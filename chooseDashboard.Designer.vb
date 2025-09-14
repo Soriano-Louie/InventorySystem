@@ -22,48 +22,22 @@ Partial Class chooseDashboard
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        PictureBox1 = New PictureBox()
-        PictureBox2 = New PictureBox()
         choosePanel = New Panel()
         Label1 = New Label()
         chooseTableLayoutPanel1 = New TableLayoutPanel()
         retailButton = New Button()
         wholeSaleButton = New Button()
-        CType(PictureBox1, ComponentModel.ISupportInitialize).BeginInit()
-        CType(PictureBox2, ComponentModel.ISupportInitialize).BeginInit()
         choosePanel.SuspendLayout()
         chooseTableLayoutPanel1.SuspendLayout()
         SuspendLayout()
         ' 
-        ' PictureBox1
-        ' 
-        PictureBox1.BackColor = Color.Transparent
-        PictureBox1.BackgroundImage = My.Resources.Resources.opacityPawPrints
-        PictureBox1.BackgroundImageLayout = ImageLayout.Stretch
-        PictureBox1.Location = New Point(-92, -82)
-        PictureBox1.Name = "PictureBox1"
-        PictureBox1.Size = New Size(638, 651)
-        PictureBox1.TabIndex = 0
-        PictureBox1.TabStop = False
-        ' 
-        ' PictureBox2
-        ' 
-        PictureBox2.Anchor = AnchorStyles.Bottom Or AnchorStyles.Right
-        PictureBox2.BackColor = Color.Transparent
-        PictureBox2.BackgroundImage = My.Resources.Resources.opacityPawPrints
-        PictureBox2.BackgroundImageLayout = ImageLayout.Stretch
-        PictureBox2.Location = New Point(913, 265)
-        PictureBox2.Name = "PictureBox2"
-        PictureBox2.Size = New Size(638, 651)
-        PictureBox2.TabIndex = 1
-        PictureBox2.TabStop = False
-        ' 
         ' choosePanel
         ' 
         choosePanel.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
+        choosePanel.AutoSize = True
         choosePanel.Controls.Add(Label1)
         choosePanel.Controls.Add(chooseTableLayoutPanel1)
-        choosePanel.Location = New Point(318, 88)
+        choosePanel.Location = New Point(228, 87)
         choosePanel.Name = "choosePanel"
         choosePanel.Padding = New Padding(20)
         choosePanel.Size = New Size(1011, 626)
@@ -85,9 +59,9 @@ Partial Class chooseDashboard
         ' 
         chooseTableLayoutPanel1.Anchor = AnchorStyles.None
         chooseTableLayoutPanel1.ColumnCount = 3
-        chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40.0F))
-        chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20.0F))
-        chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40.0F))
+        chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40F))
+        chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20F))
+        chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40F))
         chooseTableLayoutPanel1.Controls.Add(retailButton, 2, 0)
         chooseTableLayoutPanel1.Controls.Add(wholeSaleButton, 0, 0)
         chooseTableLayoutPanel1.Location = New Point(39, 103)
@@ -95,7 +69,7 @@ Partial Class chooseDashboard
         chooseTableLayoutPanel1.MinimumSize = New Size(900, 500)
         chooseTableLayoutPanel1.Name = "chooseTableLayoutPanel1"
         chooseTableLayoutPanel1.RowCount = 1
-        chooseTableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
+        chooseTableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
         chooseTableLayoutPanel1.Size = New Size(900, 500)
         chooseTableLayoutPanel1.TabIndex = 2
         ' 
@@ -105,7 +79,7 @@ Partial Class chooseDashboard
         retailButton.FlatAppearance.BorderSize = 0
         retailButton.FlatStyle = FlatStyle.Popup
         retailButton.Font = New Font("Segoe UI", 20.25F, FontStyle.Bold)
-        retailButton.Image = My.Resources.Resources.retail1
+        retailButton.Image = My.Resources.Resources.store_8771926
         retailButton.ImageAlign = ContentAlignment.TopCenter
         retailButton.Location = New Point(545, 88)
         retailButton.Margin = New Padding(3, 10, 10, 10)
@@ -124,7 +98,7 @@ Partial Class chooseDashboard
         wholeSaleButton.FlatAppearance.BorderSize = 0
         wholeSaleButton.FlatStyle = FlatStyle.Popup
         wholeSaleButton.Font = New Font("Segoe UI", 20.25F, FontStyle.Bold)
-        wholeSaleButton.Image = My.Resources.Resources.wholsale
+        wholeSaleButton.Image = My.Resources.Resources.wholesaler_160899371
         wholeSaleButton.ImageAlign = ContentAlignment.TopCenter
         wholeSaleButton.Location = New Point(10, 88)
         wholeSaleButton.Margin = New Padding(10, 10, 3, 10)
@@ -137,29 +111,24 @@ Partial Class chooseDashboard
         wholeSaleButton.TextAlign = ContentAlignment.BottomCenter
         wholeSaleButton.UseVisualStyleBackColor = True
         ' 
-        ' chooseDashboard
+        ' ChooseDashboard
         ' 
-        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        BackgroundImage = My.Resources.Resources.brownWdPawPrints
         ClientSize = New Size(1469, 810)
         Controls.Add(choosePanel)
-        Controls.Add(PictureBox2)
-        Controls.Add(PictureBox1)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
-        Name = "chooseDashboard"
+        Name = "ChooseDashboard"
         StartPosition = FormStartPosition.Manual
         Text = "Admin"
         WindowState = FormWindowState.Maximized
-        CType(PictureBox1, ComponentModel.ISupportInitialize).EndInit()
-        CType(PictureBox2, ComponentModel.ISupportInitialize).EndInit()
         choosePanel.ResumeLayout(False)
         choosePanel.PerformLayout()
         chooseTableLayoutPanel1.ResumeLayout(False)
         ResumeLayout(False)
+        PerformLayout()
     End Sub
-
-    Friend WithEvents PictureBox1 As PictureBox
-    Friend WithEvents PictureBox2 As PictureBox
     Friend WithEvents choosePanel As Panel
     Friend WithEvents retailButton As Button
     Friend WithEvents wholeSaleButton As Button

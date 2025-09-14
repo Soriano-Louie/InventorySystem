@@ -3,9 +3,8 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports Microsoft.Data.SqlClient
-Imports Microsoft.VisualBasic.ApplicationServices
 
-Public Class loginForm
+Public Class LoginForm
     'Private Sub loginForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
     '    brownPanel.BackColor = Color.FromArgb(79, 51, 40) ' Custom purple color
     'End Sub
@@ -145,8 +144,9 @@ Public Class loginForm
 
     ' Function to hash password with SHA256
     Private Function GetConnectionString() As String
-        Return "Server=DESKTOP-3AKTMEV;Initial Catalog=Inventory System;Integrated Security=True;TrustServerCertificate=True;"
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
+
 
     Private Function HashSHA256Base64(password As String) As String
         Using sha256 As SHA256 = SHA256.Create()
@@ -179,7 +179,7 @@ Public Class loginForm
     Private Sub UpdatePasswordHashInDb(username As String, newHash As String)
         Using conn As New SqlConnection(GetConnectionString())
             conn.Open()
-            Dim sql As String = "UPDATE Users SET PasswordHash = @ph WHERE Username = @u"
+            Dim sql As String = "UPDATE users SET password = @ph WHERE username = @u"
             Using cmd As New SqlCommand(sql, conn)
                 cmd.Parameters.Add("@ph", SqlDbType.NVarChar, -1).Value = newHash
                 cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
@@ -188,7 +188,7 @@ Public Class loginForm
         End Using
     End Sub
 
-    Private Sub loginButton_Click(sender As Object, e As EventArgs) Handles loginButton.Click
+    Private Sub LoginButton_Click(sender As Object, e As EventArgs) Handles loginButton.Click
         Dim username As String = usrnmTxtBx.Text.Trim()
         Dim password As String = psswrdTxtBx.Text
 
@@ -204,7 +204,7 @@ Public Class loginForm
         Try
             Using conn As New SqlConnection(connStr)
                 conn.Open()
-                Using cmd As New SqlCommand("SELECT PasswordHash FROM Users WHERE Username = @u", conn)
+                Using cmd As New SqlCommand("SELECT password FROM users WHERE username = @u", conn)
                     cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
                     storedObj = cmd.ExecuteScalar()
                 End Using

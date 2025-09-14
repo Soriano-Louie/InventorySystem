@@ -1,6 +1,6 @@
 ﻿Imports System.Drawing.Drawing2D
 
-Public Class chooseDashboard
+Public Class ChooseDashboard
     Public Sub New()
 
         ' This call is required by the designer.
@@ -95,6 +95,11 @@ Public Class chooseDashboard
     End Sub
 
     Private Sub wholeSaleButton_Click(sender As Object, e As EventArgs) Handles wholeSaleButton.Click
+        Me.Hide()
+        WholesaleDashboard.Show()
+    End Sub
+
+    Private Sub retailButton_Click(sender As Object, e As EventArgs) Handles retailButton.Click
 
     End Sub
 End Class
