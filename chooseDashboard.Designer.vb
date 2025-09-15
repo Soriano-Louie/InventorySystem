@@ -39,32 +39,31 @@ Partial Class chooseDashboard
         choosePanel.Controls.Add(chooseTableLayoutPanel1)
         choosePanel.Location = New Point(228, 87)
         choosePanel.Name = "choosePanel"
-        choosePanel.Padding = New Padding(20)
-        choosePanel.Size = New Size(1011, 626)
+        choosePanel.Padding = New Padding(20, 60, 20, 20)
+        choosePanel.Size = New Size(1011, 636)
         choosePanel.TabIndex = 2
         ' 
         ' Label1
         ' 
-        Label1.Anchor = AnchorStyles.None
-        Label1.AutoSize = True
+        Label1.Dock = DockStyle.Top
         Label1.Font = New Font("Segoe UI", 26.25F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label1.Location = New Point(315, 35)
+        Label1.Location = New Point(20, 60)
         Label1.Name = "Label1"
-        Label1.Size = New Size(457, 47)
+        Label1.Size = New Size(971, 47)
         Label1.TabIndex = 3
         Label1.Text = "Where do you want to go?"
-        Label1.TextAlign = ContentAlignment.TopCenter
+        Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' chooseTableLayoutPanel1
         ' 
-        chooseTableLayoutPanel1.Anchor = AnchorStyles.None
+        chooseTableLayoutPanel1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
         chooseTableLayoutPanel1.ColumnCount = 3
         chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40F))
         chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20F))
         chooseTableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40F))
         chooseTableLayoutPanel1.Controls.Add(retailButton, 2, 0)
         chooseTableLayoutPanel1.Controls.Add(wholeSaleButton, 0, 0)
-        chooseTableLayoutPanel1.Location = New Point(39, 103)
+        chooseTableLayoutPanel1.Location = New Point(51, 110)
         chooseTableLayoutPanel1.MaximumSize = New Size(900, 500)
         chooseTableLayoutPanel1.MinimumSize = New Size(900, 500)
         chooseTableLayoutPanel1.Name = "chooseTableLayoutPanel1"
@@ -80,13 +79,12 @@ Partial Class chooseDashboard
         retailButton.FlatStyle = FlatStyle.Popup
         retailButton.Font = New Font("Segoe UI", 20.25F, FontStyle.Bold)
         retailButton.Image = My.Resources.Resources.store_8771926
-        retailButton.ImageAlign = ContentAlignment.TopCenter
-        retailButton.Location = New Point(545, 88)
+        retailButton.Location = New Point(545, 67)
         retailButton.Margin = New Padding(3, 10, 10, 10)
         retailButton.MaximumSize = New Size(800, 400)
         retailButton.Name = "retailButton"
         retailButton.Padding = New Padding(0, 0, 0, 10)
-        retailButton.Size = New Size(345, 324)
+        retailButton.Size = New Size(345, 365)
         retailButton.TabIndex = 1
         retailButton.Text = "Retail"
         retailButton.TextAlign = ContentAlignment.BottomCenter
@@ -99,13 +97,12 @@ Partial Class chooseDashboard
         wholeSaleButton.FlatStyle = FlatStyle.Popup
         wholeSaleButton.Font = New Font("Segoe UI", 20.25F, FontStyle.Bold)
         wholeSaleButton.Image = My.Resources.Resources.wholesaler_160899371
-        wholeSaleButton.ImageAlign = ContentAlignment.TopCenter
-        wholeSaleButton.Location = New Point(10, 88)
+        wholeSaleButton.Location = New Point(10, 67)
         wholeSaleButton.Margin = New Padding(10, 10, 3, 10)
         wholeSaleButton.MaximumSize = New Size(800, 400)
         wholeSaleButton.Name = "wholeSaleButton"
         wholeSaleButton.Padding = New Padding(0, 0, 0, 10)
-        wholeSaleButton.Size = New Size(345, 324)
+        wholeSaleButton.Size = New Size(345, 365)
         wholeSaleButton.TabIndex = 0
         wholeSaleButton.Text = "Wholesale"
         wholeSaleButton.TextAlign = ContentAlignment.BottomCenter
@@ -124,7 +121,6 @@ Partial Class chooseDashboard
         Text = "Admin"
         WindowState = FormWindowState.Maximized
         choosePanel.ResumeLayout(False)
-        choosePanel.PerformLayout()
         chooseTableLayoutPanel1.ResumeLayout(False)
         ResumeLayout(False)
         PerformLayout()

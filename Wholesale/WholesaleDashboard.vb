@@ -1,4 +1,5 @@
-﻿Imports InventorySystem.sidePanelControl
+﻿Imports System.Drawing.Drawing2D
+Imports InventorySystem.sidePanelControl
 Imports InventorySystem.topPanelControl
 
 
@@ -23,6 +24,17 @@ Public Class WholesaleDashboard
         Panel3.BackColor = Color.FromArgb(230, 216, 177)
         Panel2.BackColor = Color.FromArgb(147, 53, 53)
         Panel2.ForeColor = Color.FromArgb(230, 216, 177)
+        Panel4.BackColor = Color.FromArgb(230, 216, 177)
+        Panel5.BackColor = Color.FromArgb(230, 216, 177)
+        Panel6.BackColor = Color.FromArgb(230, 216, 177)
+        Panel7.BackColor = Color.FromArgb(230, 216, 177)
+
+        Label1.ForeColor = Color.FromArgb(79, 51, 40)
+        Label3.ForeColor = Color.FromArgb(79, 51, 40)
+        Label2.ForeColor = Color.FromArgb(230, 216, 177)
+        Label4.ForeColor = Color.FromArgb(79, 51, 40)
+        Label5.ForeColor = Color.FromArgb(79, 51, 40)
+        Label6.ForeColor = Color.FromArgb(79, 51, 40)
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -119,5 +131,52 @@ Public Class WholesaleDashboard
 
     Private Sub WholesaleDashboard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button1")
+
+        ' Example: Make Panel1 have rounded corners with radius 30
+        SetRoundedRegion2(Panel1, 30)
+        SetRoundedRegion2(Panel2, 30)
+        SetRoundedRegion2(Panel3, 30)
+        SetRoundedRegion2(Panel4, 30)
+        SetRoundedRegion2(Panel5, 30)
+        SetRoundedRegion2(Panel6, 30)
+        SetRoundedRegion2(Panel7, 30)
     End Sub
+
+    Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
+        Dim rect As New Rectangle(0, 0, ctrl.Width, ctrl.Height)
+        Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
+            ctrl.Region = New Region(path)
+        End Using
+    End Sub
+
+    Private Function GetRoundedRectanglePath2(rect As Rectangle, radius As Integer) As GraphicsPath
+        Dim path As New GraphicsPath()
+        Dim diameter As Integer = radius * 2
+
+        path.StartFigure()
+
+        ' Top edge
+        path.AddLine(rect.X + radius, rect.Y, rect.Right - radius, rect.Y)
+        ' Top-right corner
+        path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90)
+        ' Right edge
+        path.AddLine(rect.Right, rect.Y + radius, rect.Right, rect.Bottom - radius)
+        ' Bottom-right corner
+        path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
+        ' Bottom edge
+        path.AddLine(rect.Right - radius, rect.Bottom, rect.X + radius, rect.Bottom)
+        ' Bottom-left corner
+        path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90)
+        ' Left edge
+        path.AddLine(rect.X, rect.Bottom - radius, rect.X, rect.Y + radius)
+        ' Top-left corner
+        path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90)
+
+        path.CloseFigure()
+        Return path
+    End Function
+
+
+
+
 End Class

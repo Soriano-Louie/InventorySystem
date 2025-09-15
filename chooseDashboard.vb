@@ -18,8 +18,8 @@ Public Class ChooseDashboard
         wholeSaleButton.BackColor = Color.FromArgb(79, 51, 40)
         retailButton.Cursor = Cursors.Hand
         wholeSaleButton.Cursor = Cursors.Hand
-        retailButton.ForeColor = Color.FromArgb(224, 166, 109)
-        wholeSaleButton.ForeColor = Color.FromArgb(224, 166, 109)
+        retailButton.ForeColor = Color.FromArgb(230, 216, 177)
+        wholeSaleButton.ForeColor = Color.FromArgb(230, 216, 177)
         chooseTableLayoutPanel1.BackColor = Color.FromArgb(224, 166, 109)
 
 
