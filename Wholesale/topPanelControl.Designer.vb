@@ -35,9 +35,9 @@ Partial Class topPanelControl
         ' 
         dateLabel.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
         dateLabel.Font = New Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        dateLabel.Location = New Point(162, 45)
+        dateLabel.Location = New Point(142, 34)
         dateLabel.Name = "dateLabel"
-        dateLabel.Size = New Size(421, 49)
+        dateLabel.Size = New Size(368, 37)
         dateLabel.TabIndex = 10
         dateLabel.Text = "S"
         dateLabel.TextAlign = ContentAlignment.MiddleLeft
@@ -46,21 +46,20 @@ Partial Class topPanelControl
         ' 
         Label3.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
         Label3.Font = New Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label3.Location = New Point(71, 45)
+        Label3.Location = New Point(62, 34)
         Label3.Name = "Label3"
-        Label3.Size = New Size(112, 49)
+        Label3.Size = New Size(98, 37)
         Label3.TabIndex = 9
         Label3.Text = "Date:"
         Label3.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label1
         ' 
-        Label1.Anchor = AnchorStyles.Left Or AnchorStyles.Right
-        Label1.AutoSize = True
+        Label1.Dock = DockStyle.Fill
         Label1.Font = New Font("Segoe UI", 21.75F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label1.Location = New Point(137, 27)
+        Label1.Location = New Point(0, 0)
         Label1.Name = "Label1"
-        Label1.Size = New Size(240, 50)
+        Label1.Size = New Size(432, 42)
         Label1.TabIndex = 2
         Label1.Text = "WHOLESALE"
         Label1.TextAlign = ContentAlignment.MiddleCenter
@@ -69,10 +68,10 @@ Partial Class topPanelControl
         ' 
         Label2.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Right
         Label2.Font = New Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label2.Location = New Point(1698, 45)
+        Label2.Location = New Point(1486, 34)
         Label2.Name = "Label2"
-        Label2.Padding = New Padding(0, 0, 11, 0)
-        Label2.Size = New Size(200, 49)
+        Label2.Padding = New Padding(0, 0, 10, 0)
+        Label2.Size = New Size(175, 37)
         Label2.TabIndex = 8
         Label2.Text = "Admin"
         Label2.TextAlign = ContentAlignment.MiddleRight
@@ -82,39 +81,36 @@ Partial Class topPanelControl
         adminImgPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Right
         adminImgPanel.BackgroundImage = My.Resources.Resources.user__1_
         adminImgPanel.BackgroundImageLayout = ImageLayout.Stretch
-        adminImgPanel.Location = New Point(1905, 15)
-        adminImgPanel.Margin = New Padding(3, 4, 3, 4)
+        adminImgPanel.Location = New Point(1667, 11)
         adminImgPanel.Name = "adminImgPanel"
-        adminImgPanel.Size = New Size(94, 105)
+        adminImgPanel.Size = New Size(82, 79)
         adminImgPanel.TabIndex = 7
         ' 
         ' titlePanel
         ' 
-        titlePanel.Anchor = AnchorStyles.Left Or AnchorStyles.Right
-        titlePanel.AutoSize = True
+        titlePanel.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
+        titlePanel.AutoSizeMode = AutoSizeMode.GrowAndShrink
         titlePanel.Controls.Add(Label1)
-        titlePanel.Location = New Point(763, 15)
-        titlePanel.Margin = New Padding(3, 4, 3, 4)
+        titlePanel.Location = New Point(670, 29)
         titlePanel.Name = "titlePanel"
-        titlePanel.Size = New Size(494, 105)
+        titlePanel.Size = New Size(432, 42)
         titlePanel.TabIndex = 6
         ' 
         ' topPanelControl
         ' 
-        AutoScaleDimensions = New SizeF(8F, 20F)
+        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
         AutoScaleMode = AutoScaleMode.Font
+        AutoSize = True
+        AutoSizeMode = AutoSizeMode.GrowAndShrink
         Controls.Add(dateLabel)
         Controls.Add(Label3)
         Controls.Add(Label2)
         Controls.Add(adminImgPanel)
         Controls.Add(titlePanel)
-        Margin = New Padding(3, 4, 3, 4)
         Name = "topPanelControl"
-        Size = New Size(2069, 133)
+        Size = New Size(1810, 100)
         titlePanel.ResumeLayout(False)
-        titlePanel.PerformLayout()
         ResumeLayout(False)
-        PerformLayout()
     End Sub
 
     Friend WithEvents dateLabel As Label
