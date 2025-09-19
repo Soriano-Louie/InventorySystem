@@ -79,11 +79,12 @@ Partial Class topPanelControl
         ' adminImgPanel
         ' 
         adminImgPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Right
+        adminImgPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink
         adminImgPanel.BackgroundImage = My.Resources.Resources.user__1_
         adminImgPanel.BackgroundImageLayout = ImageLayout.Stretch
         adminImgPanel.Location = New Point(1667, 11)
         adminImgPanel.Name = "adminImgPanel"
-        adminImgPanel.Size = New Size(82, 79)
+        adminImgPanel.Size = New Size(92, 79)
         adminImgPanel.TabIndex = 7
         ' 
         ' titlePanel

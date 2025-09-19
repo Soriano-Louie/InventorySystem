@@ -1,4 +1,5 @@
-﻿Imports InventorySystem.sidePanelControl
+﻿Imports System.Drawing.Drawing2D
+Imports InventorySystem.sidePanelControl
 Imports InventorySystem.topPanelControl
 
 Public Class InventoryForm
@@ -6,6 +7,9 @@ Public Class InventoryForm
     Friend WithEvents sidePanel As sidePanelControl
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
+    Dim dt As New DataTable()
+    Dim dv As New DataView()
+    Dim bs As New BindingSource()
 
     Public Sub New()
 
@@ -16,10 +20,25 @@ Public Class InventoryForm
         sidePanel = New sidePanelControl()
         sidePanel.Dock = DockStyle.Left
         topPanel.Dock = DockStyle.Top
+        topPanel.Margin = New Padding(0, 0, 10, 0)
         Me.Controls.Add(topPanel)
         Me.Controls.Add(sidePanel)
         Me.MaximizeBox = False
         Me.FormBorderStyle = FormBorderStyle.None
+        Me.BackColor = Color.FromArgb(224, 166, 109)
+        tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
+        tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
+
+        TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
+
+        Button1.BackColor = Color.FromArgb(147, 53, 53)
+        Button2.BackColor = Color.FromArgb(147, 53, 53)
+        Button1.ForeColor = Color.FromArgb(230, 216, 177)
+        Button2.ForeColor = Color.FromArgb(230, 216, 177)
+
+        tableDataGridView.ReadOnly = True
+        tableDataGridView.AllowUserToAddRows = False
+        tableDataGridView.AllowUserToDeleteRows = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -115,7 +134,154 @@ Public Class InventoryForm
         End Select
     End Sub
 
+    ' Dictionary to store placeholder texts for each TextBox
+    Private placeholders As New Dictionary(Of TextBox, String)
+
     Private Sub InventoryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button2")
+        ' Set placeholder texts
+        'SetPlaceholder(TextBox1, "Product Name")
+        'SetPlaceholder(TextBox2, "Weight")
+        'SetPlaceholder(TextBox3, "Price")
+        'SetPlaceholder(TextBox4, "Stock")
+        SetPlaceholder(TextBoxSearch, "Search...")
+
+        SetRoundedRegion2(Button1, 20)
+        SetRoundedRegion2(Button2, 20)
+
+        ' Example data
+        dt = New DataTable()
+        dt.Columns.Add("Name")
+
+        dt.Rows.Add("Apple")
+        dt.Rows.Add("Banana")
+        dt.Rows.Add("Pineapple")
+
+        ' Create DataView
+        dv = New DataView(dt)
+
+        ' Bind DataView to BindingSource
+        bs.DataSource = dv
+
+        ' Bind BindingSource to DataGridView
+        tableDataGridView.DataSource = bs
+
     End Sub
+
+    ' Method to assign placeholder text to a TextBox
+    Private Sub SetPlaceholder(tb As TextBox, text As String)
+        placeholders(tb) = text
+        tb.Text = text
+        tb.ForeColor = Color.Gray
+
+        ' Attach shared events
+        AddHandler tb.GotFocus, AddressOf RemovePlaceholder
+        AddHandler tb.LostFocus, AddressOf RestorePlaceholder
+    End Sub
+
+    ' When the user clicks/focuses the TextBox
+    Private Sub RemovePlaceholder(sender As Object, e As EventArgs)
+        Dim tb As TextBox = DirectCast(sender, TextBox)
+        If tb.Text = placeholders(tb) Then
+            tb.Text = ""
+            tb.ForeColor = Color.Black
+        End If
+    End Sub
+
+    ' When the TextBox loses focus
+    Private Sub RestorePlaceholder(sender As Object, e As EventArgs)
+        Dim tb As TextBox = DirectCast(sender, TextBox)
+        If String.IsNullOrWhiteSpace(tb.Text) Then
+            tb.Text = placeholders(tb)
+            tb.ForeColor = Color.Gray
+        End If
+    End Sub
+
+    Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
+        Dim rect As New Rectangle(0, 0, ctrl.Width, ctrl.Height)
+        Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
+            ctrl.Region = New Region(path)
+        End Using
+    End Sub
+
+    Private Function GetRoundedRectanglePath2(rect As Rectangle, radius As Integer) As GraphicsPath
+        Dim path As New GraphicsPath()
+        Dim diameter As Integer = radius * 2
+
+        path.StartFigure()
+
+        ' Top edge
+        path.AddLine(rect.X + radius, rect.Y, rect.Right - radius, rect.Y)
+        ' Top-right corner
+        path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90)
+        ' Right edge
+        path.AddLine(rect.Right, rect.Y + radius, rect.Right, rect.Bottom - radius)
+        ' Bottom-right corner
+        path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
+        ' Bottom edge
+        path.AddLine(rect.Right - radius, rect.Bottom, rect.X + radius, rect.Bottom)
+        ' Bottom-left corner
+        path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90)
+        ' Left edge
+        path.AddLine(rect.X, rect.Bottom - radius, rect.X, rect.Y + radius)
+        ' Top-left corner
+        path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90)
+
+        path.CloseFigure()
+        Return path
+    End Function
+
+    'Private Sub ComboBox1_DrawItem(sender As Object, e As DrawItemEventArgs)
+    '    If e.Index < 0 Then Return
+
+    '    ' Use your custom color for background
+    '    'Dim customBack As Color = Color.FromArgb(230, 216, 177)
+    '    'e.Graphics.FillRectangle(New SolidBrush(customBack), e.Bounds)
+
+    '    ' Draw the item text in black
+    '    Dim itemText = ComboBox1.Items(e.Index).ToString
+    '    e.Graphics.DrawString(itemText, e.Font, Brushes.Black, e.Bounds)
+
+    '    ' Draw focus rectangle if selected
+    '    e.DrawFocusRectangle()
+    'End Sub
+
+    'Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
+    '    Dim searchText As String = TextBoxSearch.Text.ToLower()
+
+    '    For Each row As DataGridViewRow In tableDataGridView.Rows
+    '        row.Visible = True ' reset first
+
+    '        Dim match As Boolean = False
+    '        For Each cell As DataGridViewCell In row.Cells
+    '            If cell.Value IsNot Nothing AndAlso cell.Value.ToString().ToLower().Contains(searchText) Then
+    '                match = True
+    '                Exit For
+    '            End If
+    '        Next
+
+    '        row.Visible = match
+    '    Next
+    'End Sub
+
+    'search using dataview filter  
+    Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
+        'reset place holder if focused to not interfere with search
+        Dim placeholder As String = ""
+        If placeholders.ContainsKey(TextBoxSearch) Then
+            placeholder = placeholders(TextBoxSearch)
+        End If
+
+        If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
+            bs.Filter = ""   ' Show all rows
+        Else
+            bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+        End If
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        Dim popup As New addItemForm()
+        popup.ShowDialog(Me)
+    End Sub
+
 End Class
