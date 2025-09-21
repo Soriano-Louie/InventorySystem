@@ -100,13 +100,13 @@
             Case "Button2"
                 ShowSingleForm(Of InventoryForm)()
             Case "Button3"
-                ShowSingleForm(Of productsForm)()
+                ShowSingleForm(Of categoriesForm)()
             Case "Button4"
-                ShowSingleForm(Of deliveryForm)()
+                ShowSingleForm(Of deliveryLogsForm)()
             Case "Button5"
                 ShowSingleForm(Of salesReport)()
             Case "Button6"
-                ShowSingleForm(Of logsForm)()
+                ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
                 ShowSingleForm(Of userSettingsForm)()
         End Select

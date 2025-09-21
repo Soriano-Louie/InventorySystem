@@ -2,8 +2,7 @@
 Imports InventorySystem.sidePanelControl
 Imports InventorySystem.topPanelControl
 
-Public Class salesReport
-
+Public Class deliveryLogsForm
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
@@ -32,9 +31,7 @@ Public Class salesReport
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
 
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
-
-        Button1.BackColor = Color.FromArgb(147, 53, 53)
-        Button1.ForeColor = Color.FromArgb(230, 216, 177)
+        Label1.ForeColor = Color.FromArgb(79, 51, 40)
 
         tableDataGridView.ReadOnly = True
         tableDataGridView.AllowUserToAddRows = False
@@ -90,12 +87,10 @@ Public Class salesReport
     End Sub
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
-
         ' No need to call HighlightButton here
-
     End Sub
 
-    Private Sub salesReport_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+    Private Sub deliveryForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
         Application.Exit()
     End Sub
 
@@ -135,10 +130,9 @@ Public Class salesReport
         End Select
     End Sub
 
-    Private Sub salesReport_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        HighlightButton("Button5")
+    Private Sub deliveryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        HighlightButton("Button4")
         SetPlaceholder(TextBoxSearch, "Search...")
-        SetRoundedRegion2(Button1, 20)
 
         ' Example data
         dt = New DataTable()
@@ -157,6 +151,7 @@ Public Class salesReport
         ' Bind BindingSource to DataGridView
         tableDataGridView.DataSource = bs
     End Sub
+
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
         Dim rect As New Rectangle(0, 0, ctrl.Width, ctrl.Height)
         Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
@@ -232,4 +227,5 @@ Public Class salesReport
             bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
+
 End Class

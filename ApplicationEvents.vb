@@ -29,8 +29,8 @@ Namespace My
             ' Make the application DPI-aware (handles scaling at 125%, 150%, etc.)
             e.HighDpiMode = HighDpiMode.PerMonitorV2
 
-            ' Optional: Set a default font that scales cleanly
-            e.Font = New Font("Segoe UI", 10, FontStyle.Regular)
+            '' Optional: Set a default font that scales cleanly
+            'e.Font = New Font("Segoe UI", 10, FontStyle.Regular)
         End Sub
 
     End Class

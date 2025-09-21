@@ -31,6 +31,7 @@ Public Class InventoryForm
 
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
 
+
         Button1.BackColor = Color.FromArgb(147, 53, 53)
         Button2.BackColor = Color.FromArgb(147, 53, 53)
         Button1.ForeColor = Color.FromArgb(230, 216, 177)
@@ -39,6 +40,7 @@ Public Class InventoryForm
         tableDataGridView.ReadOnly = True
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
+        tableDataGridView.RowHeadersVisible = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -122,13 +124,13 @@ Public Class InventoryForm
             Case "Button2"
                 ShowSingleForm(Of InventoryForm)()
             Case "Button3"
-                ShowSingleForm(Of productsForm)()
+                ShowSingleForm(Of categoriesForm)()
             Case "Button4"
-                ShowSingleForm(Of deliveryForm)()
+                ShowSingleForm(Of deliveryLogsForm)()
             Case "Button5"
                 ShowSingleForm(Of salesReport)()
             Case "Button6"
-                ShowSingleForm(Of logsForm)()
+                ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
                 ShowSingleForm(Of userSettingsForm)()
         End Select
@@ -267,7 +269,7 @@ Public Class InventoryForm
     'search using dataview filter  
     Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
         'reset place holder if focused to not interfere with search
-        Dim placeholder As String = ""
+        Dim placeholder = ""
         If placeholders.ContainsKey(TextBoxSearch) Then
             placeholder = placeholders(TextBoxSearch)
         End If
@@ -284,4 +286,8 @@ Public Class InventoryForm
         popup.ShowDialog(Me)
     End Sub
 
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        Dim popup As New editItemForm()
+        popup.ShowDialog(Me)
+    End Sub
 End Class

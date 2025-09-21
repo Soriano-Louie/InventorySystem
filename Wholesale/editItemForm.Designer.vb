@@ -1,5 +1,5 @@
 ﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class addItemForm
+Partial Class editItemForm
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
@@ -22,12 +22,14 @@ Partial Class addItemForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        mainPanel = New Panel()
+        Panel1 = New Panel()
+        Label1 = New Label()
         TableLayoutPanel1 = New TableLayoutPanel()
         Panel9 = New Panel()
         TableLayoutPanel2 = New TableLayoutPanel()
+        deleteButton = New Button()
+        updateButton = New Button()
         cancelButton = New Button()
-        saveButton = New Button()
         Panel8 = New Panel()
         Label9 = New Label()
         TextBox8 = New TextBox()
@@ -49,12 +51,10 @@ Partial Class addItemForm
         Panel2 = New Panel()
         ComboBox1 = New ComboBox()
         Label3 = New Label()
-        Panel1 = New Panel()
+        Panel10 = New Panel()
         Label2 = New Label()
         TextBox1 = New TextBox()
-        topPanel = New Panel()
-        Label1 = New Label()
-        mainPanel.SuspendLayout()
+        Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
         Panel9.SuspendLayout()
         TableLayoutPanel2.SuspendLayout()
@@ -65,19 +65,28 @@ Partial Class addItemForm
         Panel4.SuspendLayout()
         Panel3.SuspendLayout()
         Panel2.SuspendLayout()
-        Panel1.SuspendLayout()
-        topPanel.SuspendLayout()
+        Panel10.SuspendLayout()
         SuspendLayout()
         ' 
-        ' mainPanel
+        ' Panel1
         ' 
-        mainPanel.Controls.Add(TableLayoutPanel1)
-        mainPanel.Controls.Add(topPanel)
-        mainPanel.Dock = DockStyle.Fill
-        mainPanel.Location = New Point(0, 0)
-        mainPanel.Name = "mainPanel"
-        mainPanel.Size = New Size(362, 735)
-        mainPanel.TabIndex = 0
+        Panel1.Controls.Add(Label1)
+        Panel1.Dock = DockStyle.Top
+        Panel1.Location = New Point(0, 0)
+        Panel1.Name = "Panel1"
+        Panel1.Size = New Size(362, 69)
+        Panel1.TabIndex = 0
+        ' 
+        ' Label1
+        ' 
+        Label1.Dock = DockStyle.Fill
+        Label1.Font = New Font("Segoe UI", 15.75F, FontStyle.Bold)
+        Label1.Location = New Point(0, 0)
+        Label1.Name = "Label1"
+        Label1.Size = New Size(362, 69)
+        Label1.TabIndex = 0
+        Label1.Text = "Edit Item Details"
+        Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' TableLayoutPanel1
         ' 
@@ -91,7 +100,7 @@ Partial Class addItemForm
         TableLayoutPanel1.Controls.Add(Panel4, 0, 3)
         TableLayoutPanel1.Controls.Add(Panel3, 0, 2)
         TableLayoutPanel1.Controls.Add(Panel2, 0, 1)
-        TableLayoutPanel1.Controls.Add(Panel1, 0, 0)
+        TableLayoutPanel1.Controls.Add(Panel10, 0, 0)
         TableLayoutPanel1.Dock = DockStyle.Fill
         TableLayoutPanel1.Location = New Point(0, 69)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
@@ -107,7 +116,7 @@ Partial Class addItemForm
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 11.1111107F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 20F))
         TableLayoutPanel1.Size = New Size(362, 666)
-        TableLayoutPanel1.TabIndex = 3
+        TableLayoutPanel1.TabIndex = 4
         ' 
         ' Panel9
         ' 
@@ -120,11 +129,13 @@ Partial Class addItemForm
         ' 
         ' TableLayoutPanel2
         ' 
-        TableLayoutPanel2.ColumnCount = 2
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
-        TableLayoutPanel2.Controls.Add(cancelButton, 1, 0)
-        TableLayoutPanel2.Controls.Add(saveButton, 0, 0)
+        TableLayoutPanel2.ColumnCount = 3
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel2.Controls.Add(deleteButton, 1, 0)
+        TableLayoutPanel2.Controls.Add(updateButton, 0, 0)
+        TableLayoutPanel2.Controls.Add(cancelButton, 2, 0)
         TableLayoutPanel2.Dock = DockStyle.Fill
         TableLayoutPanel2.Location = New Point(0, 0)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
@@ -132,6 +143,37 @@ Partial Class addItemForm
         TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
         TableLayoutPanel2.Size = New Size(356, 76)
         TableLayoutPanel2.TabIndex = 14
+        ' 
+        ' deleteButton
+        ' 
+        deleteButton.Anchor = AnchorStyles.None
+        deleteButton.AutoSize = True
+        deleteButton.BackColor = Color.Red
+        deleteButton.Cursor = Cursors.Hand
+        deleteButton.FlatAppearance.BorderSize = 0
+        deleteButton.FlatStyle = FlatStyle.Popup
+        deleteButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
+        deleteButton.Location = New Point(131, 22)
+        deleteButton.Name = "deleteButton"
+        deleteButton.Size = New Size(91, 31)
+        deleteButton.TabIndex = 15
+        deleteButton.Text = "DELETE"
+        deleteButton.UseVisualStyleBackColor = False
+        ' 
+        ' updateButton
+        ' 
+        updateButton.Anchor = AnchorStyles.None
+        updateButton.AutoSize = True
+        updateButton.Cursor = Cursors.Hand
+        updateButton.FlatAppearance.BorderSize = 0
+        updateButton.FlatStyle = FlatStyle.Popup
+        updateButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
+        updateButton.Location = New Point(20, 22)
+        updateButton.Name = "updateButton"
+        updateButton.Size = New Size(78, 31)
+        updateButton.TabIndex = 13
+        updateButton.Text = "UPDATE"
+        updateButton.UseVisualStyleBackColor = True
         ' 
         ' cancelButton
         ' 
@@ -141,27 +183,12 @@ Partial Class addItemForm
         cancelButton.FlatAppearance.BorderSize = 0
         cancelButton.FlatStyle = FlatStyle.Popup
         cancelButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        cancelButton.Location = New Point(220, 20)
+        cancelButton.Location = New Point(250, 22)
         cancelButton.Name = "cancelButton"
-        cancelButton.Size = New Size(93, 35)
+        cancelButton.Size = New Size(91, 31)
         cancelButton.TabIndex = 14
         cancelButton.Text = "CANCEL"
         cancelButton.UseVisualStyleBackColor = True
-        ' 
-        ' saveButton
-        ' 
-        saveButton.Anchor = AnchorStyles.None
-        saveButton.AutoSize = True
-        saveButton.Cursor = Cursors.Hand
-        saveButton.FlatAppearance.BorderSize = 0
-        saveButton.FlatStyle = FlatStyle.Popup
-        saveButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        saveButton.Location = New Point(51, 20)
-        saveButton.Name = "saveButton"
-        saveButton.Size = New Size(75, 35)
-        saveButton.TabIndex = 13
-        saveButton.Text = "SAVE"
-        saveButton.UseVisualStyleBackColor = True
         ' 
         ' Panel8
         ' 
@@ -360,15 +387,15 @@ Partial Class addItemForm
         Label3.Text = "Category"
         Label3.TextAlign = ContentAlignment.MiddleLeft
         ' 
-        ' Panel1
+        ' Panel10
         ' 
-        Panel1.Controls.Add(Label2)
-        Panel1.Controls.Add(TextBox1)
-        Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(3, 3)
-        Panel1.Name = "Panel1"
-        Panel1.Size = New Size(356, 67)
-        Panel1.TabIndex = 4
+        Panel10.Controls.Add(Label2)
+        Panel10.Controls.Add(TextBox1)
+        Panel10.Dock = DockStyle.Fill
+        Panel10.Location = New Point(3, 3)
+        Panel10.Name = "Panel10"
+        Panel10.Size = New Size(356, 67)
+        Panel10.TabIndex = 4
         ' 
         ' Label2
         ' 
@@ -388,36 +415,17 @@ Partial Class addItemForm
         TextBox1.Size = New Size(350, 27)
         TextBox1.TabIndex = 2
         ' 
-        ' topPanel
-        ' 
-        topPanel.Controls.Add(Label1)
-        topPanel.Dock = DockStyle.Top
-        topPanel.Location = New Point(0, 0)
-        topPanel.Name = "topPanel"
-        topPanel.Size = New Size(362, 69)
-        topPanel.TabIndex = 0
-        ' 
-        ' Label1
-        ' 
-        Label1.Dock = DockStyle.Fill
-        Label1.Font = New Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label1.Location = New Point(0, 0)
-        Label1.Name = "Label1"
-        Label1.Size = New Size(362, 69)
-        Label1.TabIndex = 0
-        Label1.Text = "Add Item to Inventory"
-        Label1.TextAlign = ContentAlignment.MiddleCenter
-        ' 
-        ' addItemForm
+        ' editItemForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(362, 735)
-        Controls.Add(mainPanel)
+        Controls.Add(TableLayoutPanel1)
+        Controls.Add(Panel1)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
-        Name = "addItemForm"
+        Name = "editItemForm"
         StartPosition = FormStartPosition.CenterParent
-        mainPanel.ResumeLayout(False)
+        Panel1.ResumeLayout(False)
         TableLayoutPanel1.ResumeLayout(False)
         Panel9.ResumeLayout(False)
         TableLayoutPanel2.ResumeLayout(False)
@@ -436,19 +444,18 @@ Partial Class addItemForm
         Panel3.PerformLayout()
         Panel2.ResumeLayout(False)
         Panel2.PerformLayout()
-        Panel1.ResumeLayout(False)
-        Panel1.PerformLayout()
-        topPanel.ResumeLayout(False)
+        Panel10.ResumeLayout(False)
+        Panel10.PerformLayout()
         ResumeLayout(False)
     End Sub
 
-    Friend WithEvents mainPanel As Panel
-    Friend WithEvents topPanel As Panel
-    Friend WithEvents Label1 As Label
-    Friend WithEvents TextBox1 As TextBox
-    Friend WithEvents Label2 As Label
-    Friend WithEvents TableLayoutPanel1 As TableLayoutPanel
     Friend WithEvents Panel1 As Panel
+    Friend WithEvents Label1 As Label
+    Friend WithEvents TableLayoutPanel1 As TableLayoutPanel
+    Friend WithEvents Panel9 As Panel
+    Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
+    Friend WithEvents cancelButton As Button
+    Friend WithEvents updateButton As Button
     Friend WithEvents Panel8 As Panel
     Friend WithEvents Label9 As Label
     Friend WithEvents TextBox8 As TextBox
@@ -468,10 +475,10 @@ Partial Class addItemForm
     Friend WithEvents Label4 As Label
     Friend WithEvents TextBox3 As TextBox
     Friend WithEvents Panel2 As Panel
-    Friend WithEvents Label3 As Label
     Friend WithEvents ComboBox1 As ComboBox
-    Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
-    Friend WithEvents cancelButton As Button
-    Friend WithEvents saveButton As Button
-    Friend WithEvents Panel9 As Panel
+    Friend WithEvents Label3 As Label
+    Friend WithEvents Panel10 As Panel
+    Friend WithEvents Label2 As Label
+    Friend WithEvents TextBox1 As TextBox
+    Friend WithEvents deleteButton As Button
 End Class
