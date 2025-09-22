@@ -43,19 +43,20 @@ Partial Class InventoryForm
         dataGridViewPanel.Controls.Add(tableDataGridView)
         dataGridViewPanel.Dock = DockStyle.Fill
         dataGridViewPanel.Location = New Point(0, 0)
+        dataGridViewPanel.Margin = New Padding(3, 4, 3, 4)
         dataGridViewPanel.Name = "dataGridViewPanel"
-        dataGridViewPanel.Padding = New Padding(50, 120, 50, 20)
-        dataGridViewPanel.Size = New Size(1810, 945)
+        dataGridViewPanel.Padding = New Padding(57, 160, 57, 27)
+        dataGridViewPanel.Size = New Size(1924, 1055)
         dataGridViewPanel.TabIndex = 0
         ' 
         ' addProductPanel
         ' 
         addProductPanel.Anchor = AnchorStyles.Top
         addProductPanel.Controls.Add(TableLayoutPanel1)
-        addProductPanel.Location = New Point(0, 4)
-        addProductPanel.Margin = New Padding(3, 3, 3, 20)
+        addProductPanel.Location = New Point(-72, 5)
+        addProductPanel.Margin = New Padding(3, 4, 3, 27)
         addProductPanel.Name = "addProductPanel"
-        addProductPanel.Size = New Size(1810, 116)
+        addProductPanel.Size = New Size(2069, 155)
         addProductPanel.TabIndex = 2
         ' 
         ' TableLayoutPanel1
@@ -67,13 +68,14 @@ Partial Class InventoryForm
         TableLayoutPanel1.Controls.Add(Button2, 1, 0)
         TableLayoutPanel1.Controls.Add(Button1, 0, 0)
         TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
-        TableLayoutPanel1.Location = New Point(301, 14)
+        TableLayoutPanel1.Location = New Point(344, 19)
+        TableLayoutPanel1.Margin = New Padding(3, 4, 3, 4)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
         TableLayoutPanel1.RowCount = 2
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 60F))
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 40F))
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 20F))
-        TableLayoutPanel1.Size = New Size(1175, 99)
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 60.0F))
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 40.0F))
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 27.0F))
+        TableLayoutPanel1.Size = New Size(1343, 132)
         TableLayoutPanel1.TabIndex = 4
         ' 
         ' Button2
@@ -83,12 +85,13 @@ Partial Class InventoryForm
         Button2.Cursor = Cursors.Hand
         Button2.FlatAppearance.BorderSize = 0
         Button2.FlatStyle = FlatStyle.Popup
-        Button2.Font = New Font("Segoe UI", 14F)
-        Button2.Location = New Point(773, 12)
+        Button2.Font = New Font("Segoe UI", 14.0F)
+        Button2.Location = New Point(893, 11)
+        Button2.Margin = New Padding(3, 4, 3, 4)
         Button2.Name = "Button2"
-        Button2.Size = New Size(216, 35)
+        Button2.Size = New Size(227, 56)
         Button2.TabIndex = 1
-        Button2.Text = "EDIT ITEM"
+        Button2.Text = "Edit Item"
         Button2.UseVisualStyleBackColor = True
         ' 
         ' Button1
@@ -98,12 +101,13 @@ Partial Class InventoryForm
         Button1.Cursor = Cursors.Hand
         Button1.FlatAppearance.BorderSize = 0
         Button1.FlatStyle = FlatStyle.Popup
-        Button1.Font = New Font("Segoe UI", 14F)
-        Button1.Location = New Point(185, 12)
+        Button1.Font = New Font("Segoe UI", 14.0F)
+        Button1.Location = New Point(222, 11)
+        Button1.Margin = New Padding(3, 4, 3, 4)
         Button1.Name = "Button1"
-        Button1.Size = New Size(216, 35)
+        Button1.Size = New Size(227, 56)
         Button1.TabIndex = 0
-        Button1.Text = "ADD ITEM"
+        Button1.Text = "Add Item"
         Button1.UseVisualStyleBackColor = True
         ' 
         ' Panel1
@@ -111,19 +115,21 @@ Partial Class InventoryForm
         Panel1.Anchor = AnchorStyles.None
         TableLayoutPanel1.SetColumnSpan(Panel1, 2)
         Panel1.Controls.Add(TextBoxSearch)
-        Panel1.Location = New Point(487, 62)
+        Panel1.Location = New Point(557, 83)
+        Panel1.Margin = New Padding(3, 4, 3, 4)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(200, 34)
+        Panel1.Size = New Size(229, 45)
         Panel1.TabIndex = 2
         ' 
         ' TextBoxSearch
         ' 
-        TextBoxSearch.BorderStyle = BorderStyle.None
+        TextBoxSearch.BorderStyle = BorderStyle.FixedSingle
         TextBoxSearch.Dock = DockStyle.Fill
-        TextBoxSearch.Font = New Font("Segoe UI", 13F)
+        TextBoxSearch.Font = New Font("Segoe UI", 13.0F)
         TextBoxSearch.Location = New Point(0, 0)
+        TextBoxSearch.Margin = New Padding(3, 4, 3, 4)
         TextBoxSearch.Name = "TextBoxSearch"
-        TextBoxSearch.Size = New Size(200, 24)
+        TextBoxSearch.Size = New Size(229, 36)
         TextBoxSearch.TabIndex = 0
         ' 
         ' tableDataGridView
@@ -136,18 +142,21 @@ Partial Class InventoryForm
         tableDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.Raised
         tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
         tableDataGridView.Dock = DockStyle.Fill
-        tableDataGridView.Location = New Point(50, 120)
+        tableDataGridView.Location = New Point(57, 160)
+        tableDataGridView.Margin = New Padding(3, 4, 3, 4)
         tableDataGridView.Name = "tableDataGridView"
-        tableDataGridView.Size = New Size(1710, 805)
+        tableDataGridView.RowHeadersWidth = 51
+        tableDataGridView.Size = New Size(1810, 868)
         tableDataGridView.TabIndex = 0
         ' 
         ' InventoryForm
         ' 
-        AutoScaleDimensions = New SizeF(7F, 15F)
+        AutoScaleDimensions = New SizeF(8.0F, 20.0F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1810, 945)
+        ClientSize = New Size(1924, 1055)
         Controls.Add(dataGridViewPanel)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
+        Margin = New Padding(3, 4, 3, 4)
         Name = "InventoryForm"
         StartPosition = FormStartPosition.CenterScreen
         Text = "Inventory"

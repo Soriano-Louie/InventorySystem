@@ -30,7 +30,7 @@ Namespace My
             e.HighDpiMode = HighDpiMode.PerMonitorV2
 
             '' Optional: Set a default font that scales cleanly
-            'e.Font = New Font("Segoe UI", 10, FontStyle.Regular)
+            e.Font = New Font("Segoe UI", 10, FontStyle.Regular)
         End Sub
 
     End Class

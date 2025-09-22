@@ -1,14 +1,12 @@
 ﻿Imports System.Drawing.Drawing2D
-Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
 
-Public Class deliveryLogsForm
+Public Class userManagementForm
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
-    Dim dt As New DataTable()
-    Dim dv As New DataView()
+    ' Dictionary to store placeholder texts for each TextBox
+    Private placeholders As New Dictionary(Of TextBox, String)
     Dim bs As New BindingSource()
 
     Public Sub New()
@@ -27,15 +25,13 @@ Public Class deliveryLogsForm
         Me.BackColor = Color.FromArgb(224, 166, 109)
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
-        Label1.ForeColor = Color.FromArgb(79, 51, 40)
 
-        fromTextBox.BackColor = Color.FromArgb(230, 216, 177)
-        toTextBox.BackColor = Color.FromArgb(230, 216, 177)
+        addUserButton.BackColor = Color.FromArgb(147, 53, 53)
+        addUserButton.ForeColor = Color.FromArgb(230, 216, 177)
+        editUserButton.BackColor = Color.FromArgb(147, 53, 53)
+        editUserButton.ForeColor = Color.FromArgb(230, 216, 177)
 
-        tableDataGridView.ReadOnly = True
-        tableDataGridView.AllowUserToAddRows = False
-        tableDataGridView.AllowUserToDeleteRows = False
-        tableDataGridView.RowHeadersVisible = False
+        TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -86,10 +82,12 @@ Public Class deliveryLogsForm
     End Sub
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
+
         ' No need to call HighlightButton here
+
     End Sub
 
-    Private Sub deliveryForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+    Private Sub userSettingsForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
         Application.Exit()
     End Sub
 
@@ -129,25 +127,11 @@ Public Class deliveryLogsForm
         End Select
     End Sub
 
-    Private Sub deliveryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        HighlightButton("Button4")
-
-        ' Example data
-        dt = New DataTable()
-        dt.Columns.Add("Name")
-
-        dt.Rows.Add("Apple")
-        dt.Rows.Add("Banana")
-        dt.Rows.Add("Pineapple")
-
-        ' Create DataView
-        dv = New DataView(dt)
-
-        ' Bind DataView to BindingSource
-        bs.DataSource = dv
-
-        ' Bind BindingSource to DataGridView
-        tableDataGridView.DataSource = bs
+    Private Sub userManagementForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        HighlightButton("Button7")
+        SetPlaceholder(TextBoxSearch, "Search...")
+        SetRoundedRegion2(addUserButton, 20)
+        SetRoundedRegion2(editUserButton, 20)
     End Sub
 
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
@@ -184,4 +168,55 @@ Public Class deliveryLogsForm
         Return path
     End Function
 
+    Private Sub SetPlaceholder(tb As TextBox, text As String)
+        placeholders(tb) = text
+        tb.Text = text
+        tb.ForeColor = Color.Gray
+
+        ' Attach shared events
+        AddHandler tb.GotFocus, AddressOf RemovePlaceholder
+        AddHandler tb.LostFocus, AddressOf RestorePlaceholder
+    End Sub
+
+    ' When the user clicks/focuses the TextBox
+    Private Sub RemovePlaceholder(sender As Object, e As EventArgs)
+        Dim tb As TextBox = DirectCast(sender, TextBox)
+        If tb.Text = placeholders(tb) Then
+            tb.Text = ""
+            tb.ForeColor = Color.Black
+        End If
+    End Sub
+
+    ' When the TextBox loses focus
+    Private Sub RestorePlaceholder(sender As Object, e As EventArgs)
+        Dim tb As TextBox = DirectCast(sender, TextBox)
+        If String.IsNullOrWhiteSpace(tb.Text) Then
+            tb.Text = placeholders(tb)
+            tb.ForeColor = Color.Gray
+        End If
+    End Sub
+
+    Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
+        'reset place holder if focused to not interfere with search
+        Dim placeholder = ""
+        If placeholders.ContainsKey(TextBoxSearch) Then
+            placeholder = placeholders(TextBoxSearch)
+        End If
+
+        If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
+            bs.Filter = ""   ' Show all rows
+        Else
+            bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+        End If
+    End Sub
+
+    Private Sub addUserButton_Click(sender As Object, e As EventArgs) Handles addUserButton.Click
+        Dim popup As New addUserForm
+        popup.ShowDialog(Me)
+    End Sub
+
+    Private Sub editUserButton_Click(sender As Object, e As EventArgs) Handles editUserButton.Click
+        Dim popup As New editUserForm
+        popup.ShowDialog(Me)
+    End Sub
 End Class

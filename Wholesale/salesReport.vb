@@ -31,6 +31,9 @@ Public Class salesReport
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
 
+        fromTextBox.BackColor = Color.FromArgb(230, 216, 177)
+        toTextBox.BackColor = Color.FromArgb(230, 216, 177)
+
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
 
         Button1.BackColor = Color.FromArgb(147, 53, 53)
@@ -131,7 +134,7 @@ Public Class salesReport
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
-                ShowSingleForm(Of userSettingsForm)()
+                ShowSingleForm(Of userManagementForm)()
         End Select
     End Sub
 

@@ -125,7 +125,7 @@ Public Class WholesaleDashboard
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
-                ShowSingleForm(Of userSettingsForm)()
+                ShowSingleForm(Of userManagementForm)()
         End Select
     End Sub
 

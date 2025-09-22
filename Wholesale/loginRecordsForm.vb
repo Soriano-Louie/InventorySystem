@@ -20,6 +20,17 @@ Public Class loginRecordsForm
         Me.Controls.Add(sidePanel)
         Me.MaximizeBox = False
         Me.FormBorderStyle = FormBorderStyle.None
+        Me.BackColor = Color.FromArgb(224, 166, 109)
+
+        fromTextBox.BackColor = Color.FromArgb(230, 216, 177)
+        toTextBox.BackColor = Color.FromArgb(230, 216, 177)
+
+        tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
+        tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
+        tableDataGridView.ReadOnly = True
+        tableDataGridView.AllowUserToAddRows = False
+        tableDataGridView.AllowUserToDeleteRows = False
+        tableDataGridView.RowHeadersVisible = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -111,11 +122,13 @@ Public Class loginRecordsForm
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
-                ShowSingleForm(Of userSettingsForm)()
+                ShowSingleForm(Of userManagementForm)()
         End Select
     End Sub
 
     Private Sub logsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button6")
     End Sub
+
+
 End Class

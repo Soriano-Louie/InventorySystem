@@ -96,12 +96,12 @@ Partial Class salesReport
         ' 
         ' TextBoxSearch
         ' 
-        TextBoxSearch.BorderStyle = BorderStyle.None
+        TextBoxSearch.BorderStyle = BorderStyle.FixedSingle
         TextBoxSearch.Dock = DockStyle.Bottom
         TextBoxSearch.Font = New Font("Segoe UI", 13F)
-        TextBoxSearch.Location = New Point(0, 10)
+        TextBoxSearch.Location = New Point(0, 3)
         TextBoxSearch.Name = "TextBoxSearch"
-        TextBoxSearch.Size = New Size(200, 24)
+        TextBoxSearch.Size = New Size(200, 31)
         TextBoxSearch.TabIndex = 0
         ' 
         ' Panel3
@@ -127,6 +127,7 @@ Partial Class salesReport
         ' toTextBox
         ' 
         toTextBox.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
+        toTextBox.BorderStyle = BorderStyle.FixedSingle
         toTextBox.Font = New Font("Segoe UI", 12F)
         toTextBox.Location = New Point(49, 11)
         toTextBox.Name = "toTextBox"
@@ -136,10 +137,11 @@ Partial Class salesReport
         ' Label2
         ' 
         Label2.Anchor = AnchorStyles.None
+        Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 10F)
-        Label2.Location = New Point(24, 0)
+        Label2.Location = New Point(23, 17)
         Label2.Name = "Label2"
-        Label2.Size = New Size(26, 53)
+        Label2.Size = New Size(26, 19)
         Label2.TabIndex = 6
         Label2.Text = "To:"
         Label2.TextAlign = ContentAlignment.MiddleLeft
@@ -157,6 +159,7 @@ Partial Class salesReport
         ' fromTextBox
         ' 
         fromTextBox.Anchor = AnchorStyles.Right
+        fromTextBox.BorderStyle = BorderStyle.FixedSingle
         fromTextBox.Font = New Font("Segoe UI", 12F)
         fromTextBox.Location = New Point(99, 12)
         fromTextBox.Name = "fromTextBox"
@@ -166,10 +169,11 @@ Partial Class salesReport
         ' Label1
         ' 
         Label1.Anchor = AnchorStyles.None
+        Label1.AutoSize = True
         Label1.Font = New Font("Segoe UI", 10F)
-        Label1.Location = New Point(56, 0)
+        Label1.Location = New Point(53, 17)
         Label1.Name = "Label1"
-        Label1.Size = New Size(44, 53)
+        Label1.Size = New Size(44, 19)
         Label1.TabIndex = 2
         Label1.Text = "From:"
         Label1.TextAlign = ContentAlignment.MiddleLeft
@@ -186,7 +190,7 @@ Partial Class salesReport
         Button1.Name = "Button1"
         Button1.Size = New Size(240, 35)
         Button1.TabIndex = 0
-        Button1.Text = "EXPORT TO EXCEL/PDF"
+        Button1.Text = "Export To Excel/PDF"
         Button1.UseVisualStyleBackColor = True
         ' 
         ' tableDataGridView
