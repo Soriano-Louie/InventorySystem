@@ -1,6 +1,8 @@
-﻿Imports System.Drawing.Drawing2D
-Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
+﻿Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Drawing.Drawing2D
+Imports Microsoft.Data
+Imports Microsoft.Data.SqlClient
 
 Public Class InventoryForm
     Dim topPanel As New topPanelControl()
@@ -135,12 +137,62 @@ Public Class InventoryForm
                 ShowSingleForm(Of userManagementForm)()
         End Select
     End Sub
+    Private Function GetConnectionString() As String
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+    Private Sub LoadProducts()
+        Dim connString As String = GetConnectionString()
+        Dim query As String = "SELECT SKU, ProductName, unit, wholesalePrice, retailPrice, cost, StockQuantity, ReorderLevel, expirationDate FROM Products"
+
+        'Using conn As New SqlConnection(connString)
+        '    Using cmd As New SqlCommand(query, conn)
+        '        ' Create a Data Adapter
+        '        Using adapter As New SqlDataAdapter(cmd)
+        '            Dim dt As New DataTable()
+        '            Try
+        '                adapter.Fill(dt)
+        '                tableDataGridView.DataSource = dt
+        '            Catch ex As Exception
+        '                MessageBox.Show("Error retrieving data: " & ex.Message)
+        '            End Try
+        '        End Using
+        '    End Using
+        'End Using
+
+        Try
+            Using conn As New SqlConnection(connString)
+                Using da As New SqlDataAdapter(query, conn)
+                    dt.Clear() ' clear old data
+                    da.Fill(dt)
+                End Using
+            End Using
+
+            With tableDataGridView
+                .EnableHeadersVisualStyles = False ' allow custom styling
+                .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
+                .Columns("SKU").HeaderText = "Product Code"
+                .Columns("productName").HeaderText = "Product Name"
+                .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
+                .Columns("unit").HeaderText = "Unit"
+                .Columns("wholesalePrice").HeaderText = "Wholesale Price"
+                .Columns("retailPrice").HeaderText = "Retail Price"
+                .Columns("cost").HeaderText = "Cost"
+                .Columns("StockQuantity").HeaderText = "Quantity in Stock"
+                .Columns("ReorderLevel").HeaderText = "Reorder Level"
+                .Columns("expirationDate").HeaderText = "Expiration Date"
+            End With
+        Catch ex As Exception
+            MessageBox.Show("Error loading data: " & ex.Message)
+        End Try
+    End Sub
 
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
 
     Private Sub InventoryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button2")
+
         ' Set placeholder texts
         'SetPlaceholder(TextBox1, "Product Name")
         'SetPlaceholder(TextBox2, "Weight")
@@ -151,22 +203,18 @@ Public Class InventoryForm
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
 
-        ' Example data
+        ' Initialize
         dt = New DataTable()
-        dt.Columns.Add("Name")
-
-        dt.Rows.Add("Apple")
-        dt.Rows.Add("Banana")
-        dt.Rows.Add("Pineapple")
-
-        ' Create DataView
         dv = New DataView(dt)
+        bs = New BindingSource()
 
-        ' Bind DataView to BindingSource
+        ' Bindings
         bs.DataSource = dv
-
-        ' Bind BindingSource to DataGridView
         tableDataGridView.DataSource = bs
+
+
+        ' Load data
+        LoadProducts()
 
     End Sub
 
@@ -277,7 +325,7 @@ Public Class InventoryForm
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
             bs.Filter = ""   ' Show all rows
         Else
-            bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+            bs.Filter = String.Format("productName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
 

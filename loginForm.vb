@@ -4,6 +4,7 @@ Imports System.Text
 Imports System.Text.RegularExpressions
 Imports Microsoft.Data.SqlClient
 
+
 Public Class LoginForm
     'Private Sub loginForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
     '    brownPanel.BackColor = Color.FromArgb(79, 51, 40) ' Custom purple color
@@ -179,7 +180,7 @@ Public Class LoginForm
     Private Sub UpdatePasswordHashInDb(username As String, newHash As String)
         Using conn As New SqlConnection(GetConnectionString())
             conn.Open()
-            Dim sql As String = "UPDATE users SET password = @ph WHERE username = @u"
+            Dim sql As String = "UPDATE users SET passwordHash = @ph WHERE username = @u"
             Using cmd As New SqlCommand(sql, conn)
                 cmd.Parameters.Add("@ph", SqlDbType.NVarChar, -1).Value = newHash
                 cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
@@ -204,7 +205,7 @@ Public Class LoginForm
         Try
             Using conn As New SqlConnection(connStr)
                 conn.Open()
-                Using cmd As New SqlCommand("SELECT password FROM users WHERE username = @u", conn)
+                Using cmd As New SqlCommand("SELECT passwordHash FROM users WHERE username = @u", conn)
                     cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
                     storedObj = cmd.ExecuteScalar()
                 End Using
