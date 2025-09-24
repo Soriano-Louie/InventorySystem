@@ -1,8 +1,10 @@
 ﻿Imports System.Data
 Imports System.Data.SqlClient
 Imports System.Drawing.Drawing2D
+Imports System.IO
 Imports Microsoft.Data
 Imports Microsoft.Data.SqlClient
+Imports System.Drawing.Printing
 
 Public Class InventoryForm
     Dim topPanel As New topPanelControl()
@@ -12,6 +14,9 @@ Public Class InventoryForm
     Dim dt As New DataTable()
     Dim dv As New DataView()
     Dim bs As New BindingSource()
+
+    Private WithEvents printDoc As New PrintDocument
+    Private qrImageToPrint As Image
 
     Public Sub New()
 
@@ -143,7 +148,7 @@ Public Class InventoryForm
 
     Private Sub LoadProducts()
         Dim connString As String = GetConnectionString()
-        Dim query As String = "SELECT SKU, ProductName, unit, wholesalePrice, retailPrice, cost, StockQuantity, ReorderLevel, expirationDate FROM Products"
+        Dim query As String = "SELECT SKU, ProductName, unit, wholesalePrice, retailPrice, cost, StockQuantity, ReorderLevel, expirationDate, QRCodeImage FROM Products"
 
         'Using conn As New SqlConnection(connString)
         '    Using cmd As New SqlCommand(query, conn)
@@ -168,6 +173,20 @@ Public Class InventoryForm
                 End Using
             End Using
 
+            ' After filling DataTable
+            If Not dt.Columns.Contains("QR Code Hex") Then
+                dt.Columns.Add("QR Code Hex", GetType(String))
+            End If
+
+            'Convert QRCodeImage column to hex text instead of auto-image
+            For Each row As DataRow In dt.Rows
+                If Not IsDBNull(row("QRCodeImage")) Then
+                    Dim bytes As Byte() = CType(row("QRCodeImage"), Byte())
+                    row("QR Code Hex") = BitConverter.ToString(bytes).Replace("-", "")
+                End If
+            Next
+
+
             With tableDataGridView
                 .EnableHeadersVisualStyles = False ' allow custom styling
                 .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
@@ -182,10 +201,100 @@ Public Class InventoryForm
                 .Columns("ReorderLevel").HeaderText = "Reorder Level"
                 .Columns("expirationDate").HeaderText = "Expiration Date"
             End With
+
+            tableDataGridView.Columns("QRCodeImage").Visible = False
         Catch ex As Exception
             MessageBox.Show("Error loading data: " & ex.Message)
         End Try
     End Sub
+
+    'cell double click for previewing and printing QR code
+    Private Sub tableDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles tableDataGridView.CellDoubleClick
+        If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 Then
+            ' Make sure they clicked the QR column
+            If tableDataGridView.Columns(e.ColumnIndex).Name = "QR Code Hex" Then
+                Dim hexString As String = tableDataGridView.Rows(e.RowIndex).Cells(e.ColumnIndex).Value.ToString()
+
+                ' Convert HEX string back to Byte()
+                Dim bytes As Byte() = Enumerable.Range(0, hexString.Length \ 2) _
+                .Select(Function(i) Convert.ToByte(hexString.Substring(i * 2, 2), 16)).ToArray()
+
+                ' Create image from Byte()
+                Using ms As New MemoryStream(bytes)
+                    Dim qrImage As Image = Image.FromStream(ms)
+
+                    ' Show the image in a preview form
+                    Dim previewForm As New Form With {
+                    .Text = "QR Code Preview",
+                    .Size = New Size(300, 300),
+                    .StartPosition = FormStartPosition.CenterParent
+                    }
+
+                    Dim pb As New PictureBox With {
+                    .Dock = DockStyle.Fill,
+                    .Image = qrImage,
+                    .SizeMode = PictureBoxSizeMode.Zoom
+                    }
+                    previewForm.Controls.Add(pb)
+
+                    ' Add a Print button
+                    Dim btnPrint As New Button With {
+                    .Text = "Print QR Code",
+                    .Dock = DockStyle.Bottom
+                    }
+                    AddHandler btnPrint.Click, Sub()
+                                                   PrintQRCode(qrImage)
+                                               End Sub
+                    previewForm.Controls.Add(btnPrint)
+
+                    previewForm.ShowDialog()
+                End Using
+            End If
+        End If
+    End Sub
+
+    ' Call this when user clicks "Print QR"
+    Private Sub PrintQRCode(qrImage As Image)
+        qrImageToPrint = qrImage
+        Dim printPreview As New PrintPreviewDialog()
+        printPreview.Document = printDoc
+        printPreview.ShowDialog()
+    End Sub
+
+    ' Handles actual drawing on paper
+    Private Sub printDoc_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDoc.PrintPage
+        If qrImageToPrint IsNot Nothing Then
+            ' Define size for QR code (small square)
+            Dim qrSize As Integer = 150  ' You can adjust this to make it smaller/larger
+
+            ' Position at top-left (X=0, Y=0)
+            Dim x As Integer = 0
+            Dim y As Integer = 0
+
+            ' Draw QR code on the paper
+            e.Graphics.DrawImage(qrImageToPrint, x, y, qrSize, qrSize)
+        End If
+    End Sub
+
+    'Private Sub PrintQRCode(qrImage As Image)
+    '    Dim printDoc As New Printing.PrintDocument
+    '    AddHandler printDoc.PrintPage,
+    '    Sub(sender As Object, e As Printing.PrintPageEventArgs)
+    '        ' Center image on paper
+    '        Dim x As Integer = (e.PageBounds.Width - qrImage.Width) \ 2
+    '        Dim y As Integer = (e.PageBounds.Height - qrImage.Height) \ 2
+    '        e.Graphics.DrawImage(qrImage, x, y)
+    '    End Sub
+
+    '    Dim dlg As New PrintDialog With {
+    '    .Document = printDoc
+    '}
+
+    '    If dlg.ShowDialog() = DialogResult.OK Then
+    '        printDoc.Print()
+    '    End If
+    'End Sub
+
 
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
