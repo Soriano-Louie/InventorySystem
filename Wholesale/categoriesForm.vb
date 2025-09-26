@@ -1,6 +1,5 @@
 ﻿Imports System.Drawing.Drawing2D
-Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
+Imports Microsoft.Data.SqlClient
 
 Public Class categoriesForm
     Dim topPanel As New topPanelControl()
@@ -138,27 +137,56 @@ Public Class categoriesForm
     Private Sub categoriesForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button3")
 
-        SetPlaceholder(TextBoxSearch, "Search...")
+        SetPlaceholder(TextBoxSearch, "Search Category Name...")
 
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
 
-        ' Example data
+        ' Initialize
         dt = New DataTable()
-        dt.Columns.Add("Name")
-
-        dt.Rows.Add("Apple")
-        dt.Rows.Add("Banana")
-        dt.Rows.Add("Pineapple")
-
-        ' Create DataView
         dv = New DataView(dt)
+        bs = New BindingSource()
 
-        ' Bind DataView to BindingSource
+        ' Bindings
         bs.DataSource = dv
-
-        ' Bind BindingSource to DataGridView
         tableDataGridView.DataSource = bs
+
+        loadCategories()
+    End Sub
+
+    Private Function GetConnectionString() As String
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+    Public Sub loadCategories()
+        Dim connString As String = GetConnectionString()
+        Dim query As String = "
+            SELECT CategoryName, Description FROM Categories"
+        Try
+            Using conn As New SqlConnection(connString)
+                Using da As New SqlDataAdapter(query, conn)
+                    dt.Clear() ' clear old data
+                    da.Fill(dt)
+                End Using
+            End Using
+
+            tableDataGridView.AutoGenerateColumns = True
+            tableDataGridView.Refresh()
+
+            With tableDataGridView
+                .EnableHeadersVisualStyles = False ' allow custom styling
+                .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
+                If .Columns.Contains("CategoryName") Then
+                    .Columns("CategoryName").HeaderText = "Category"
+                End If
+
+                If .Columns.Contains("Description") Then
+                    .Columns("Description").HeaderText = "Description"
+                End If
+            End With
+        Catch ex As Exception
+            MessageBox.Show("Error loading categories: " & ex.Message)
+        End Try
     End Sub
 
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
@@ -233,7 +261,7 @@ Public Class categoriesForm
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
             bs.Filter = ""   ' Show all rows
         Else
-            bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+            bs.Filter = String.Format("CategoryName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
 

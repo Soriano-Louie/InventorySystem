@@ -25,9 +25,9 @@ Partial Class editCategoryForm
         TableLayoutPanel1 = New TableLayoutPanel()
         Panel2 = New Panel()
         Label4 = New Label()
-        TextBox3 = New TextBox()
+        categoryText = New TextBox()
         Panel10 = New Panel()
-        ComboBox1 = New ComboBox()
+        categoryDropdown = New ComboBox()
         Label2 = New Label()
         TableLayoutPanel2 = New TableLayoutPanel()
         updateButton = New Button()
@@ -35,7 +35,7 @@ Partial Class editCategoryForm
         cancelButton = New Button()
         Panel1 = New Panel()
         Label3 = New Label()
-        TextBox2 = New TextBox()
+        descriptionText = New TextBox()
         Label1 = New Label()
         TableLayoutPanel1.SuspendLayout()
         Panel2.SuspendLayout()
@@ -66,12 +66,12 @@ Partial Class editCategoryForm
         ' Panel2
         ' 
         Panel2.Controls.Add(Label4)
-        Panel2.Controls.Add(TextBox3)
+        Panel2.Controls.Add(categoryText)
         Panel2.Dock = DockStyle.Fill
-        Panel2.Location = New Point(3, 64)
+        Panel2.Location = New Point(3, 61)
         Panel2.Name = "Panel2"
-        Panel2.Size = New Size(358, 55)
-        Panel2.TabIndex = 10
+        Panel2.Size = New Size(358, 53)
+        Panel2.TabIndex = 2
         ' 
         ' Label4
         ' 
@@ -83,31 +83,31 @@ Partial Class editCategoryForm
         Label4.Text = "Updated Name"
         Label4.TextAlign = ContentAlignment.MiddleLeft
         ' 
-        ' TextBox3
+        ' categoryText
         ' 
-        TextBox3.Font = New Font("Segoe UI", 11F)
-        TextBox3.Location = New Point(3, 31)
-        TextBox3.Name = "TextBox3"
-        TextBox3.Size = New Size(350, 27)
-        TextBox3.TabIndex = 2
+        categoryText.Font = New Font("Segoe UI", 11F)
+        categoryText.Location = New Point(3, 31)
+        categoryText.Name = "categoryText"
+        categoryText.Size = New Size(350, 27)
+        categoryText.TabIndex = 2
         ' 
         ' Panel10
         ' 
-        Panel10.Controls.Add(ComboBox1)
+        Panel10.Controls.Add(categoryDropdown)
         Panel10.Controls.Add(Label2)
         Panel10.Dock = DockStyle.Fill
         Panel10.Location = New Point(3, 3)
         Panel10.Name = "Panel10"
-        Panel10.Size = New Size(358, 55)
-        Panel10.TabIndex = 5
+        Panel10.Size = New Size(358, 52)
+        Panel10.TabIndex = 1
         ' 
-        ' ComboBox1
+        ' categoryDropdown
         ' 
-        ComboBox1.FormattingEnabled = True
-        ComboBox1.Location = New Point(3, 32)
-        ComboBox1.Name = "ComboBox1"
-        ComboBox1.Size = New Size(350, 23)
-        ComboBox1.TabIndex = 2
+        categoryDropdown.FormattingEnabled = True
+        categoryDropdown.Location = New Point(3, 32)
+        categoryDropdown.Name = "categoryDropdown"
+        categoryDropdown.Size = New Size(350, 23)
+        categoryDropdown.TabIndex = 1
         ' 
         ' Label2
         ' 
@@ -129,12 +129,12 @@ Partial Class editCategoryForm
         TableLayoutPanel2.Controls.Add(saveButton, 0, 0)
         TableLayoutPanel2.Controls.Add(cancelButton, 2, 0)
         TableLayoutPanel2.Dock = DockStyle.Fill
-        TableLayoutPanel2.Location = New Point(3, 186)
+        TableLayoutPanel2.Location = New Point(3, 179)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
         TableLayoutPanel2.RowCount = 1
         TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
-        TableLayoutPanel2.Size = New Size(358, 50)
-        TableLayoutPanel2.TabIndex = 8
+        TableLayoutPanel2.Size = New Size(358, 57)
+        TableLayoutPanel2.TabIndex = 4
         ' 
         ' updateButton
         ' 
@@ -145,10 +145,10 @@ Partial Class editCategoryForm
         updateButton.FlatAppearance.BorderSize = 0
         updateButton.FlatStyle = FlatStyle.Popup
         updateButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        updateButton.Location = New Point(133, 9)
+        updateButton.Location = New Point(133, 13)
         updateButton.Name = "updateButton"
         updateButton.Size = New Size(91, 31)
-        updateButton.TabIndex = 17
+        updateButton.TabIndex = 5
         updateButton.Text = "DELETE"
         updateButton.UseVisualStyleBackColor = False
         ' 
@@ -160,10 +160,10 @@ Partial Class editCategoryForm
         saveButton.FlatAppearance.BorderSize = 0
         saveButton.FlatStyle = FlatStyle.Popup
         saveButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        saveButton.Location = New Point(22, 9)
+        saveButton.Location = New Point(22, 13)
         saveButton.Name = "saveButton"
         saveButton.Size = New Size(75, 31)
-        saveButton.TabIndex = 15
+        saveButton.TabIndex = 4
         saveButton.Text = "SAVE"
         saveButton.UseVisualStyleBackColor = True
         ' 
@@ -175,22 +175,22 @@ Partial Class editCategoryForm
         cancelButton.FlatAppearance.BorderSize = 0
         cancelButton.FlatStyle = FlatStyle.Popup
         cancelButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        cancelButton.Location = New Point(252, 9)
+        cancelButton.Location = New Point(252, 13)
         cancelButton.Name = "cancelButton"
         cancelButton.Size = New Size(91, 31)
-        cancelButton.TabIndex = 16
+        cancelButton.TabIndex = 6
         cancelButton.Text = "CANCEL"
         cancelButton.UseVisualStyleBackColor = True
         ' 
         ' Panel1
         ' 
         Panel1.Controls.Add(Label3)
-        Panel1.Controls.Add(TextBox2)
+        Panel1.Controls.Add(descriptionText)
         Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(3, 125)
+        Panel1.Location = New Point(3, 120)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(358, 55)
-        Panel1.TabIndex = 9
+        Panel1.Size = New Size(358, 53)
+        Panel1.TabIndex = 3
         ' 
         ' Label3
         ' 
@@ -202,13 +202,13 @@ Partial Class editCategoryForm
         Label3.Text = "Updated Description"
         Label3.TextAlign = ContentAlignment.MiddleLeft
         ' 
-        ' TextBox2
+        ' descriptionText
         ' 
-        TextBox2.Font = New Font("Segoe UI", 11F)
-        TextBox2.Location = New Point(3, 31)
-        TextBox2.Name = "TextBox2"
-        TextBox2.Size = New Size(350, 27)
-        TextBox2.TabIndex = 2
+        descriptionText.Font = New Font("Segoe UI", 11F)
+        descriptionText.Location = New Point(3, 31)
+        descriptionText.Name = "descriptionText"
+        descriptionText.Size = New Size(350, 27)
+        descriptionText.TabIndex = 3
         ' 
         ' Label1
         ' 
@@ -252,10 +252,10 @@ Partial Class editCategoryForm
     Friend WithEvents saveButton As Button
     Friend WithEvents Panel1 As Panel
     Friend WithEvents Label3 As Label
-    Friend WithEvents TextBox2 As TextBox
+    Friend WithEvents descriptionText As TextBox
     Friend WithEvents Panel2 As Panel
     Friend WithEvents Label4 As Label
-    Friend WithEvents TextBox3 As TextBox
-    Friend WithEvents ComboBox1 As ComboBox
+    Friend WithEvents categoryText As TextBox
+    Friend WithEvents categoryDropdown As ComboBox
     Friend WithEvents updateButton As Button
 End Class

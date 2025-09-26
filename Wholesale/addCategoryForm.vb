@@ -1,4 +1,6 @@
-﻿Public Class addCategoryForm
+﻿Imports Microsoft.Data.SqlClient
+
+Public Class addCategoryForm
     Public Sub New()
         InitializeComponent()
         Me.MaximizeBox = False
@@ -37,7 +39,78 @@
         MyBase.WndProc(m)
     End Sub
 
+    Private Sub ResetControl(ctrl As Control)
+        If TypeOf ctrl Is TextBox Then
+            DirectCast(ctrl, TextBox).Clear()
+        ElseIf TypeOf ctrl Is ComboBox Then
+            DirectCast(ctrl, ComboBox).SelectedIndex = -1
+        ElseIf TypeOf ctrl Is DateTimePicker Then
+            Dim picker As DateTimePicker = DirectCast(ctrl, DateTimePicker)
+
+            ' Use today's date but respect MinDate/MaxDate
+            Dim today As Date = DateTime.Today
+            If today < picker.MinDate Then
+                picker.Value = picker.MinDate
+            ElseIf today > picker.MaxDate Then
+                picker.Value = picker.MaxDate
+            Else
+                picker.Value = today
+            End If
+        End If
+    End Sub
+
+    Private Sub addCategoryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Me.BeginInvoke(Sub() categoryText.Focus())
+    End Sub
+
     Private Sub cancelButton_Click(sender As Object, e As EventArgs) Handles cancelButton.Click
         Me.Close()
+    End Sub
+
+    Private Function GetConnectionString() As String
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+
+
+    Private Sub saveButton_Click(sender As Object, e As EventArgs) Handles saveButton.Click
+        If String.IsNullOrWhiteSpace(categoryText.Text) Then
+            MessageBox.Show("Please enter a category name.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        Try
+            Dim query As String = "
+                INSERT INTO Categories (CategoryName, Description)
+                VALUES (@CategoryName, @Description);
+            "
+
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Using cmd As New SqlCommand(query, conn)
+                    ' Always required
+                    cmd.Parameters.AddWithValue("@CategoryName", categoryText.Text.Trim())
+
+                    ' Optional: insert NULL if textbox empty
+                    If String.IsNullOrWhiteSpace(descriptionText.Text) Then
+                        cmd.Parameters.AddWithValue("@Description", DBNull.Value)
+                    Else
+                        cmd.Parameters.AddWithValue("@Description", descriptionText.Text.Trim())
+                    End If
+
+                    cmd.ExecuteNonQuery()
+                    MessageBox.Show("Category added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                    categoriesForm.loadCategories() ' Refresh main form's category list
+                End Using
+            End Using
+            ' Clear inputs for next entry
+            ResetControl(categoryText)
+            ResetControl(descriptionText)
+            categoryText.Focus()
+
+        Catch ex As Exception
+            MessageBox.Show("Error adding category: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 End Class

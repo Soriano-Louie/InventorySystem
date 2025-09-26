@@ -24,4 +24,12 @@
         Dim btn As Button = CType(sender, Button)
         RaiseEvent ButtonClicked(Me, btn.Name)
     End Sub
+
+    Private Sub Button8_Click(sender As Object, e As EventArgs) Handles Button8.Click
+        ChooseDashboard.Show()
+        Dim hostForm As Form = Me.FindForm() ' find the form that hosts this UserControl
+        If hostForm IsNot Nothing Then
+            hostForm.Hide()
+        End If
+    End Sub
 End Class

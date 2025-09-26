@@ -1,8 +1,5 @@
-﻿Imports System.Data
-Imports System.Data.SqlClient
-Imports System.Drawing.Drawing2D
+﻿Imports System.Drawing.Drawing2D
 Imports System.IO
-Imports Microsoft.Data
 Imports Microsoft.Data.SqlClient
 Imports System.Drawing.Printing
 
@@ -321,7 +318,7 @@ Public Class InventoryForm
         'SetPlaceholder(TextBox2, "Weight")
         'SetPlaceholder(TextBox3, "Price")
         'SetPlaceholder(TextBox4, "Stock")
-        SetPlaceholder(TextBoxSearch, "Search...")
+        SetPlaceholder(TextBoxSearch, "Search Product Name")
 
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)

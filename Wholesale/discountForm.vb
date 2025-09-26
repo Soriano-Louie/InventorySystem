@@ -17,6 +17,7 @@ Public Class discountForm
 
         saveButton.BackColor = Color.FromArgb(224, 166, 109)
         saveButton.ForeColor = Color.FromArgb(79, 51, 40)
+        dgvDiscounts.BackgroundColor = Color.FromArgb(230, 216, 177)
         dgvDiscounts.Columns.Add("MinSacks", "Min Sacks")
         dgvDiscounts.Columns.Add("MaxSacks", "Max Sacks")
         dgvDiscounts.Columns.Add("DiscountPrice", "Discount Price")

@@ -26,10 +26,10 @@ Partial Class addCategoryForm
         TableLayoutPanel1 = New TableLayoutPanel()
         Panel1 = New Panel()
         Label3 = New Label()
-        TextBox2 = New TextBox()
+        descriptionText = New TextBox()
         Panel10 = New Panel()
         Label2 = New Label()
-        TextBox1 = New TextBox()
+        categoryText = New TextBox()
         TableLayoutPanel2 = New TableLayoutPanel()
         cancelButton = New Button()
         saveButton = New Button()
@@ -70,7 +70,7 @@ Partial Class addCategoryForm
         ' Panel1
         ' 
         Panel1.Controls.Add(Label3)
-        Panel1.Controls.Add(TextBox2)
+        Panel1.Controls.Add(descriptionText)
         Panel1.Dock = DockStyle.Fill
         Panel1.Location = New Point(3, 82)
         Panel1.Name = "Panel1"
@@ -87,18 +87,18 @@ Partial Class addCategoryForm
         Label3.Text = "Description (optional)"
         Label3.TextAlign = ContentAlignment.MiddleLeft
         ' 
-        ' TextBox2
+        ' descriptionText
         ' 
-        TextBox2.Font = New Font("Segoe UI", 11F)
-        TextBox2.Location = New Point(3, 31)
-        TextBox2.Name = "TextBox2"
-        TextBox2.Size = New Size(350, 27)
-        TextBox2.TabIndex = 2
+        descriptionText.Font = New Font("Segoe UI", 11F)
+        descriptionText.Location = New Point(3, 31)
+        descriptionText.Name = "descriptionText"
+        descriptionText.Size = New Size(350, 27)
+        descriptionText.TabIndex = 2
         ' 
         ' Panel10
         ' 
         Panel10.Controls.Add(Label2)
-        Panel10.Controls.Add(TextBox1)
+        Panel10.Controls.Add(categoryText)
         Panel10.Dock = DockStyle.Fill
         Panel10.Location = New Point(3, 3)
         Panel10.Name = "Panel10"
@@ -115,13 +115,13 @@ Partial Class addCategoryForm
         Label2.Text = "Category Name"
         Label2.TextAlign = ContentAlignment.MiddleLeft
         ' 
-        ' TextBox1
+        ' categoryText
         ' 
-        TextBox1.Font = New Font("Segoe UI", 11F)
-        TextBox1.Location = New Point(3, 31)
-        TextBox1.Name = "TextBox1"
-        TextBox1.Size = New Size(350, 27)
-        TextBox1.TabIndex = 2
+        categoryText.Font = New Font("Segoe UI", 11F)
+        categoryText.Location = New Point(3, 31)
+        categoryText.Name = "categoryText"
+        categoryText.Size = New Size(350, 27)
+        categoryText.TabIndex = 2
         ' 
         ' TableLayoutPanel2
         ' 
@@ -193,10 +193,10 @@ Partial Class addCategoryForm
     Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
     Friend WithEvents Panel1 As Panel
     Friend WithEvents Label3 As Label
-    Friend WithEvents TextBox2 As TextBox
+    Friend WithEvents descriptionText As TextBox
     Friend WithEvents Panel10 As Panel
     Friend WithEvents Label2 As Label
-    Friend WithEvents TextBox1 As TextBox
+    Friend WithEvents categoryText As TextBox
     Friend WithEvents saveButton As Button
     Friend WithEvents cancelButton As Button
 End Class
