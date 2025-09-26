@@ -48,6 +48,7 @@ Public Class InventoryForm
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
+        tableDataGridView.TabStop = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -146,9 +147,22 @@ Public Class InventoryForm
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
 
-    Private Sub LoadProducts()
+    Public Sub LoadProducts()
         Dim connString As String = GetConnectionString()
-        Dim query As String = "SELECT SKU, ProductName, unit, wholesalePrice, retailPrice, cost, StockQuantity, ReorderLevel, expirationDate, QRCodeImage FROM Products"
+        Dim query As String = "
+            SELECT p.SKU, 
+                   p.ProductName,
+                   c.CategoryName,
+                   p.unit, 
+                   p.retailPrice, 
+                   p.cost, 
+                   p.StockQuantity, 
+                   p.ReorderLevel, 
+                   p.expirationDate, 
+                   p.QRCodeImage
+            FROM Products p
+            INNER JOIN Categories c ON p.CategoryID = c.CategoryID"
+
 
         'Using conn As New SqlConnection(connString)
         '    Using cmd As New SqlCommand(query, conn)
@@ -193,8 +207,8 @@ Public Class InventoryForm
                 .Columns("SKU").HeaderText = "Product Code"
                 .Columns("productName").HeaderText = "Product Name"
                 .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
+                .Columns("CategoryName").HeaderText = "Category"
                 .Columns("unit").HeaderText = "Unit"
-                .Columns("wholesalePrice").HeaderText = "Wholesale Price"
                 .Columns("retailPrice").HeaderText = "Retail Price"
                 .Columns("cost").HeaderText = "Cost"
                 .Columns("StockQuantity").HeaderText = "Quantity in Stock"

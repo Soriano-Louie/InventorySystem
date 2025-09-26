@@ -80,20 +80,22 @@ Public Class addItemForm
         End Try
     End Sub
 
-    Private Sub InsertProductWithQRCode(sku As String, productName As String, unit As String,
-                                    wholesale As Decimal, retail As Decimal, cost As Decimal,
+    Private Sub InsertProductWithQRCode(sku As String, productName As String, unit As String, retail As Decimal, cost As Decimal,
                                     qty As Integer, reorder As Integer, expirationDate As Date,
                                     categoryID As Integer)
 
         Dim connString As String = GetConnectionString()
+        Dim newProductID As Integer = -1
+
         Using conn As New SqlConnection(connString)
             conn.Open()
 
             ' Updated query with CategoryID and ExpirationDate
             Dim query As String = "INSERT INTO Products 
-                               (SKU, ProductName, Unit, WholesalePrice, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
+                               OUTPUT INSERTED.ProductID
                                VALUES 
-                               (@SKU, @ProductName, @Unit, @WholesalePrice, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
+                               (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
 
             Using cmd As New SqlCommand(query, conn)
 
@@ -116,7 +118,6 @@ Public Class addItemForm
                 cmd.Parameters.AddWithValue("@SKU", sku)
                 cmd.Parameters.AddWithValue("@ProductName", productName)
                 cmd.Parameters.AddWithValue("@Unit", unit)
-                cmd.Parameters.AddWithValue("@WholesalePrice", wholesale)
                 cmd.Parameters.AddWithValue("@RetailPrice", retail)
                 cmd.Parameters.AddWithValue("@Cost", cost)
                 cmd.Parameters.AddWithValue("@StockQuantity", qty)
@@ -125,13 +126,39 @@ Public Class addItemForm
                 cmd.Parameters.AddWithValue("@CategoryID", categoryID)
                 cmd.Parameters.Add("@QRCodeImage", SqlDbType.VarBinary).Value = qrData
 
-                ' 3️⃣ Execute insert
-                cmd.ExecuteNonQuery()
+                ' This executes insert and gets the new ProductID
+                newProductID = Convert.ToInt32(cmd.ExecuteScalar())
             End Using
         End Using
 
         MessageBox.Show("Product inserted with QR Code successfully!")
+        If MessageBox.Show("Do you want to set discounts for this product now?",
+                   "Add Discounts", MessageBoxButtons.YesNo) = DialogResult.Yes Then
+            Dim discountForm As New discountForm(newProductID, productName)
+            discountForm.ShowDialog()
+        End If
     End Sub
+
+    Private Sub ResetControl(ctrl As Control)
+        If TypeOf ctrl Is TextBox Then
+            DirectCast(ctrl, TextBox).Clear()
+        ElseIf TypeOf ctrl Is ComboBox Then
+            DirectCast(ctrl, ComboBox).SelectedIndex = -1
+        ElseIf TypeOf ctrl Is DateTimePicker Then
+            Dim picker As DateTimePicker = DirectCast(ctrl, DateTimePicker)
+
+            ' Use today's date but respect MinDate/MaxDate
+            Dim today As Date = DateTime.Today
+            If today < picker.MinDate Then
+                picker.Value = picker.MinDate
+            ElseIf today > picker.MaxDate Then
+                picker.Value = picker.MaxDate
+            Else
+                picker.Value = today
+            End If
+        End If
+    End Sub
+
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.BeginInvoke(Sub() skuTextBox.Focus())
@@ -147,7 +174,6 @@ Public Class addItemForm
             skuTextBox.Text,                           ' SKU
             productTextBox.Text,                       ' Product Name
             unitTextBox.Text,                          ' Unit
-            Decimal.Parse(wholeSaleTextBox.Text),      ' Wholesale Price
             Decimal.Parse(retailTextBox.Text),         ' Retail Price
             Decimal.Parse(costTextBox.Text),           ' Cost
             Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
@@ -155,6 +181,40 @@ Public Class addItemForm
             DateTime.Parse(DateTimePicker1.Text), ' Expiration Date
             Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID (hidden ValueMember)
         )
+
+        ' Clear inputs
+        For Each ctrl As Control In Panel1.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel2.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel3.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel4.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel6.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel7.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel8.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel10.Controls
+            ResetControl(ctrl)
+        Next
+        For Each ctrl As Control In Panel11.Controls
+            ResetControl(ctrl)
+        Next
+        Me.BeginInvoke(Sub() skuTextBox.Focus())
+
+
+        ' Refresh the DataGridView
+        InventoryForm.LoadProducts()
     End Sub
 
 End Class
