@@ -201,13 +201,21 @@ Public Class LoginForm
         Dim connStr = GetConnectionString()
         Dim storedObj As Object = Nothing
         Dim stored As String = ""
+        Dim userRole As String = ""
 
         Try
             Using conn As New SqlConnection(connStr)
                 conn.Open()
-                Using cmd As New SqlCommand("SELECT passwordHash FROM users WHERE username = @u", conn)
+                Using cmd As New SqlCommand("SELECT passwordHash, userRole FROM users WHERE username = @u", conn)
                     cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
                     storedObj = cmd.ExecuteScalar()
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            storedObj = reader("passwordHash")
+                            userRole = reader("userRole").ToString()
+                        End If
+                    End Using
                 End Using
             End Using
 
@@ -222,9 +230,14 @@ Public Class LoginForm
             If IsStoredValueHashed(stored) Then
                 Dim hashedInput As String = HashSHA256Base64(password)
                 If hashedInput = stored Then
+                    UpdateLastLogin(username)
                     MessageBox.Show("Login successful!")
                     Me.Hide()
-                    chooseDashboard.Show()
+                    If userRole.ToLower() = "admin" Then
+                        ChooseDashboard.Show()
+                    Else
+                        'cashierPage.Show()
+                    End If
                 Else
                     MessageBox.Show("Username or password incorrect.")
                 End If
@@ -235,9 +248,14 @@ Public Class LoginForm
                     ' successful login → now hash and save
                     Dim newHash = HashSHA256Base64(password)
                     UpdatePasswordHashInDb(username, newHash)
+                    UpdateLastLogin(username)
                     MessageBox.Show("Login successful! Password was hashed for security.")
                     Me.Hide()
-                    chooseDashboard.Show()
+                    If userRole.ToLower() = "admin" Then
+                        ChooseDashboard.Show()
+                    Else
+                        'cashierPage.Show()
+                    End If
                 Else
                     MessageBox.Show("Username or password incorrect.")
                 End If
@@ -248,4 +266,16 @@ Public Class LoginForm
         End Try
 
     End Sub
+
+    Private Sub UpdateLastLogin(username As String)
+        Dim query As String = "UPDATE users SET lastLogin = GETDATE() WHERE username = @u"
+        Using conn As New SqlConnection(GetConnectionString())
+            Using cmd As New SqlCommand(query, conn)
+                cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
+                conn.Open()
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
 End Class

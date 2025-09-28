@@ -1,6 +1,5 @@
 ﻿Imports System.Drawing.Drawing2D
-Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
+Imports Microsoft.Data.SqlClient
 
 Public Class salesReport
 
@@ -138,27 +137,74 @@ Public Class salesReport
         End Select
     End Sub
 
+    Private Function GetConnectionString() As String
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+    Public Sub loadSalesReport()
+        Dim connStr As String = GetConnectionString()
+        Dim query As String = "
+        SELECT 
+            sr.SaleID,
+            sr.SaleDate,
+            p.ProductName,
+            c.CategoryName,
+            sr.QuantitySold,
+            sr.UnitPrice,
+            sr.TotalAmount,
+            sr.PaymentMethod,
+            u.username AS HandledBy
+        FROM SalesReport sr
+        INNER JOIN Products p ON sr.ProductID = p.ProductID
+        INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+        INNER JOIN Users u ON sr.HandledBy = u.userID
+        ORDER BY sr.SaleDate DESC
+    "
+
+        Try
+            Using conn As New SqlConnection(connStr)
+                Using da As New SqlDataAdapter(query, conn)
+                    dt.Clear()
+                    da.Fill(dt)
+
+                    ' Optional formatting
+                    With tableDataGridView
+                        .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                        .Columns("SaleID").HeaderText = "Sale ID"
+                        .Columns("SaleDate").HeaderText = "Date"
+                        .Columns("ProductName").HeaderText = "Product"
+                        .Columns("CategoryName").HeaderText = "Category"
+                        .Columns("QuantitySold").HeaderText = "Quantity"
+                        .Columns("UnitPrice").HeaderText = "Unit Price"
+                        .Columns("TotalAmount").HeaderText = "Total"
+                        .Columns("PaymentMethod").HeaderText = "Payment"
+                        .Columns("HandledBy").HeaderText = "Handled By"
+                    End With
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error loading sales report: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     Private Sub salesReport_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button5")
         SetPlaceholder(TextBoxSearch, "Search...")
         SetRoundedRegion2(Button1, 20)
 
         ' Example data
+        ' Initialize
         dt = New DataTable()
-        dt.Columns.Add("Name")
-
-        dt.Rows.Add("Apple")
-        dt.Rows.Add("Banana")
-        dt.Rows.Add("Pineapple")
-
-        ' Create DataView
         dv = New DataView(dt)
+        bs = New BindingSource()
 
-        ' Bind DataView to BindingSource
+        ' Bindings
         bs.DataSource = dv
-
-        ' Bind BindingSource to DataGridView
         tableDataGridView.DataSource = bs
+
+
+        ' Load data
+        loadSalesReport()
     End Sub
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
         Dim rect As New Rectangle(0, 0, ctrl.Width, ctrl.Height)
@@ -232,7 +278,7 @@ Public Class salesReport
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
             bs.Filter = ""   ' Show all rows
         Else
-            bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+            bs.Filter = String.Format("ProductName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
 End Class
