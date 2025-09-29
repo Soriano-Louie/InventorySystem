@@ -1,5 +1,12 @@
 ﻿Imports System.Drawing.Drawing2D
+Imports System.Drawing.Printing
+Imports System.IO
+Imports System.Reflection.Metadata
 Imports Microsoft.Data.SqlClient
+Imports Microsoft.Office.Interop
+Imports iTextSharp.text
+Imports iTextSharp.text.pdf
+Imports Document = iTextSharp.text.Document
 
 Public Class salesReport
 
@@ -30,13 +37,19 @@ Public Class salesReport
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
 
-        fromTextBox.BackColor = Color.FromArgb(230, 216, 177)
-        toTextBox.BackColor = Color.FromArgb(230, 216, 177)
+        DateTimePickerFrom.BackColor = Color.FromArgb(230, 216, 177)
+        DateTimePickerTo.BackColor = Color.FromArgb(230, 216, 177)
 
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
 
         Button1.BackColor = Color.FromArgb(147, 53, 53)
         Button1.ForeColor = Color.FromArgb(230, 216, 177)
+        Button2.BackColor = Color.FromArgb(147, 53, 53)
+        Button2.ForeColor = Color.FromArgb(230, 216, 177)
+        btnSearch.BackColor = Color.FromArgb(147, 53, 53)
+        btnSearch.ForeColor = Color.FromArgb(230, 216, 177)
+        resetButton.BackColor = Color.FromArgb(147, 53, 53)
+        resetButton.ForeColor = Color.FromArgb(230, 216, 177)
 
         tableDataGridView.ReadOnly = True
         tableDataGridView.AllowUserToAddRows = False
@@ -164,8 +177,15 @@ Public Class salesReport
         Try
             Using conn As New SqlConnection(connStr)
                 Using da As New SqlDataAdapter(query, conn)
-                    dt.Clear()
+                    ' Ensure dt exists
+                    If dt Is Nothing Then
+                        dt = New DataTable()
+                    Else
+                        dt.Clear()
+                    End If
+
                     da.Fill(dt)
+
 
                     ' Optional formatting
                     With tableDataGridView
@@ -191,6 +211,7 @@ Public Class salesReport
         HighlightButton("Button5")
         SetPlaceholder(TextBoxSearch, "Search...")
         SetRoundedRegion2(Button1, 20)
+        SetRoundedRegion2(Button2, 20)
 
         ' Example data
         ' Initialize
@@ -207,13 +228,13 @@ Public Class salesReport
         loadSalesReport()
     End Sub
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
-        Dim rect As New Rectangle(0, 0, ctrl.Width, ctrl.Height)
+        Dim rect As New System.Drawing.Rectangle(0, 0, ctrl.Width, ctrl.Height)
         Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
             ctrl.Region = New Region(path)
         End Using
     End Sub
 
-    Private Function GetRoundedRectanglePath2(rect As Rectangle, radius As Integer) As GraphicsPath
+    Private Function GetRoundedRectanglePath2(rect As System.Drawing.Rectangle, radius As Integer) As GraphicsPath
         Dim path As New GraphicsPath()
         Dim diameter As Integer = radius * 2
 
@@ -239,6 +260,7 @@ Public Class salesReport
         path.CloseFigure()
         Return path
     End Function
+
 
     Private Sub SetPlaceholder(tb As TextBox, text As String)
         placeholders(tb) = text
@@ -280,5 +302,155 @@ Public Class salesReport
         Else
             bs.Filter = String.Format("ProductName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
+    End Sub
+
+    Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
+        Using con As New SqlConnection(GetConnectionString())
+            Dim query As String = "
+            SELECT 
+                sr.SaleID,
+                sr.SaleDate,
+                p.ProductName,
+                c.CategoryName,
+                sr.QuantitySold,
+                sr.UnitPrice,
+                sr.TotalAmount,
+                sr.PaymentMethod,
+                u.username AS HandledBy
+            FROM SalesReport sr
+            INNER JOIN Products p ON sr.ProductID = p.ProductID
+            INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+            INNER JOIN Users u ON sr.HandledBy = u.userID
+            WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
+            ORDER BY sr.SaleDate DESC"
+
+            Using cmd As New SqlCommand(query, con)
+                cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
+                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date)
+
+                Dim da As New SqlDataAdapter(cmd)
+                dt.Clear()                ' reuse class-level dt (mybase load) to keep the same binding
+                da.Fill(dt)               ' fills the same dt bound to dv/bs/grid
+            End Using
+        End Using
+    End Sub
+
+    ' Reset button (show all records + reset pickers)
+    Private Sub btnReset_Click(sender As Object, e As EventArgs) Handles resetButton.Click
+        ' Reset the DateTimePickers to today's date
+        DateTimePickerFrom.Value = DateTime.Today
+        DateTimePickerTo.Value = DateTime.Today
+
+        ' Reload all records
+        loadSalesReport()
+    End Sub
+
+    Private Sub ExportToExcel()
+        Try
+            Dim excelApp As New Excel.Application
+            Dim workbook As Excel.Workbook = excelApp.Workbooks.Add()
+            Dim worksheet As Excel.Worksheet = workbook.Sheets(1)
+
+            ' Export column headers
+            For col As Integer = 0 To tableDataGridView.Columns.Count - 1
+                worksheet.Cells(1, col + 1) = tableDataGridView.Columns(col).HeaderText
+            Next
+
+            ' Format header row
+            Dim headerRange As Excel.Range = worksheet.Range("A1", worksheet.Cells(1, tableDataGridView.Columns.Count))
+            headerRange.Font.Bold = True
+            headerRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter
+            headerRange.Interior.Color = RGB(230, 216, 177)
+            ' Export rows
+            For row As Integer = 0 To tableDataGridView.Rows.Count - 1
+                For col As Integer = 0 To tableDataGridView.Columns.Count - 1
+                    worksheet.Cells(row + 2, col + 1) = tableDataGridView.Rows(row).Cells(col).Value
+                Next
+            Next
+
+            ' Save file
+            Dim saveDialog As New SaveFileDialog()
+            saveDialog.Filter = "Excel Files|*.xlsx"
+            saveDialog.FileName = "SalesReport.xlsx"
+
+            If saveDialog.ShowDialog() = DialogResult.OK Then
+                ' Auto fit columns and rows before saving
+                worksheet.Columns.AutoFit()
+                worksheet.Rows.AutoFit()
+
+                workbook.SaveAs(saveDialog.FileName)
+                workbook.Close()
+                excelApp.Quit()
+                MessageBox.Show("Exported to Excel successfully!")
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Error exporting to Excel: " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub ExportToPDF()
+        Try
+            Dim saveDialog As New SaveFileDialog()
+            saveDialog.Filter = "PDF Files|*.pdf"
+            saveDialog.FileName = "SalesReport.pdf"
+
+            If saveDialog.ShowDialog() = DialogResult.OK Then
+                Dim pdfTable As New PdfPTable(tableDataGridView.Columns.Count)
+                pdfTable.WidthPercentage = 100
+
+                ' Set equal column widths
+                Dim widths(tableDataGridView.Columns.Count - 1) As Single
+                For i As Integer = 0 To widths.Length - 1
+                    widths(i) = 1 ' all equal weight
+                Next
+                pdfTable.SetWidths(widths)
+
+                ' Add styled headers
+                Dim headerFont As Font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.BLACK)
+                For Each column As DataGridViewColumn In tableDataGridView.Columns
+                    Dim headerCell As New PdfPCell(New Phrase(column.HeaderText, headerFont))
+                    headerCell.BackgroundColor = BaseColor.LIGHT_GRAY
+                    headerCell.HorizontalAlignment = Element.ALIGN_CENTER
+                    pdfTable.AddCell(headerCell)
+                Next
+
+                ' Add data rows
+                Dim cellFont As Font = FontFactory.GetFont(FontFactory.HELVETICA, 9, BaseColor.BLACK)
+                For Each row As DataGridViewRow In tableDataGridView.Rows
+                    If Not row.IsNewRow Then
+                        For Each cell As DataGridViewCell In row.Cells
+                            Dim pdfCell As New PdfPCell(New Phrase(If(cell.Value IsNot Nothing, cell.Value.ToString(), ""), cellFont))
+                            pdfCell.HorizontalAlignment = Element.ALIGN_CENTER
+                            pdfTable.AddCell(pdfCell)
+                        Next
+                    End If
+                Next
+
+
+                ' Write file
+                Using stream As New FileStream(saveDialog.FileName, FileMode.Create)
+                    Dim pdfDoc As New Document(PageSize.A4, 10, 10, 10, 10)
+                    PdfWriter.GetInstance(pdfDoc, stream)
+                    pdfDoc.Open()
+                    pdfDoc.Add(pdfTable)
+                    pdfDoc.Close()
+                    stream.Close()
+                End Using
+
+                MessageBox.Show("Exported to PDF successfully!")
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Error exporting to PDF: " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        ExportToExcel()
+    End Sub
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        ExportToPDF()
     End Sub
 End Class

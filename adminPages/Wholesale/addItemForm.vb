@@ -170,17 +170,39 @@ Public Class addItemForm
     End Sub
 
     Private Sub saveButton_Click(sender As Object, e As EventArgs) Handles addButton.Click
-        InsertProductWithQRCode(
-            skuTextBox.Text,                           ' SKU
-            productTextBox.Text,                       ' Product Name
-            unitTextBox.Text,                          ' Unit
-            Decimal.Parse(retailTextBox.Text),         ' Retail Price
-            Decimal.Parse(costTextBox.Text),           ' Cost
-            Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
-            Integer.Parse(reorderTextBox.Text),        ' Reorder Level
-            DateTime.Parse(DateTimePicker1.Text), ' Expiration Date
-            Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID (hidden ValueMember)
-        )
+        If String.IsNullOrWhiteSpace(skuTextBox.Text) OrElse
+           String.IsNullOrWhiteSpace(productTextBox.Text) OrElse
+           String.IsNullOrWhiteSpace(unitTextBox.Text) OrElse
+           String.IsNullOrWhiteSpace(retailTextBox.Text) OrElse
+           String.IsNullOrWhiteSpace(costTextBox.Text) OrElse
+           String.IsNullOrWhiteSpace(quantityTextBox.Text) OrElse
+           String.IsNullOrWhiteSpace(reorderTextBox.Text) OrElse
+           categoryDropDown.SelectedValue Is Nothing OrElse
+           DateTimePicker1.Value = DateTimePicker1.MinDate Then
+
+            MessageBox.Show("Please fill in all required fields.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Exit Sub
+        End If
+
+        Try
+            InsertProductWithQRCode(
+                skuTextBox.Text,                           ' SKU
+                productTextBox.Text,                       ' Product Name
+                unitTextBox.Text,                          ' Unit
+                Decimal.Parse(retailTextBox.Text),         ' Retail Price
+                Decimal.Parse(costTextBox.Text),           ' Cost
+                Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
+                Integer.Parse(reorderTextBox.Text),        ' Reorder Level
+                DateTimePicker1.Value,                     ' Expiration Date (better than parsing Text)
+                Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID
+            )
+            MessageBox.Show("Product inserted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As FormatException
+            MessageBox.Show("Please enter valid numeric values for price, cost, quantity, and reorder level.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Catch ex As Exception
+            MessageBox.Show("Error inserting product: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
 
         ' Clear inputs
         For Each ctrl As Control In Panel1.Controls
