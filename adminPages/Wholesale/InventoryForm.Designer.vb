@@ -25,10 +25,11 @@ Partial Class InventoryForm
         dataGridViewPanel = New Panel()
         addProductPanel = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
-        Button2 = New Button()
+        btnPrintAllQRCodes = New Button()
         Button1 = New Button()
         Panel1 = New Panel()
         TextBoxSearch = New TextBox()
+        Button2 = New Button()
         tableDataGridView = New DataGridView()
         dataGridViewPanel.SuspendLayout()
         addProductPanel.SuspendLayout()
@@ -61,35 +62,36 @@ Partial Class InventoryForm
         ' TableLayoutPanel1
         ' 
         TableLayoutPanel1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
-        TableLayoutPanel1.ColumnCount = 2
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.00001F))
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 49.99999F))
-        TableLayoutPanel1.Controls.Add(Button2, 1, 0)
+        TableLayoutPanel1.ColumnCount = 3
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.33334F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.33333F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel1.Controls.Add(btnPrintAllQRCodes, 1, 0)
         TableLayoutPanel1.Controls.Add(Button1, 0, 0)
         TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
-        TableLayoutPanel1.Location = New Point(301, 14)
+        TableLayoutPanel1.Controls.Add(Button2, 2, 0)
+        TableLayoutPanel1.Location = New Point(457, 11)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
         TableLayoutPanel1.RowCount = 2
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 60F))
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 40F))
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 20F))
-        TableLayoutPanel1.Size = New Size(1175, 99)
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 60.0F))
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 40.0F))
+        TableLayoutPanel1.Size = New Size(875, 99)
         TableLayoutPanel1.TabIndex = 4
         ' 
-        ' Button2
+        ' btnPrintAllQRCodes
         ' 
-        Button2.Anchor = AnchorStyles.None
-        Button2.AutoSize = True
-        Button2.Cursor = Cursors.Hand
-        Button2.FlatAppearance.BorderSize = 0
-        Button2.FlatStyle = FlatStyle.Popup
-        Button2.Font = New Font("Segoe UI", 14F)
-        Button2.Location = New Point(781, 8)
-        Button2.Name = "Button2"
-        Button2.Size = New Size(199, 42)
-        Button2.TabIndex = 1
-        Button2.Text = "Edit Item"
-        Button2.UseVisualStyleBackColor = True
+        btnPrintAllQRCodes.Anchor = AnchorStyles.None
+        btnPrintAllQRCodes.AutoSize = True
+        btnPrintAllQRCodes.Cursor = Cursors.Hand
+        btnPrintAllQRCodes.FlatAppearance.BorderSize = 0
+        btnPrintAllQRCodes.FlatStyle = FlatStyle.Popup
+        btnPrintAllQRCodes.Font = New Font("Segoe UI", 14.0F)
+        btnPrintAllQRCodes.Location = New Point(337, 8)
+        btnPrintAllQRCodes.Name = "btnPrintAllQRCodes"
+        btnPrintAllQRCodes.Size = New Size(199, 42)
+        btnPrintAllQRCodes.TabIndex = 3
+        btnPrintAllQRCodes.Text = "Print All QR Codes"
+        btnPrintAllQRCodes.UseVisualStyleBackColor = True
         ' 
         ' Button1
         ' 
@@ -98,8 +100,8 @@ Partial Class InventoryForm
         Button1.Cursor = Cursors.Hand
         Button1.FlatAppearance.BorderSize = 0
         Button1.FlatStyle = FlatStyle.Popup
-        Button1.Font = New Font("Segoe UI", 14F)
-        Button1.Location = New Point(194, 8)
+        Button1.Font = New Font("Segoe UI", 14.0F)
+        Button1.Location = New Point(46, 8)
         Button1.Name = "Button1"
         Button1.Size = New Size(199, 42)
         Button1.TabIndex = 0
@@ -109,9 +111,9 @@ Partial Class InventoryForm
         ' Panel1
         ' 
         Panel1.Anchor = AnchorStyles.None
-        TableLayoutPanel1.SetColumnSpan(Panel1, 2)
+        TableLayoutPanel1.SetColumnSpan(Panel1, 3)
         Panel1.Controls.Add(TextBoxSearch)
-        Panel1.Location = New Point(487, 62)
+        Panel1.Location = New Point(337, 62)
         Panel1.Name = "Panel1"
         Panel1.Size = New Size(200, 34)
         Panel1.TabIndex = 2
@@ -120,11 +122,26 @@ Partial Class InventoryForm
         ' 
         TextBoxSearch.BorderStyle = BorderStyle.FixedSingle
         TextBoxSearch.Dock = DockStyle.Fill
-        TextBoxSearch.Font = New Font("Segoe UI", 13F)
+        TextBoxSearch.Font = New Font("Segoe UI", 13.0F)
         TextBoxSearch.Location = New Point(0, 0)
         TextBoxSearch.Name = "TextBoxSearch"
         TextBoxSearch.Size = New Size(200, 31)
         TextBoxSearch.TabIndex = 0
+        ' 
+        ' Button2
+        ' 
+        Button2.Anchor = AnchorStyles.None
+        Button2.AutoSize = True
+        Button2.Cursor = Cursors.Hand
+        Button2.FlatAppearance.BorderSize = 0
+        Button2.FlatStyle = FlatStyle.Popup
+        Button2.Font = New Font("Segoe UI", 14.0F)
+        Button2.Location = New Point(629, 8)
+        Button2.Name = "Button2"
+        Button2.Size = New Size(199, 42)
+        Button2.TabIndex = 1
+        Button2.Text = "Edit Item"
+        Button2.UseVisualStyleBackColor = True
         ' 
         ' tableDataGridView
         ' 
@@ -144,7 +161,7 @@ Partial Class InventoryForm
         ' 
         ' InventoryForm
         ' 
-        AutoScaleDimensions = New SizeF(7F, 15F)
+        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1684, 791)
         Controls.Add(dataGridViewPanel)
@@ -171,4 +188,5 @@ Partial Class InventoryForm
     Friend WithEvents Button2 As Button
     Friend WithEvents Panel1 As Panel
     Friend WithEvents TextBoxSearch As TextBox
+    Friend WithEvents btnPrintAllQRCodes As Button
 End Class

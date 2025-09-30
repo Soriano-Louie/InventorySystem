@@ -13,7 +13,7 @@ Public Class InventoryForm
     Dim bs As New BindingSource()
 
     Private WithEvents printDoc As New PrintDocument
-    Private qrImageToPrint As Image
+    Private WithEvents printDocAll As New PrintDocument
 
     Public Sub New()
 
@@ -40,6 +40,8 @@ Public Class InventoryForm
         Button2.BackColor = Color.FromArgb(147, 53, 53)
         Button1.ForeColor = Color.FromArgb(230, 216, 177)
         Button2.ForeColor = Color.FromArgb(230, 216, 177)
+        btnPrintAllQRCodes.BackColor = Color.FromArgb(147, 53, 53)
+        btnPrintAllQRCodes.ForeColor = Color.FromArgb(230, 216, 177)
 
         tableDataGridView.ReadOnly = True
         tableDataGridView.AllowUserToAddRows = False
@@ -234,27 +236,32 @@ Public Class InventoryForm
                 Using ms As New MemoryStream(bytes)
                     Dim qrImage As Image = Image.FromStream(ms)
 
+                    ' Get product name from the row 
+                    Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("productName").Value.ToString()
+
                     ' Show the image in a preview form
                     Dim previewForm As New Form With {
                     .Text = "QR Code Preview",
                     .Size = New Size(300, 300),
                     .StartPosition = FormStartPosition.CenterParent
-                    }
+                }
 
                     Dim pb As New PictureBox With {
                     .Dock = DockStyle.Fill,
                     .Image = qrImage,
                     .SizeMode = PictureBoxSizeMode.Zoom
-                    }
+                }
                     previewForm.Controls.Add(pb)
 
                     ' Add a Print button
                     Dim btnPrint As New Button With {
                     .Text = "Print QR Code",
                     .Dock = DockStyle.Bottom
-                    }
+                }
+
+                    ' ✅ Pass both QR and ProductName to the new print function
                     AddHandler btnPrint.Click, Sub()
-                                                   PrintQRCode(qrImage)
+                                                   PrintQRCode(qrImage, productName)
                                                End Sub
                     previewForm.Controls.Add(btnPrint)
 
@@ -264,47 +271,272 @@ Public Class InventoryForm
         End If
     End Sub
 
+
+    Private qrImageToPrint As Image
+    Private productNameToPrint As String
+    Private numberOfCopies As Integer
+
     ' Call this when user clicks "Print QR"
-    Private Sub PrintQRCode(qrImage As Image)
+    ' Ask user how many copies they want before printing
+    Private Sub PrintQRCode(qrImage As Image, productName As String)
         qrImageToPrint = qrImage
+        productNameToPrint = productName
+
+        ' Ask user which paper size to use
+        Dim sizeChoice As String = InputBox("Choose paper size (Letter, Legal, A4):", "Paper Size", "Letter")
+
+        If String.IsNullOrWhiteSpace(sizeChoice) Then
+            ' User cancelled
+            Exit Sub
+        End If
+
+        Select Case sizeChoice.ToLower()
+            Case "letter"
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Letter", 850, 1100)
+            Case "legal"
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Legal", 850, 1400)
+            Case "a4"
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("A4", 827, 1169)
+            Case Else
+                MessageBox.Show("Invalid choice. Defaulting to Letter size.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Letter", 850, 1100)
+        End Select
+
+        ' Ask how many copies to print
+        Dim input As String = InputBox("How many copies per product?", "Copies", "1")
+
+        If String.IsNullOrWhiteSpace(input) Then
+            ' User cancelled
+            Exit Sub
+        End If
+
+        If Not Integer.TryParse(input, copiesPerProduct) OrElse copiesPerProduct <= 0 Then
+            MessageBox.Show("Invalid number of copies.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        ' Reduce margins
+        Dim settings = printDoc.DefaultPageSettings
+        settings.Margins = New Margins(10, 10, 10, 10) ' 0.1 inch on all sides
+        printDoc.DefaultPageSettings = settings
+
+        ' show preview before printing
         Dim printPreview As New PrintPreviewDialog()
         printPreview.Document = printDoc
         printPreview.ShowDialog()
     End Sub
 
+
     ' Handles actual drawing on paper
     Private Sub printDoc_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDoc.PrintPage
         If qrImageToPrint IsNot Nothing Then
-            ' Define size for QR code (small square)
-            Dim qrSize As Integer = 150  ' You can adjust this to make it smaller/larger
+            Dim qrSize As Integer = 100   ' Size of each QR code
+            Dim margin As Integer = 20    ' Space between QR codes
+            Dim font As New Font("Arial", 10, FontStyle.Bold)
 
-            ' Position at top-left (X=0, Y=0)
-            Dim x As Integer = 0
-            Dim y As Integer = 0
+            Dim pageWidth As Integer = e.MarginBounds.Width
+            Dim pageHeight As Integer = e.MarginBounds.Height
 
-            ' Draw QR code on the paper
-            e.Graphics.DrawImage(qrImageToPrint, x, y, qrSize, qrSize)
+            ' Calculate how many QR codes fit per row
+            Dim qrPerRow As Integer = Math.Floor((pageWidth + margin) / (qrSize + margin))
+            Dim qrPerCol As Integer = Math.Floor((pageHeight + margin) / (qrSize + 30 + margin)) ' 30px for text
+
+            Dim totalPerPage As Integer = qrPerRow * qrPerCol
+
+            Dim copiesPrinted As Integer = 0
+            Dim x As Integer = e.MarginBounds.Left
+            Dim y As Integer = e.MarginBounds.Top
+
+            While copiesPrinted < numberOfCopies
+                ' Draw QR code
+                e.Graphics.DrawImage(qrImageToPrint, x, y, qrSize, qrSize)
+
+                ' Draw Product Name below QR
+                Dim textY As Integer = y + qrSize + 5
+                e.Graphics.DrawString(productNameToPrint, font, Brushes.Black, x, textY)
+
+                copiesPrinted += 1
+
+                ' Move to next position
+                x += qrSize + margin
+
+                ' If we reach end of row
+                If (copiesPrinted Mod qrPerRow = 0) Then
+                    x = e.MarginBounds.Left
+                    y += qrSize + 30 + margin ' QR height + text + spacing
+                End If
+
+                ' If page is full, tell printer there’s more pages
+                If copiesPrinted < numberOfCopies AndAlso copiesPrinted Mod totalPerPage = 0 Then
+                    e.HasMorePages = True
+                    Return
+                End If
+            End While
         End If
     End Sub
 
-    'Private Sub PrintQRCode(qrImage As Image)
-    '    Dim printDoc As New Printing.PrintDocument
-    '    AddHandler printDoc.PrintPage,
-    '    Sub(sender As Object, e As Printing.PrintPageEventArgs)
-    '        ' Center image on paper
-    '        Dim x As Integer = (e.PageBounds.Width - qrImage.Width) \ 2
-    '        Dim y As Integer = (e.PageBounds.Height - qrImage.Height) \ 2
-    '        e.Graphics.DrawImage(qrImage, x, y)
-    '    End Sub
+    ' Handles actual drawing on paper, print single top left qr code on paper
+    'Private Sub printDoc_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDoc.PrintPage
+    '    If qrImageToPrint IsNot Nothing Then
+    '        ' Define size for QR code (small square)
+    '        Dim qrSize As Integer = 150  ' You can adjust this to make it smaller/larger
 
-    '    Dim dlg As New PrintDialog With {
-    '    .Document = printDoc
-    '}
+    '        ' Position at top-left (X=0, Y=0)
+    '        Dim x As Integer = 0
+    '        Dim y As Integer = 0
 
-    '    If dlg.ShowDialog() = DialogResult.OK Then
-    '        printDoc.Print()
+    '        ' Draw QR code on the paper
+    '        e.Graphics.DrawImage(qrImageToPrint, x, y, qrSize, qrSize)
     '    End If
     'End Sub
+
+    ' PRINTING FOR ALL QR CODES 
+    ' Store data to print
+    Private qrImagesToPrint As New List(Of Image)
+    Private productNamesToPrint As New List(Of String)
+
+    ' Copies for each QR
+    Private copiesPerProduct As Integer = 1
+
+    Private Sub btnPrintAllQRCodes_Click(sender As Object, e As EventArgs) Handles btnPrintAllQRCodes.Click
+        ' 1. Ask paper size
+        ' Ask user which paper size to use
+        Dim sizeChoice As String = InputBox("Choose paper size (Letter, Legal, A4):", "Paper Size", "Letter")
+
+        If String.IsNullOrWhiteSpace(sizeChoice) Then
+            ' User cancelled
+            Exit Sub
+        End If
+
+        Select Case sizeChoice.ToLower()
+            Case "letter"
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Letter", 850, 1100)
+            Case "legal"
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Legal", 850, 1400)
+            Case "a4"
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("A4", 827, 1169)
+            Case Else
+                MessageBox.Show("Invalid choice. Defaulting to Letter size.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Letter", 850, 1100)
+        End Select
+
+        ' 2. Ask copies
+        Dim input As String = InputBox("How many copies per product?", "Copies", "1")
+
+        If String.IsNullOrWhiteSpace(input) Then
+            ' User cancelled
+            Exit Sub
+        End If
+
+        If Not Integer.TryParse(input, copiesPerProduct) OrElse copiesPerProduct <= 0 Then
+            MessageBox.Show("Invalid number of copies.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        ' 3. Load products & QRs from database
+        qrImagesToPrint.Clear()
+        productNamesToPrint.Clear()
+
+        Using conn As New SqlConnection(GetConnectionString())
+            conn.Open()
+            Dim query As String = "SELECT ProductName, QRCodeImage FROM Products"
+
+            Using cmd As New SqlCommand(query, conn)
+                Using rdr As SqlDataReader = cmd.ExecuteReader()
+                    While rdr.Read()
+                        Dim productName As String = rdr("ProductName").ToString()
+
+                        Dim qrBytes As Byte() = Nothing
+
+                        If Not IsDBNull(rdr("QRCodeImage")) Then
+                            qrBytes = DirectCast(rdr("QRCodeImage"), Byte())
+                        End If
+
+
+                        Dim qrImg As Image = Nothing
+                        If qrBytes IsNot Nothing Then
+                            Using ms As New MemoryStream(qrBytes)
+                                qrImg = Image.FromStream(ms)
+                            End Using
+                        End If
+
+                        ' Store the product name + image (Nothing means no QR)
+                        For i As Integer = 1 To copiesPerProduct
+                            qrImagesToPrint.Add(qrImg) ' Can be Nothing
+                            productNamesToPrint.Add(productName)
+                        Next
+                    End While
+                End Using
+            End Using
+        End Using
+
+        ' Reduce margins
+        Dim settings = printDocAll.DefaultPageSettings
+        settings.Margins = New Margins(10, 10, 10, 10) ' 0.1 inch on all sides
+        printDocAll.DefaultPageSettings = settings
+
+        ' 4. Show preview before printing
+        Dim preview As New PrintPreviewDialog()
+        preview.Document = printDocAll
+        preview.Width = 800
+        preview.Height = 600
+        preview.ShowDialog()
+    End Sub
+
+    Private printIndex As Integer = 0
+
+    Private currentIndex As Integer = 0 ' Track across pages
+
+    Private Sub printDocAll_PrintPage(sender As Object, e As Printing.PrintPageEventArgs) Handles printDocAll.PrintPage
+        Dim margin As Integer = 20
+        Dim qrSize As Integer = 100
+
+        ' Grid layout calculation
+        Dim qrPerRow As Integer = (e.MarginBounds.Width - margin) \ (qrSize + margin)
+        Dim qrPerCol As Integer = (e.MarginBounds.Height - margin) \ (qrSize + margin)
+        Dim maxPerPage As Integer = qrPerRow * qrPerCol
+
+        Dim x As Integer = e.MarginBounds.Left
+        Dim y As Integer = e.MarginBounds.Top
+
+        Dim count As Integer = 0
+
+        While currentIndex < qrImagesToPrint.Count AndAlso count < maxPerPage
+            Dim img As Image = qrImagesToPrint(currentIndex)
+            Dim name As String = productNamesToPrint(currentIndex)
+
+            ' Draw QR or placeholder
+            If img IsNot Nothing Then
+                e.Graphics.DrawImage(img, x, y, qrSize, qrSize)
+            Else
+                e.Graphics.DrawRectangle(Pens.Black, x, y, qrSize, qrSize)
+                e.Graphics.DrawString("NO QR", New Font("Arial", 8), Brushes.Black, x + 10, y + (qrSize \ 2) - 5)
+            End If
+
+            ' Print product name
+            e.Graphics.DrawString(name, New Font("Arial", 8), Brushes.Black, x, y + qrSize + 5)
+
+            ' Move to next cell
+            count += 1
+            currentIndex += 1
+            x += qrSize + margin
+
+            If count Mod qrPerRow = 0 Then
+                x = e.MarginBounds.Left
+                y += qrSize + margin + 20
+            End If
+        End While
+
+        ' Check if more pages are needed
+        If currentIndex < qrImagesToPrint.Count Then
+            e.HasMorePages = True
+        Else
+            e.HasMorePages = False
+            currentIndex = 0 ' Reset for next print job
+        End If
+    End Sub
+
+
 
 
     ' Dictionary to store placeholder texts for each TextBox
@@ -322,6 +554,7 @@ Public Class InventoryForm
 
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
+        SetRoundedRegion2(btnPrintAllQRCodes, 20)
 
         ' Initialize
         dt = New DataTable()
@@ -455,7 +688,7 @@ Public Class InventoryForm
     End Sub
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        Dim popup As New editItemForm()
+        Dim popup As New editItemForm
         popup.ShowDialog(Me)
     End Sub
 End Class
