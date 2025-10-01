@@ -26,11 +26,12 @@ Partial Class loginRecordsForm
         Panel1 = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
         Panel5 = New Panel()
-        toTextBox = New TextBox()
+        DateTimePickerTo = New DateTimePicker()
         Label2 = New Label()
         Panel4 = New Panel()
-        fromTextBox = New TextBox()
+        DateTimePickerFrom = New DateTimePicker()
         Label1 = New Label()
+        filterButton = New Button()
         tableDataGridView = New DataGridView()
         mainPanel.SuspendLayout()
         Panel1.SuspendLayout()
@@ -63,44 +64,45 @@ Partial Class loginRecordsForm
         ' TableLayoutPanel1
         ' 
         TableLayoutPanel1.Anchor = AnchorStyles.None
-        TableLayoutPanel1.ColumnCount = 2
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
+        TableLayoutPanel1.ColumnCount = 3
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
         TableLayoutPanel1.Controls.Add(Panel5, 1, 0)
         TableLayoutPanel1.Controls.Add(Panel4, 0, 0)
-        TableLayoutPanel1.Location = New Point(660, 21)
+        TableLayoutPanel1.Controls.Add(filterButton, 2, 0)
+        TableLayoutPanel1.Location = New Point(620, 21)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
         TableLayoutPanel1.RowCount = 1
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 50F))
-        TableLayoutPanel1.Size = New Size(441, 75)
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
+        TableLayoutPanel1.Size = New Size(481, 75)
         TableLayoutPanel1.TabIndex = 0
         ' 
         ' Panel5
         ' 
-        Panel5.Controls.Add(toTextBox)
+        Panel5.Controls.Add(DateTimePickerTo)
         Panel5.Controls.Add(Label2)
         Panel5.Dock = DockStyle.Fill
-        Panel5.Location = New Point(223, 3)
+        Panel5.Location = New Point(163, 3)
         Panel5.Name = "Panel5"
-        Panel5.Size = New Size(215, 69)
+        Panel5.Size = New Size(154, 69)
         Panel5.TabIndex = 7
         ' 
-        ' toTextBox
+        ' DateTimePickerTo
         ' 
-        toTextBox.Anchor = AnchorStyles.None
-        toTextBox.BorderStyle = BorderStyle.FixedSingle
-        toTextBox.Font = New Font("Segoe UI", 12F)
-        toTextBox.Location = New Point(47, 18)
-        toTextBox.Name = "toTextBox"
-        toTextBox.Size = New Size(123, 29)
-        toTextBox.TabIndex = 7
+        DateTimePickerTo.Checked = False
+        DateTimePickerTo.Format = DateTimePickerFormat.Custom
+        DateTimePickerTo.Location = New Point(51, 21)
+        DateTimePickerTo.Name = "DateTimePickerTo"
+        DateTimePickerTo.Size = New Size(93, 23)
+        DateTimePickerTo.TabIndex = 7
         ' 
         ' Label2
         ' 
         Label2.Anchor = AnchorStyles.None
         Label2.AutoSize = True
-        Label2.Font = New Font("Segoe UI", 10F)
-        Label2.Location = New Point(18, 23)
+        Label2.Font = New Font("Segoe UI", 10.0F)
+        Label2.Location = New Point(19, 23)
         Label2.Name = "Label2"
         Label2.Size = New Size(26, 19)
         Label2.TabIndex = 6
@@ -109,35 +111,47 @@ Partial Class loginRecordsForm
         ' 
         ' Panel4
         ' 
-        Panel4.Controls.Add(fromTextBox)
+        Panel4.Controls.Add(DateTimePickerFrom)
         Panel4.Controls.Add(Label1)
         Panel4.Dock = DockStyle.Left
         Panel4.Location = New Point(3, 3)
         Panel4.Name = "Panel4"
-        Panel4.Size = New Size(214, 69)
+        Panel4.Size = New Size(154, 69)
         Panel4.TabIndex = 3
         ' 
-        ' fromTextBox
+        ' DateTimePickerFrom
         ' 
-        fromTextBox.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Right
-        fromTextBox.BorderStyle = BorderStyle.FixedSingle
-        fromTextBox.Font = New Font("Segoe UI", 12F)
-        fromTextBox.Location = New Point(60, 18)
-        fromTextBox.Name = "fromTextBox"
-        fromTextBox.Size = New Size(123, 29)
-        fromTextBox.TabIndex = 3
+        DateTimePickerFrom.Checked = False
+        DateTimePickerFrom.Format = DateTimePickerFormat.Custom
+        DateTimePickerFrom.Location = New Point(55, 21)
+        DateTimePickerFrom.Name = "DateTimePickerFrom"
+        DateTimePickerFrom.Size = New Size(93, 23)
+        DateTimePickerFrom.TabIndex = 3
         ' 
         ' Label1
         ' 
         Label1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
         Label1.AutoSize = True
-        Label1.Font = New Font("Segoe UI", 10F)
-        Label1.Location = New Point(12, 23)
+        Label1.Font = New Font("Segoe UI", 10.0F)
+        Label1.Location = New Point(4, 23)
         Label1.Name = "Label1"
         Label1.Size = New Size(44, 19)
         Label1.TabIndex = 2
         Label1.Text = "From:"
         Label1.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' filterButton
+        ' 
+        filterButton.Anchor = AnchorStyles.None
+        filterButton.Cursor = Cursors.Hand
+        filterButton.FlatAppearance.BorderSize = 0
+        filterButton.FlatStyle = FlatStyle.Popup
+        filterButton.Location = New Point(363, 26)
+        filterButton.Name = "filterButton"
+        filterButton.Size = New Size(75, 23)
+        filterButton.TabIndex = 8
+        filterButton.Text = "Filter"
+        filterButton.UseVisualStyleBackColor = True
         ' 
         ' tableDataGridView
         ' 
@@ -156,7 +170,7 @@ Partial Class loginRecordsForm
         ' 
         ' loginRecordsForm
         ' 
-        AutoScaleDimensions = New SizeF(7F, 15F)
+        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1810, 792)
         Controls.Add(mainPanel)
@@ -180,9 +194,10 @@ Partial Class loginRecordsForm
     Friend WithEvents Panel1 As Panel
     Friend WithEvents TableLayoutPanel1 As TableLayoutPanel
     Friend WithEvents Panel4 As Panel
-    Friend WithEvents fromTextBox As TextBox
     Friend WithEvents Label1 As Label
     Friend WithEvents Panel5 As Panel
-    Friend WithEvents toTextBox As TextBox
     Friend WithEvents Label2 As Label
+    Friend WithEvents DateTimePickerTo As DateTimePicker
+    Friend WithEvents DateTimePickerFrom As DateTimePicker
+    Friend WithEvents filterButton As Button
 End Class

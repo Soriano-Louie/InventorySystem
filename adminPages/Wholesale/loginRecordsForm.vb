@@ -1,11 +1,14 @@
-﻿Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
+﻿Imports Microsoft.Data.SqlClient
+Imports System.Data
 
 Public Class loginRecordsForm
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
+    Dim dt As New DataTable()
+    Dim dv As New DataView()
+    Dim bs As New BindingSource()
 
     Public Sub New()
 
@@ -22,8 +25,8 @@ Public Class loginRecordsForm
         Me.FormBorderStyle = FormBorderStyle.None
         Me.BackColor = Color.FromArgb(224, 166, 109)
 
-        fromTextBox.BackColor = Color.FromArgb(230, 216, 177)
-        toTextBox.BackColor = Color.FromArgb(230, 216, 177)
+        filterButton.BackColor = Color.FromArgb(147, 53, 53)
+        filterButton.ForeColor = Color.FromArgb(230, 216, 177)
 
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
@@ -128,7 +131,74 @@ Public Class loginRecordsForm
 
     Private Sub logsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button6")
+        ' Example data
+        ' Initialize
+        dt = New DataTable()
+        dv = New DataView(dt)
+        bs = New BindingSource()
+
+        ' Bindings
+        bs.DataSource = dv
+        tableDataGridView.DataSource = bs
+
+        LoadLoginHistory()
     End Sub
 
+    Private Function GetConnectionString() As String
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
 
+    Private Sub LoadLoginHistory()
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+
+                Dim query As String = "SELECT h.LoginID, u.username, h.LoginTime, h.DeviceInfo " &
+                                      "FROM UserLoginHistory h " &
+                                      "INNER JOIN Users u ON h.UserID = u.UserID " &
+                                      "ORDER BY h.LoginTime DESC"
+
+                Using cmd As New SqlCommand(query, conn)
+                    Using da As New SqlDataAdapter(cmd)
+                        da.Fill(dt)
+
+                        ' Bind to DataGridView
+                        tableDataGridView.DataSource = dt
+
+                        With tableDataGridView
+                            .EnableHeadersVisualStyles = False ' allow custom styling
+                            .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
+                            .Columns("LoginID").HeaderText = "Login ID"
+                            .Columns("username").HeaderText = "Username"
+                            .Columns("LoginTime").HeaderText = "Login Time"
+                            .Columns("DeviceInfo").HeaderText = "Device Info"
+                        End With
+                    End Using
+                End Using
+            End Using
+
+        Catch ex As Exception
+            MessageBox.Show("Error loading login history: " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub filterButton_Click(sender As Object, e As EventArgs) Handles filterButton.Click
+        Using con As New SqlConnection(GetConnectionString())
+            Dim query As String = "
+            SELECT h.LoginID, u.username, h.LoginTime, h.DeviceInfo
+            FROM UserLoginHistory h
+            INNER JOIN Users u ON h.UserID = u.UserID
+            WHERE h.LoginTime >= @FromDate AND h.LoginTime < @ToDateNextDay
+            ORDER BY h.LoginTime DESC"
+
+            Using cmd As New SqlCommand(query, con)
+                cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
+                cmd.Parameters.AddWithValue("@ToDateNextDay", DateTimePickerTo.Value.Date.AddDays(1))
+
+                Dim da As New SqlDataAdapter(cmd)
+                dt.Clear()                ' reuse class-level dt (mybase load) to keep the same binding
+                da.Fill(dt)               ' fills the same dt bound to dv/bs/grid
+            End Using
+        End Using
+    End Sub
 End Class

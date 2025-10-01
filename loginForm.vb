@@ -3,6 +3,7 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports Microsoft.Data.SqlClient
+Imports Microsoft.VisualBasic.ApplicationServices
 
 
 Public Class LoginForm
@@ -199,71 +200,70 @@ Public Class LoginForm
         End If
 
         Dim connStr = GetConnectionString()
-        Dim storedObj As Object = Nothing
-        Dim stored As String = ""
         Dim userRole As String = ""
 
         Try
             Using conn As New SqlConnection(connStr)
                 conn.Open()
-                Using cmd As New SqlCommand("SELECT passwordHash, userRole FROM users WHERE username = @u", conn)
+
+                ' ✅ Fetch UserID, passwordHash, and role in one query
+                Dim query As String = "SELECT userID, passwordHash, userRole FROM Users WHERE username = @u"
+                Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
-                    storedObj = cmd.ExecuteScalar()
 
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
-                            storedObj = reader("passwordHash")
+                            Dim userID As Integer = Convert.ToInt32(reader("userID"))
+                            Dim storedObj As Object = reader("passwordHash")
                             userRole = reader("userRole").ToString()
+
+                            If storedObj Is Nothing OrElse storedObj Is DBNull.Value Then
+                                MessageBox.Show("Username or password incorrect.")
+                                Return
+                            End If
+
+                            Dim stored As String = storedObj.ToString()
+
+                            ' Compare hash
+                            If IsStoredValueHashed(stored) Then
+                                Dim hashedInput As String = HashSHA256Base64(password)
+                                If hashedInput = stored Then
+                                    ' Update last login
+                                    reader.Close()
+                                    Using updateCmd As New SqlCommand("UPDATE Users SET lastLogin = GETDATE() WHERE userID = @id", conn)
+                                        updateCmd.Parameters.AddWithValue("@id", userID)
+                                        updateCmd.ExecuteNonQuery()
+                                    End Using
+
+                                    ' Insert login history
+                                    Using insertCmd As New SqlCommand("INSERT INTO UserLoginHistory (UserID, DeviceInfo) VALUES (@UserID, @DeviceInfo)", conn)
+                                        insertCmd.Parameters.AddWithValue("@UserID", userID)
+                                        insertCmd.Parameters.AddWithValue("@DeviceInfo", Environment.MachineName)
+                                        insertCmd.ExecuteNonQuery()
+                                    End Using
+
+                                    ' Success
+                                    MessageBox.Show("Login successful!")
+                                    Me.Hide()
+                                    If userRole.ToLower() = "admin" Then
+                                        chooseDashboard.Show()
+                                    Else
+                                        'cashierPage.Show()
+                                    End If
+                                Else
+                                    MessageBox.Show("Username or password incorrect.")
+                                End If
+                            End If
+                        Else
+                            MessageBox.Show("Username or password incorrect.")
                         End If
                     End Using
                 End Using
             End Using
-
-            If storedObj Is Nothing OrElse storedObj Is DBNull.Value Then
-                MessageBox.Show("Username or password incorrect.")
-                Return
-            End If
-
-            stored = storedObj.ToString()
-
-            ' Case 1: stored is already a hash
-            If IsStoredValueHashed(stored) Then
-                Dim hashedInput As String = HashSHA256Base64(password)
-                If hashedInput = stored Then
-                    UpdateLastLogin(username)
-                    MessageBox.Show("Login successful!")
-                    Me.Hide()
-                    If userRole.ToLower() = "admin" Then
-                        ChooseDashboard.Show()
-                    Else
-                        'cashierPage.Show()
-                    End If
-                Else
-                    MessageBox.Show("Username or password incorrect.")
-                End If
-
-            Else
-                ' Case 2: stored is plaintext
-                If stored = password Then
-                    ' successful login → now hash and save
-                    Dim newHash = HashSHA256Base64(password)
-                    UpdatePasswordHashInDb(username, newHash)
-                    UpdateLastLogin(username)
-                    MessageBox.Show("Login successful! Password was hashed for security.")
-                    Me.Hide()
-                    If userRole.ToLower() = "admin" Then
-                        ChooseDashboard.Show()
-                    Else
-                        'cashierPage.Show()
-                    End If
-                Else
-                    MessageBox.Show("Username or password incorrect.")
-                End If
-            End If
-
         Catch ex As Exception
-            MessageBox.Show("Error connecting to database: " & ex.Message)
+            MessageBox.Show("Error during login: " & ex.Message)
         End Try
+
 
     End Sub
 

@@ -34,6 +34,7 @@ Partial Class deliveryLogsForm
         Label3 = New Label()
         Label1 = New Label()
         tableDataGridView = New DataGridView()
+        filterButton = New Button()
         mainPanel.SuspendLayout()
         Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
@@ -81,15 +82,17 @@ Partial Class deliveryLogsForm
         ' TableLayoutPanel2
         ' 
         TableLayoutPanel2.Anchor = AnchorStyles.None
-        TableLayoutPanel2.ColumnCount = 2
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
+        TableLayoutPanel2.ColumnCount = 3
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
         TableLayoutPanel2.Controls.Add(Panel5, 1, 0)
         TableLayoutPanel2.Controls.Add(Panel4, 0, 0)
+        TableLayoutPanel2.Controls.Add(filterButton, 2, 0)
         TableLayoutPanel2.Location = New Point(661, 55)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
         TableLayoutPanel2.RowCount = 1
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 50F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
         TableLayoutPanel2.Size = New Size(488, 56)
         TableLayoutPanel2.TabIndex = 1
         ' 
@@ -98,9 +101,9 @@ Partial Class deliveryLogsForm
         Panel5.Controls.Add(toTextBox)
         Panel5.Controls.Add(Label2)
         Panel5.Dock = DockStyle.Fill
-        Panel5.Location = New Point(247, 3)
+        Panel5.Location = New Point(165, 3)
         Panel5.Name = "Panel5"
-        Panel5.Size = New Size(238, 50)
+        Panel5.Size = New Size(156, 50)
         Panel5.TabIndex = 7
         ' 
         ' toTextBox
@@ -108,9 +111,9 @@ Partial Class deliveryLogsForm
         toTextBox.Anchor = AnchorStyles.None
         toTextBox.BorderStyle = BorderStyle.FixedSingle
         toTextBox.Font = New Font("Segoe UI", 12F)
-        toTextBox.Location = New Point(69, 12)
+        toTextBox.Location = New Point(55, 12)
         toTextBox.Name = "toTextBox"
-        toTextBox.Size = New Size(123, 29)
+        toTextBox.Size = New Size(87, 29)
         toTextBox.TabIndex = 7
         ' 
         ' Label2
@@ -118,7 +121,7 @@ Partial Class deliveryLogsForm
         Label2.Anchor = AnchorStyles.None
         Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 10F)
-        Label2.Location = New Point(37, 16)
+        Label2.Location = New Point(20, 16)
         Label2.Name = "Label2"
         Label2.Size = New Size(26, 19)
         Label2.TabIndex = 6
@@ -132,7 +135,7 @@ Partial Class deliveryLogsForm
         Panel4.Dock = DockStyle.Left
         Panel4.Location = New Point(3, 3)
         Panel4.Name = "Panel4"
-        Panel4.Size = New Size(219, 50)
+        Panel4.Size = New Size(156, 50)
         Panel4.TabIndex = 3
         ' 
         ' fromTextBox
@@ -142,7 +145,7 @@ Partial Class deliveryLogsForm
         fromTextBox.Font = New Font("Segoe UI", 12F)
         fromTextBox.Location = New Point(65, 12)
         fromTextBox.Name = "fromTextBox"
-        fromTextBox.Size = New Size(123, 29)
+        fromTextBox.Size = New Size(87, 29)
         fromTextBox.TabIndex = 3
         ' 
         ' Label3
@@ -183,6 +186,16 @@ Partial Class deliveryLogsForm
         tableDataGridView.Size = New Size(1710, 652)
         tableDataGridView.TabIndex = 0
         ' 
+        ' filterButton
+        ' 
+        filterButton.Anchor = AnchorStyles.None
+        filterButton.Location = New Point(368, 16)
+        filterButton.Name = "filterButton"
+        filterButton.Size = New Size(75, 23)
+        filterButton.TabIndex = 8
+        filterButton.Text = "Filter"
+        filterButton.UseVisualStyleBackColor = True
+        ' 
         ' deliveryLogsForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
@@ -218,4 +231,5 @@ Partial Class deliveryLogsForm
     Friend WithEvents Panel4 As Panel
     Friend WithEvents fromTextBox As TextBox
     Friend WithEvents Label3 As Label
+    Friend WithEvents filterButton As Button
 End Class
