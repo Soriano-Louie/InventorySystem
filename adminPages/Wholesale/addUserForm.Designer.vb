@@ -24,23 +24,23 @@ Partial Class addUserForm
     Private Sub InitializeComponent()
         Label1 = New Label()
         TableLayoutPanel1 = New TableLayoutPanel()
-        Panel2 = New Panel()
-        ComboBox1 = New ComboBox()
-        Label4 = New Label()
-        Panel1 = New Panel()
-        Label3 = New Label()
-        TextBox2 = New TextBox()
-        Panel10 = New Panel()
-        Label2 = New Label()
-        TextBox1 = New TextBox()
         TableLayoutPanel2 = New TableLayoutPanel()
         cancelButton = New Button()
         saveButton = New Button()
+        Panel2 = New Panel()
+        userRoleDropdown = New ComboBox()
+        Label4 = New Label()
+        Panel1 = New Panel()
+        Label3 = New Label()
+        passwordText = New TextBox()
+        Panel10 = New Panel()
+        Label2 = New Label()
+        userNameText = New TextBox()
         TableLayoutPanel1.SuspendLayout()
+        TableLayoutPanel2.SuspendLayout()
         Panel2.SuspendLayout()
         Panel1.SuspendLayout()
         Panel10.SuspendLayout()
-        TableLayoutPanel2.SuspendLayout()
         SuspendLayout()
         ' 
         ' Label1
@@ -72,90 +72,6 @@ Partial Class addUserForm
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 25F))
         TableLayoutPanel1.Size = New Size(364, 313)
         TableLayoutPanel1.TabIndex = 3
-        ' 
-        ' Panel2
-        ' 
-        Panel2.Controls.Add(ComboBox1)
-        Panel2.Controls.Add(Label4)
-        Panel2.Dock = DockStyle.Fill
-        Panel2.Location = New Point(3, 159)
-        Panel2.Name = "Panel2"
-        Panel2.Size = New Size(358, 72)
-        Panel2.TabIndex = 8
-        ' 
-        ' ComboBox1
-        ' 
-        ComboBox1.FormattingEnabled = True
-        ComboBox1.Location = New Point(3, 31)
-        ComboBox1.Name = "ComboBox1"
-        ComboBox1.Size = New Size(350, 23)
-        ComboBox1.TabIndex = 2
-        ' 
-        ' Label4
-        ' 
-        Label4.AutoSize = True
-        Label4.Location = New Point(3, 10)
-        Label4.Name = "Label4"
-        Label4.Size = New Size(30, 15)
-        Label4.TabIndex = 1
-        Label4.Text = "Role"
-        Label4.TextAlign = ContentAlignment.MiddleLeft
-        ' 
-        ' Panel1
-        ' 
-        Panel1.Controls.Add(Label3)
-        Panel1.Controls.Add(TextBox2)
-        Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(3, 81)
-        Panel1.Name = "Panel1"
-        Panel1.Size = New Size(358, 72)
-        Panel1.TabIndex = 7
-        ' 
-        ' Label3
-        ' 
-        Label3.AutoSize = True
-        Label3.Location = New Point(3, 10)
-        Label3.Name = "Label3"
-        Label3.Size = New Size(57, 15)
-        Label3.TabIndex = 1
-        Label3.Text = "Password"
-        Label3.TextAlign = ContentAlignment.MiddleLeft
-        ' 
-        ' TextBox2
-        ' 
-        TextBox2.Font = New Font("Segoe UI", 11F)
-        TextBox2.Location = New Point(3, 31)
-        TextBox2.Name = "TextBox2"
-        TextBox2.Size = New Size(350, 27)
-        TextBox2.TabIndex = 2
-        ' 
-        ' Panel10
-        ' 
-        Panel10.Controls.Add(Label2)
-        Panel10.Controls.Add(TextBox1)
-        Panel10.Dock = DockStyle.Fill
-        Panel10.Location = New Point(3, 3)
-        Panel10.Name = "Panel10"
-        Panel10.Size = New Size(358, 72)
-        Panel10.TabIndex = 6
-        ' 
-        ' Label2
-        ' 
-        Label2.AutoSize = True
-        Label2.Location = New Point(3, 10)
-        Label2.Name = "Label2"
-        Label2.Size = New Size(60, 15)
-        Label2.TabIndex = 1
-        Label2.Text = "Username"
-        Label2.TextAlign = ContentAlignment.MiddleLeft
-        ' 
-        ' TextBox1
-        ' 
-        TextBox1.Font = New Font("Segoe UI", 11F)
-        TextBox1.Location = New Point(3, 31)
-        TextBox1.Name = "TextBox1"
-        TextBox1.Size = New Size(350, 27)
-        TextBox1.TabIndex = 2
         ' 
         ' TableLayoutPanel2
         ' 
@@ -202,6 +118,91 @@ Partial Class addUserForm
         saveButton.Text = "SAVE"
         saveButton.UseVisualStyleBackColor = True
         ' 
+        ' Panel2
+        ' 
+        Panel2.Controls.Add(userRoleDropdown)
+        Panel2.Controls.Add(Label4)
+        Panel2.Dock = DockStyle.Fill
+        Panel2.Location = New Point(3, 159)
+        Panel2.Name = "Panel2"
+        Panel2.Size = New Size(358, 72)
+        Panel2.TabIndex = 8
+        ' 
+        ' userRoleDropdown
+        ' 
+        userRoleDropdown.AutoCompleteMode = AutoCompleteMode.Append
+        userRoleDropdown.FormattingEnabled = True
+        userRoleDropdown.Location = New Point(3, 31)
+        userRoleDropdown.Name = "userRoleDropdown"
+        userRoleDropdown.Size = New Size(350, 23)
+        userRoleDropdown.TabIndex = 2
+        ' 
+        ' Label4
+        ' 
+        Label4.AutoSize = True
+        Label4.Location = New Point(3, 10)
+        Label4.Name = "Label4"
+        Label4.Size = New Size(30, 15)
+        Label4.TabIndex = 1
+        Label4.Text = "Role"
+        Label4.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' Panel1
+        ' 
+        Panel1.Controls.Add(Label3)
+        Panel1.Controls.Add(passwordText)
+        Panel1.Dock = DockStyle.Fill
+        Panel1.Location = New Point(3, 81)
+        Panel1.Name = "Panel1"
+        Panel1.Size = New Size(358, 72)
+        Panel1.TabIndex = 7
+        ' 
+        ' Label3
+        ' 
+        Label3.AutoSize = True
+        Label3.Location = New Point(3, 10)
+        Label3.Name = "Label3"
+        Label3.Size = New Size(57, 15)
+        Label3.TabIndex = 1
+        Label3.Text = "Password"
+        Label3.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' passwordText
+        ' 
+        passwordText.Font = New Font("Segoe UI", 11F)
+        passwordText.Location = New Point(3, 31)
+        passwordText.Name = "passwordText"
+        passwordText.Size = New Size(350, 27)
+        passwordText.TabIndex = 2
+        ' 
+        ' Panel10
+        ' 
+        Panel10.Controls.Add(Label2)
+        Panel10.Controls.Add(userNameText)
+        Panel10.Dock = DockStyle.Fill
+        Panel10.Location = New Point(3, 3)
+        Panel10.Name = "Panel10"
+        Panel10.Size = New Size(358, 72)
+        Panel10.TabIndex = 6
+        ' 
+        ' Label2
+        ' 
+        Label2.AutoSize = True
+        Label2.Location = New Point(3, 10)
+        Label2.Name = "Label2"
+        Label2.Size = New Size(60, 15)
+        Label2.TabIndex = 1
+        Label2.Text = "Username"
+        Label2.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' userNameText
+        ' 
+        userNameText.Font = New Font("Segoe UI", 11F)
+        userNameText.Location = New Point(3, 31)
+        userNameText.Name = "userNameText"
+        userNameText.Size = New Size(350, 27)
+        userNameText.TabIndex = 2
+        ' 
         ' addUserForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
@@ -213,14 +214,14 @@ Partial Class addUserForm
         Name = "addUserForm"
         StartPosition = FormStartPosition.CenterParent
         TableLayoutPanel1.ResumeLayout(False)
+        TableLayoutPanel2.ResumeLayout(False)
+        TableLayoutPanel2.PerformLayout()
         Panel2.ResumeLayout(False)
         Panel2.PerformLayout()
         Panel1.ResumeLayout(False)
         Panel1.PerformLayout()
         Panel10.ResumeLayout(False)
         Panel10.PerformLayout()
-        TableLayoutPanel2.ResumeLayout(False)
-        TableLayoutPanel2.PerformLayout()
         ResumeLayout(False)
     End Sub
 
@@ -230,11 +231,11 @@ Partial Class addUserForm
     Friend WithEvents Label4 As Label
     Friend WithEvents Panel1 As Panel
     Friend WithEvents Label3 As Label
-    Friend WithEvents TextBox2 As TextBox
+    Friend WithEvents passwordText As TextBox
     Friend WithEvents Panel10 As Panel
     Friend WithEvents Label2 As Label
-    Friend WithEvents TextBox1 As TextBox
-    Friend WithEvents ComboBox1 As ComboBox
+    Friend WithEvents userNameText As TextBox
+    Friend WithEvents userRoleDropdown As ComboBox
     Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
     Friend WithEvents cancelButton As Button
     Friend WithEvents saveButton As Button

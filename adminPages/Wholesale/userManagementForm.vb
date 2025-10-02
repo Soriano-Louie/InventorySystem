@@ -1,4 +1,5 @@
 ﻿Imports System.Drawing.Drawing2D
+Imports Microsoft.Data.SqlClient
 
 Public Class userManagementForm
     Dim topPanel As New topPanelControl()
@@ -132,6 +133,8 @@ Public Class userManagementForm
         SetPlaceholder(TextBoxSearch, "Search...")
         SetRoundedRegion2(addUserButton, 20)
         SetRoundedRegion2(editUserButton, 20)
+
+        LoadUsers()
     End Sub
 
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
@@ -209,6 +212,40 @@ Public Class userManagementForm
             bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
+
+    Private Function GetConnectionString() As String
+        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+    Public Sub LoadUsers()
+        Dim dt As New DataTable()
+        Dim query As String = "
+        SELECT u.UserID, 
+               u.Username, 
+               r.RoleName AS [Role], 
+               u.LastLogin
+        FROM Users u
+        INNER JOIN Roles r ON u.RoleID = r.RoleID
+        ORDER BY u.UserID
+    "
+
+        Using con As New SqlConnection(GetConnectionString())
+            Using cmd As New SqlCommand(query, con)
+                Using da As New SqlDataAdapter(cmd)
+                    da.Fill(dt)
+                End Using
+            End Using
+        End Using
+
+        tableDataGridView.DataSource = dt
+
+        ' Optional: set custom headers
+        tableDataGridView.Columns("UserID").HeaderText = "User ID"
+        tableDataGridView.Columns("Username").HeaderText = "Username"
+        tableDataGridView.Columns("Role").HeaderText = "User Role"
+        tableDataGridView.Columns("LastLogin").HeaderText = "Last Login"
+    End Sub
+
 
     Private Sub addUserButton_Click(sender As Object, e As EventArgs) Handles addUserButton.Click
         Dim popup As New addUserForm

@@ -125,6 +125,7 @@ Partial Class userManagementForm
         ' 
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
+        tableDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
         tableDataGridView.Dock = DockStyle.Fill
         tableDataGridView.Location = New Point(50, 120)

@@ -206,16 +206,21 @@ Public Class LoginForm
             Using conn As New SqlConnection(connStr)
                 conn.Open()
 
-                ' ✅ Fetch UserID, passwordHash, and role in one query
-                Dim query As String = "SELECT userID, passwordHash, userRole FROM Users WHERE username = @u"
+                ' Fetch UserID, passwordHash, and RoleName from Roles table
+                Dim query As String = "
+                SELECT u.UserID, u.passwordHash, r.RoleName
+                FROM Users u
+                INNER JOIN Roles r ON u.RoleID = r.RoleID
+                WHERE u.username = @u"
+
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
 
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
-                            Dim userID As Integer = Convert.ToInt32(reader("userID"))
+                            Dim userID As Integer = Convert.ToInt32(reader("UserID"))
                             Dim storedObj As Object = reader("passwordHash")
-                            userRole = reader("userRole").ToString()
+                            userRole = reader("RoleName").ToString()
 
                             If storedObj Is Nothing OrElse storedObj Is DBNull.Value Then
                                 MessageBox.Show("Username or password incorrect.")
@@ -228,15 +233,18 @@ Public Class LoginForm
                             If IsStoredValueHashed(stored) Then
                                 Dim hashedInput As String = HashSHA256Base64(password)
                                 If hashedInput = stored Then
-                                    ' Update last login
                                     reader.Close()
-                                    Using updateCmd As New SqlCommand("UPDATE Users SET lastLogin = GETDATE() WHERE userID = @id", conn)
+
+                                    ' Update last login
+                                    Using updateCmd As New SqlCommand("UPDATE Users SET lastLogin = GETDATE() WHERE UserID = @id", conn)
                                         updateCmd.Parameters.AddWithValue("@id", userID)
                                         updateCmd.ExecuteNonQuery()
                                     End Using
 
                                     ' Insert login history
-                                    Using insertCmd As New SqlCommand("INSERT INTO UserLoginHistory (UserID, DeviceInfo) VALUES (@UserID, @DeviceInfo)", conn)
+                                    Using insertCmd As New SqlCommand("
+                                    INSERT INTO UserLoginHistory (UserID, DeviceInfo) 
+                                    VALUES (@UserID, @DeviceInfo)", conn)
                                         insertCmd.Parameters.AddWithValue("@UserID", userID)
                                         insertCmd.Parameters.AddWithValue("@DeviceInfo", Environment.MachineName)
                                         insertCmd.ExecuteNonQuery()
@@ -247,7 +255,7 @@ Public Class LoginForm
                                     Me.Hide()
                                     If userRole.ToLower() = "admin" Then
                                         chooseDashboard.Show()
-                                    Else
+                                    ElseIf userRole.ToLower() = "cashier" Then
                                         'cashierPage.Show()
                                     End If
                                 Else
@@ -263,8 +271,6 @@ Public Class LoginForm
         Catch ex As Exception
             MessageBox.Show("Error during login: " & ex.Message)
         End Try
-
-
     End Sub
 
     Private Sub UpdateLastLogin(username As String)
