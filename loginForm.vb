@@ -11,6 +11,8 @@ Public Class LoginForm
     '    brownPanel.BackColor = Color.FromArgb(79, 51, 40) ' Custom purple color
     'End Sub
 
+    Public globalUserID As Integer = 1
+
     Public Sub New()
 
         ' This call is required by the designer.
@@ -252,6 +254,7 @@ Public Class LoginForm
 
                                     ' Success
                                     MessageBox.Show("Login successful!")
+                                    'globalUserID = 1 'userID
                                     Me.Hide()
                                     If userRole.ToLower() = "admin" Then
                                         chooseDashboard.Show()

@@ -34,14 +34,38 @@ Public Class discountForm
         LoadDiscounts(_productID)
     End Sub
 
+    Private Sub ResetControl(ctrl As Control)
+        If TypeOf ctrl Is TextBox Then
+            DirectCast(ctrl, TextBox).Clear()
+        ElseIf TypeOf ctrl Is ComboBox Then
+            DirectCast(ctrl, ComboBox).SelectedIndex = -1
+        ElseIf TypeOf ctrl Is DateTimePicker Then
+            Dim picker As DateTimePicker = DirectCast(ctrl, DateTimePicker)
+
+            ' Use today's date but respect MinDate/MaxDate
+            Dim today As Date = DateTime.Today
+            If today < picker.MinDate Then
+                picker.Value = picker.MinDate
+            ElseIf today > picker.MaxDate Then
+                picker.Value = picker.MaxDate
+            Else
+                picker.Value = today
+            End If
+        End If
+    End Sub
+
     Private Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
 
     Private Sub LoadDiscounts(productID As Integer)
-
         Try
-            Dim query As String = "SELECT MinSacks, MaxSacks, DiscountPrice FROM ProductDiscounts WHERE ProductID = @ProductID"
+            ' Clear old rows to prevent duplication
+            dgvDiscounts.Rows.Clear()
+
+            Dim query As String = "SELECT MinSacks, MaxSacks, DiscountPrice 
+                               FROM ProductDiscounts 
+                               WHERE ProductID = @ProductID"
             Using conn As New SqlConnection(GetConnectionString())
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@ProductID", productID)
@@ -53,7 +77,7 @@ Public Class discountForm
                             Dim maxSacks As Integer = reader("MaxSacks")
                             Dim discountPrice As Decimal = reader("DiscountPrice")
 
-                            ' populate DataGridView
+                            ' Populate DataGridView
                             dgvDiscounts.Rows.Add(minSacks, maxSacks, discountPrice)
                         End While
                     End Using
@@ -63,6 +87,7 @@ Public Class discountForm
             MessageBox.Show("Error loading discounts: " & ex.Message)
         End Try
     End Sub
+
 
     Private Sub saveButton_Click(sender As Object, e As EventArgs) Handles saveButton.Click
         If String.IsNullOrWhiteSpace(txtMinSacks.Text) OrElse String.IsNullOrWhiteSpace(txtDiscountPrice.Text) OrElse String.IsNullOrWhiteSpace(txtMaxSacks.Text) Then
@@ -85,6 +110,10 @@ Public Class discountForm
             End Using
 
             MessageBox.Show("Discount added successfully!")
+            ' Clear input fields
+            ResetControl(txtMinSacks)
+            ResetControl(txtMaxSacks)
+            ResetControl(txtDiscountPrice)
             LoadDiscounts(_productID) ' refresh DataGridView
         Catch ex As Exception
             MessageBox.Show("Error saving discount: " & ex.Message)

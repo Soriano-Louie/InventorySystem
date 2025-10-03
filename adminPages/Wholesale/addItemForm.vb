@@ -4,7 +4,8 @@ Imports Microsoft.Data.SqlClient
 Imports QRCoder
 
 Public Class addItemForm
-    Public Sub New()
+    Private parentForm As InventoryForm
+    Public Sub New(parent As InventoryForm)
         InitializeComponent()
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(230, 216, 177)
@@ -16,6 +17,8 @@ Public Class addItemForm
         topPanel.BackColor = Color.FromArgb(224, 166, 109)
         mainPanel.BackColor = Color.FromArgb(230, 216, 177)
 
+        Me.parentForm = parent
+
         categoryDropDown.DropDownStyle = ComboBoxStyle.DropDown
         categoryDropDown.AutoCompleteMode = AutoCompleteMode.SuggestAppend
         categoryDropDown.AutoCompleteSource = AutoCompleteSource.ListItems
@@ -25,6 +28,9 @@ Public Class addItemForm
         cancelButton.BackColor = Color.FromArgb(224, 166, 109)
         addButton.ForeColor = Color.FromArgb(79, 51, 40)
         cancelButton.ForeColor = Color.FromArgb(79, 51, 40)
+
+        DateTimePicker1.ShowCheckBox = True
+        DateTimePicker1.Checked = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -81,7 +87,7 @@ Public Class addItemForm
     End Sub
 
     Private Sub InsertProductWithQRCode(sku As String, productName As String, unit As String, retail As Decimal, cost As Decimal,
-                                    qty As Integer, reorder As Integer, expirationDate As Date,
+                                    qty As Integer, reorder As Integer, expirationDate As Object,
                                     categoryID As Integer)
 
         Dim connString As String = GetConnectionString()
@@ -122,7 +128,11 @@ Public Class addItemForm
                 cmd.Parameters.AddWithValue("@Cost", cost)
                 cmd.Parameters.AddWithValue("@StockQuantity", qty)
                 cmd.Parameters.AddWithValue("@ReorderLevel", reorder)
-                cmd.Parameters.AddWithValue("@ExpirationDate", expirationDate)
+                If expirationDate Is DBNull.Value Then
+                    cmd.Parameters.AddWithValue("@ExpirationDate", DBNull.Value)
+                Else
+                    cmd.Parameters.AddWithValue("@ExpirationDate", CType(expirationDate, Date))
+                End If
                 cmd.Parameters.AddWithValue("@CategoryID", categoryID)
                 cmd.Parameters.Add("@QRCodeImage", SqlDbType.VarBinary).Value = qrData
 
@@ -136,6 +146,10 @@ Public Class addItemForm
                    "Add Discounts", MessageBoxButtons.YesNo) = DialogResult.Yes Then
             Dim discountForm As New discountForm(newProductID, productName)
             discountForm.ShowDialog()
+        End If
+        ' Refresh parent form's product list    
+        If parentForm IsNot Nothing Then
+            parentForm.LoadProducts()
         End If
     End Sub
 
@@ -177,25 +191,31 @@ Public Class addItemForm
            String.IsNullOrWhiteSpace(costTextBox.Text) OrElse
            String.IsNullOrWhiteSpace(quantityTextBox.Text) OrElse
            String.IsNullOrWhiteSpace(reorderTextBox.Text) OrElse
-           categoryDropDown.SelectedValue Is Nothing OrElse
-           DateTimePicker1.Value = DateTimePicker1.MinDate Then
+           categoryDropDown.SelectedValue Is Nothing Then
 
             MessageBox.Show("Please fill in all required fields.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Exit Sub
         End If
 
+        Dim expDate As Object
+        If DateTimePicker1.Checked Then
+            expDate = DateTimePicker1.Value
+        Else
+            expDate = DBNull.Value   ' No expiration date
+        End If
+
         Try
             InsertProductWithQRCode(
-                skuTextBox.Text,                           ' SKU
-                productTextBox.Text,                       ' Product Name
-                unitTextBox.Text,                          ' Unit
-                Decimal.Parse(retailTextBox.Text),         ' Retail Price
-                Decimal.Parse(costTextBox.Text),           ' Cost
-                Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
-                Integer.Parse(reorderTextBox.Text),        ' Reorder Level
-                DateTimePicker1.Value,                     ' Expiration Date (better than parsing Text)
-                Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID
-            )
+            skuTextBox.Text,                           ' SKU
+            productTextBox.Text,                       ' Product Name
+            unitTextBox.Text,                          ' Unit
+            Decimal.Parse(retailTextBox.Text),         ' Retail Price
+            Decimal.Parse(costTextBox.Text),           ' Cost
+            Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
+            Integer.Parse(reorderTextBox.Text),        ' Reorder Level
+            expDate,                                   ' Expiration Date or NULL
+            Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID
+        )
             MessageBox.Show("Product inserted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
         Catch ex As FormatException

@@ -70,7 +70,7 @@ Partial Class editCategoryForm
         Panel2.Dock = DockStyle.Fill
         Panel2.Location = New Point(3, 61)
         Panel2.Name = "Panel2"
-        Panel2.Size = New Size(358, 53)
+        Panel2.Size = New Size(358, 52)
         Panel2.TabIndex = 2
         ' 
         ' Label4
@@ -129,11 +129,11 @@ Partial Class editCategoryForm
         TableLayoutPanel2.Controls.Add(saveButton, 0, 0)
         TableLayoutPanel2.Controls.Add(cancelButton, 2, 0)
         TableLayoutPanel2.Dock = DockStyle.Fill
-        TableLayoutPanel2.Location = New Point(3, 179)
+        TableLayoutPanel2.Location = New Point(3, 177)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
         TableLayoutPanel2.RowCount = 1
         TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
-        TableLayoutPanel2.Size = New Size(358, 57)
+        TableLayoutPanel2.Size = New Size(358, 59)
         TableLayoutPanel2.TabIndex = 4
         ' 
         ' updateButton
@@ -145,7 +145,7 @@ Partial Class editCategoryForm
         updateButton.FlatAppearance.BorderSize = 0
         updateButton.FlatStyle = FlatStyle.Popup
         updateButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        updateButton.Location = New Point(133, 13)
+        updateButton.Location = New Point(133, 14)
         updateButton.Name = "updateButton"
         updateButton.Size = New Size(91, 31)
         updateButton.TabIndex = 5
@@ -160,7 +160,7 @@ Partial Class editCategoryForm
         saveButton.FlatAppearance.BorderSize = 0
         saveButton.FlatStyle = FlatStyle.Popup
         saveButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        saveButton.Location = New Point(22, 13)
+        saveButton.Location = New Point(22, 14)
         saveButton.Name = "saveButton"
         saveButton.Size = New Size(75, 31)
         saveButton.TabIndex = 4
@@ -175,7 +175,7 @@ Partial Class editCategoryForm
         cancelButton.FlatAppearance.BorderSize = 0
         cancelButton.FlatStyle = FlatStyle.Popup
         cancelButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        cancelButton.Location = New Point(252, 13)
+        cancelButton.Location = New Point(252, 14)
         cancelButton.Name = "cancelButton"
         cancelButton.Size = New Size(91, 31)
         cancelButton.TabIndex = 6
@@ -187,9 +187,9 @@ Partial Class editCategoryForm
         Panel1.Controls.Add(Label3)
         Panel1.Controls.Add(descriptionText)
         Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(3, 120)
+        Panel1.Location = New Point(3, 119)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(358, 53)
+        Panel1.Size = New Size(358, 52)
         Panel1.TabIndex = 3
         ' 
         ' Label3

@@ -266,12 +266,12 @@ Public Class categoriesForm
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        Dim popup As New addCategoryForm()
+        Dim popup As New addCategoryForm(Me)
         popup.ShowDialog(Me)
     End Sub
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        Dim popup As New editCategoryForm()
+        Dim popup As New editCategoryForm(Me)
         popup.ShowDialog(Me)
     End Sub
 

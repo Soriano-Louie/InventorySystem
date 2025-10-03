@@ -72,9 +72,9 @@ Public Class InventoryForm
         MyBase.WndProc(m)
     End Sub
 
-    Private Sub ShowSingleForm(Of T As {Form, New})()
-        ' Hide all forms except the one to show
+    Private Function ShowSingleForm(Of T As {Form, New})() As Form
         Dim formToShow As Form = Nothing
+
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
             If TypeOf frm Is T Then
                 formToShow = frm
@@ -95,7 +95,9 @@ Public Class InventoryForm
         If formToShow IsNot Me Then
             Me.Hide()
         End If
-    End Sub
+
+        Return formToShow ' return the form instance
+    End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
 
@@ -160,7 +162,10 @@ Public Class InventoryForm
                    p.expirationDate, 
                    p.QRCodeImage
             FROM Products p
-            INNER JOIN Categories c ON p.CategoryID = c.CategoryID"
+            INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+            ORDER BY 
+            CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END, 
+            p.expirationDate ASC"
 
 
         'Using conn As New SqlConnection(connString)
@@ -186,12 +191,11 @@ Public Class InventoryForm
                 End Using
             End Using
 
-            ' After filling DataTable
+            ' add extra column for QR hex
             If Not dt.Columns.Contains("QR Code Hex") Then
                 dt.Columns.Add("QR Code Hex", GetType(String))
             End If
 
-            'Convert QRCodeImage column to hex text instead of auto-image
             For Each row As DataRow In dt.Rows
                 If Not IsDBNull(row("QRCodeImage")) Then
                     Dim bytes As Byte() = CType(row("QRCodeImage"), Byte())
@@ -199,12 +203,15 @@ Public Class InventoryForm
                 End If
             Next
 
+            ' BIND the DataTable back to the DataGridView
+            tableDataGridView.DataSource = dt
 
+            ' Now you can safely rename headers
             With tableDataGridView
-                .EnableHeadersVisualStyles = False ' allow custom styling
+                .EnableHeadersVisualStyles = False
                 .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
                 .Columns("SKU").HeaderText = "Product Code"
-                .Columns("productName").HeaderText = "Product Name"
+                .Columns("ProductName").HeaderText = "Product Name"
                 .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
                 .Columns("CategoryName").HeaderText = "Category"
                 .Columns("unit").HeaderText = "Unit"
@@ -214,11 +221,40 @@ Public Class InventoryForm
                 .Columns("ReorderLevel").HeaderText = "Reorder Level"
                 .Columns("expirationDate").HeaderText = "Expiration Date"
             End With
+            tableDataGridView.Refresh()
 
             tableDataGridView.Columns("QRCodeImage").Visible = False
         Catch ex As Exception
             MessageBox.Show("Error loading data: " & ex.Message)
         End Try
+    End Sub
+
+    ' colored cells for expiration dates (red, orange, green)
+    Private Sub tableDataGridView_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs) Handles tableDataGridView.CellFormatting
+        If tableDataGridView.Columns(e.ColumnIndex).Name = "expirationDate" AndAlso e.Value IsNot Nothing AndAlso e.Value IsNot DBNull.Value Then
+            Dim expDate As DateTime = Convert.ToDateTime(e.Value)
+            Dim today As DateTime = DateTime.Today
+            Dim daysLeft As Integer = (expDate - today).Days
+
+            ' Apply background color based on expiration status
+            If expDate < today Then
+                ' Already expired
+                e.CellStyle.BackColor = Color.Red
+                e.CellStyle.ForeColor = Color.White
+            ElseIf daysLeft <= 30 Then
+                ' Soon to expire (within 30 days)
+                e.CellStyle.BackColor = Color.Orange
+                e.CellStyle.ForeColor = Color.Black
+            Else
+                ' Safe (not expiring soon)
+                e.CellStyle.BackColor = Color.LightGreen
+                e.CellStyle.ForeColor = Color.Black
+            End If
+        ElseIf tableDataGridView.Columns(e.ColumnIndex).Name = "expirationDate" Then
+            ' If expirationDate is NULL
+            e.CellStyle.BackColor = Color.LightGray
+            e.CellStyle.ForeColor = Color.Black
+        End If
     End Sub
 
     'cell double click for previewing and printing QR code
@@ -683,12 +719,12 @@ Public Class InventoryForm
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        Dim popup As New addItemForm()
+        Dim popup As New addItemForm(Me)
         popup.ShowDialog(Me)
     End Sub
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        Dim popup As New editItemForm
+        Dim popup As New editItemForm(Me)
         popup.ShowDialog(Me)
     End Sub
 End Class

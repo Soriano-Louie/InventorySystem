@@ -59,9 +59,9 @@ Public Class WholesaleDashboard
         MyBase.WndProc(m)
     End Sub
 
-    Private Sub ShowSingleForm(Of T As {Form, New})()
-        ' Hide all forms except the one to show
+    Private Function ShowSingleForm(Of T As {Form, New})() As Form
         Dim formToShow As Form = Nothing
+
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
             If TypeOf frm Is T Then
                 formToShow = frm
@@ -78,12 +78,14 @@ Public Class WholesaleDashboard
         formToShow.Show()
         formToShow.BringToFront()
 
-
         ' Hide this form if switching to another
         If formToShow IsNot Me Then
             Me.Hide()
         End If
-    End Sub
+
+        Return formToShow ' return the form instance
+    End Function
+
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
         ' No need to call HighlightButton here
@@ -115,17 +117,22 @@ Public Class WholesaleDashboard
             Case "Button1"
                 ShowSingleForm(Of WholesaleDashboard)()
             Case "Button2"
-                ShowSingleForm(Of InventoryForm)()
+                Dim form = ShowSingleForm(Of InventoryForm)()
+                DirectCast(form, InventoryForm).LoadProducts()
             Case "Button3"
-                ShowSingleForm(Of categoriesForm)()
+                Dim form = ShowSingleForm(Of categoriesForm)()
+                DirectCast(form, categoriesForm).loadCategories()
             Case "Button4"
                 ShowSingleForm(Of deliveryLogsForm)()
             Case "Button5"
-                ShowSingleForm(Of salesReport)()
+                Dim form = ShowSingleForm(Of salesReport)()
+                DirectCast(form, salesReport).loadSalesReport()
             Case "Button6"
-                ShowSingleForm(Of loginRecordsForm)()
+                Dim form = ShowSingleForm(Of loginRecordsForm)()
+                DirectCast(form, loginRecordsForm).LoadLoginHistory()
             Case "Button7"
-                ShowSingleForm(Of userManagementForm)()
+                Dim form = ShowSingleForm(Of userManagementForm)()
+                DirectCast(form, userManagementForm).LoadUsers()
         End Select
     End Sub
 

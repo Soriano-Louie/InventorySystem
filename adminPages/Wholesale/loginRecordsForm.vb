@@ -148,7 +148,7 @@ Public Class loginRecordsForm
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
 
-    Private Sub LoadLoginHistory()
+    Public Sub LoadLoginHistory()
         Try
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()

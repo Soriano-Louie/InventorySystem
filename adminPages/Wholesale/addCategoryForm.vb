@@ -1,8 +1,10 @@
 ﻿Imports Microsoft.Data.SqlClient
 
 Public Class addCategoryForm
-    Public Sub New()
+    Private parentForm As categoriesForm
+    Public Sub New(parent As categoriesForm)
         InitializeComponent()
+        Me.parentForm = parent
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(230, 216, 177)
 
@@ -101,7 +103,9 @@ Public Class addCategoryForm
                     cmd.ExecuteNonQuery()
                     MessageBox.Show("Category added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
-                    categoriesForm.loadCategories() ' Refresh main form's category list
+                    If parentForm IsNot Nothing Then
+                        parentForm.loadCategories() ' Refresh parent form's data
+                    End If
                 End Using
             End Using
             ' Clear inputs for next entry

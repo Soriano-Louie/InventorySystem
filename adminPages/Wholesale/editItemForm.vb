@@ -1,11 +1,12 @@
 ﻿Imports Microsoft.Data.SqlClient
 
 Public Class editItemForm
-
-    Public Sub New()
+    Private parentForm As InventoryForm
+    Public Sub New(parent As InventoryForm)
 
         ' This call is required by the designer.
         InitializeComponent()
+        Me.parentForm = parent
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(230, 216, 177)
         ' Add any initialization after the InitializeComponent() call.
@@ -199,7 +200,9 @@ Public Class editItemForm
 
         ' Refresh UI
         loadProducts()
-        InventoryForm.LoadProducts()
+        If parentForm IsNot Nothing Then
+            parentForm.LoadProducts()
+        End If
     End Sub
 
 
@@ -371,7 +374,9 @@ Public Class editItemForm
                 If rowsAffected > 0 Then
                     MessageBox.Show("Product deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                     loadProducts()
-                    InventoryForm.LoadProducts()
+                    If parentForm IsNot Nothing Then
+                        parentForm.LoadProducts()
+                    End If
                 Else
                     MessageBox.Show("No product found with that ID.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 End If

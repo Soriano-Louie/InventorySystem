@@ -230,9 +230,9 @@ Partial Class addItemForm
         Label9.AutoSize = True
         Label9.Location = New Point(3, 10)
         Label9.Name = "Label9"
-        Label9.Size = New Size(86, 15)
+        Label9.Size = New Size(151, 15)
         Label9.TabIndex = 1
-        Label9.Text = "Expiration Date"
+        Label9.Text = "Expiration Date (REQUIRED)"
         Label9.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' Panel4

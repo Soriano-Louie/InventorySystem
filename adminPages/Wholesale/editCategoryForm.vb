@@ -1,8 +1,10 @@
 ﻿Imports Microsoft.Data.SqlClient
 
 Public Class editCategoryForm
-    Public Sub New()
+    Private parentForm As categoriesForm
+    Public Sub New(parent As categoriesForm)
         InitializeComponent()
+        Me.parentForm = parent
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(230, 216, 177)
 
@@ -128,7 +130,9 @@ Public Class editCategoryForm
                         MessageBox.Show("Category updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
                         loadCategories() ' Refresh this form's category list
-                        categoriesForm.loadCategories() ' Refresh main form's category list
+                        If parentForm IsNot Nothing Then
+                            parentForm.loadCategories() ' Refresh main form's category list
+                        End If
 
                         ' Clear inputs for next entry
                         ResetControl(categoryText)
@@ -158,5 +162,36 @@ Public Class editCategoryForm
         Me.Close()
     End Sub
 
-
+    Private Sub updateButton_Click(sender As Object, e As EventArgs) Handles updateButton.Click
+        Dim query As String = "DELETE FROM Categories WHERE CategoryID = @CategoryID"
+        If String.IsNullOrWhiteSpace(categoryDropdown.SelectedValue) Then
+            MessageBox.Show("Please select a category to delete.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@CategoryID", categoryDropdown.SelectedValue)
+                    conn.Open()
+                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+                    If rowsAffected > 0 Then
+                        MessageBox.Show("Category deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        loadCategories() ' Refresh this form's category list
+                        If parentForm IsNot Nothing Then
+                            ParentForm.loadCategories() ' Refresh main form's category list
+                        End If
+                        ' Clear inputs for next entry
+                        ResetControl(categoryText)
+                        ResetControl(descriptionText)
+                        ResetControl(categoryDropdown)
+                        categoryDropdown.Focus()
+                    Else
+                        MessageBox.Show("No category was deleted. Please check the details and try again.", "Delete Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error deleting category: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class

@@ -237,7 +237,8 @@ Public Class userManagementForm
             End Using
         End Using
 
-        tableDataGridView.DataSource = dt
+        tableDataGridView.DataSource = dt       ' rebind to fresh DataTable
+        tableDataGridView.Refresh()
 
         ' Optional: set custom headers
         tableDataGridView.Columns("UserID").HeaderText = "User ID"
@@ -248,12 +249,13 @@ Public Class userManagementForm
 
 
     Private Sub addUserButton_Click(sender As Object, e As EventArgs) Handles addUserButton.Click
-        Dim popup As New addUserForm
+        Dim popup As New addUserForm(Me)
         popup.ShowDialog(Me)
     End Sub
 
     Private Sub editUserButton_Click(sender As Object, e As EventArgs) Handles editUserButton.Click
-        Dim popup As New editUserForm
+        Dim popup As New editUserForm(Me)  ' pass THIS form as parent
         popup.ShowDialog(Me)
     End Sub
+
 End Class

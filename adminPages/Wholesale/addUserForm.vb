@@ -3,9 +3,10 @@ Imports Microsoft.Data.SqlClient
 Imports System.Security.Cryptography
 
 Public Class addUserForm
-    Public Sub New()
+    Private parentForm As userManagementForm
+    Public Sub New(parent As userManagementForm)
         InitializeComponent()
-
+        Me.parentForm = parent
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(230, 216, 177)
 
@@ -85,7 +86,7 @@ Public Class addUserForm
     End Sub
 
     Private Function HashSHA256Base64(password As String) As String
-        Using sha256 As SHA256 = sha256.Create()
+        Using sha256 As SHA256 = SHA256.Create()
             Dim b = Encoding.UTF8.GetBytes(password)
             Dim h = sha256.ComputeHash(b)
             Return Convert.ToBase64String(h)
@@ -120,7 +121,9 @@ Public Class addUserForm
             End Using
 
             MessageBox.Show("User created successfully!")
-            userManagementForm.LoadUsers() ' Refresh user list in main form
+            If parentForm IsNot Nothing Then
+                parentForm.LoadUsers() ' Refresh user list in parent form
+            End If
 
             ' Reset input fields
             ResetControl(userNameText)
