@@ -112,7 +112,7 @@ Public Class userManagementForm
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of WholesaleDashboard)()
+                ShowSingleForm(Of wholesaleDashboard)()
             Case "Button2"
                 ShowSingleForm(Of InventoryForm)()
             Case "Button3"

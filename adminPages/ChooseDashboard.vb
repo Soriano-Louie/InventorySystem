@@ -100,6 +100,7 @@ Public Class ChooseDashboard
     End Sub
 
     Private Sub retailButton_Click(sender As Object, e As EventArgs) Handles retailButton.Click
-
+        Me.Hide()
+        retailDashboard.Show()
     End Sub
 End Class

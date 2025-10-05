@@ -1,9 +1,9 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class sidePanelControl
+﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+Partial Class sidePanelControl2
     Inherits System.Windows.Forms.UserControl
 
     'UserControl overrides dispose to clean up the component list.
-    <System.Diagnostics.DebuggerNonUserCode()> _
+    <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Try
             If disposing AndAlso components IsNot Nothing Then
@@ -20,7 +20,7 @@ Partial Class sidePanelControl
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
-    <System.Diagnostics.DebuggerStepThrough()> _
+    <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Button7 = New Button()
         Button6 = New Button()
@@ -41,7 +41,7 @@ Partial Class sidePanelControl
         Button7.Cursor = Cursors.Hand
         Button7.FlatAppearance.BorderSize = 0
         Button7.FlatStyle = FlatStyle.Flat
-        Button7.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button7.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button7.Location = New Point(1, 773)
         Button7.Name = "Button7"
         Button7.Padding = New Padding(20, 0, 0, 0)
@@ -57,7 +57,7 @@ Partial Class sidePanelControl
         Button6.Cursor = Cursors.Hand
         Button6.FlatAppearance.BorderSize = 0
         Button6.FlatStyle = FlatStyle.Flat
-        Button6.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button6.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button6.Location = New Point(1, 710)
         Button6.Name = "Button6"
         Button6.Padding = New Padding(20, 0, 0, 0)
@@ -73,7 +73,7 @@ Partial Class sidePanelControl
         Button5.Cursor = Cursors.Hand
         Button5.FlatAppearance.BorderSize = 0
         Button5.FlatStyle = FlatStyle.Flat
-        Button5.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button5.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button5.Location = New Point(1, 642)
         Button5.Name = "Button5"
         Button5.Padding = New Padding(20, 0, 0, 0)
@@ -89,7 +89,7 @@ Partial Class sidePanelControl
         Button4.Cursor = Cursors.Hand
         Button4.FlatAppearance.BorderSize = 0
         Button4.FlatStyle = FlatStyle.Flat
-        Button4.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button4.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button4.Location = New Point(1, 579)
         Button4.Name = "Button4"
         Button4.Padding = New Padding(20, 0, 0, 0)
@@ -105,7 +105,7 @@ Partial Class sidePanelControl
         Button2.Cursor = Cursors.Hand
         Button2.FlatAppearance.BorderSize = 0
         Button2.FlatStyle = FlatStyle.Flat
-        Button2.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button2.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button2.Location = New Point(1, 448)
         Button2.Name = "Button2"
         Button2.Padding = New Padding(20, 0, 0, 0)
@@ -121,7 +121,7 @@ Partial Class sidePanelControl
         Button1.Cursor = Cursors.Hand
         Button1.FlatAppearance.BorderSize = 0
         Button1.FlatStyle = FlatStyle.Flat
-        Button1.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button1.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button1.Location = New Point(1, 384)
         Button1.Name = "Button1"
         Button1.Padding = New Padding(20, 0, 0, 0)
@@ -148,7 +148,7 @@ Partial Class sidePanelControl
         Button3.Cursor = Cursors.Hand
         Button3.FlatAppearance.BorderSize = 0
         Button3.FlatStyle = FlatStyle.Flat
-        Button3.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button3.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button3.Location = New Point(1, 514)
         Button3.Name = "Button3"
         Button3.Padding = New Padding(20, 0, 0, 0)
@@ -179,7 +179,7 @@ Partial Class sidePanelControl
         Button9.Cursor = Cursors.Hand
         Button9.FlatAppearance.BorderSize = 0
         Button9.FlatStyle = FlatStyle.Flat
-        Button9.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button9.Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold)
         Button9.Location = New Point(0, 829)
         Button9.Name = "Button9"
         Button9.Padding = New Padding(20, 0, 0, 0)
@@ -191,7 +191,7 @@ Partial Class sidePanelControl
         ' 
         ' sidePanelControl
         ' 
-        AutoScaleDimensions = New SizeF(7F, 15F)
+        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
         AutoScaleMode = AutoScaleMode.Font
         Controls.Add(Button9)
         Controls.Add(Button8)

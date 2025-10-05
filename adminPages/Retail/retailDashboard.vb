@@ -3,7 +3,7 @@ Imports InventorySystem.sidePanelControl
 Imports InventorySystem.topPanelControl
 
 
-Public Class wholesaleDashboard
+Public Class retailDashboard
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
@@ -115,15 +115,13 @@ Public Class wholesaleDashboard
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of retailDashboard)()
+                ShowSingleForm(Of wholesaleDashboard)()
             Case "Button2"
-                Dim form = ShowSingleForm(Of InventoryForm)()
-                DirectCast(form, InventoryForm).LoadProducts()
+                
             Case "Button3"
-                Dim form = ShowSingleForm(Of categoriesForm)()
-                DirectCast(form, categoriesForm).loadCategories()
+
             Case "Button4"
-                ShowSingleForm(Of deliveryLogsForm)()
+
             Case "Button5"
                 Dim form = ShowSingleForm(Of salesReport)()
                 DirectCast(form, salesReport).loadSalesReport()

@@ -35,6 +35,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="adminPages\Retail\sidePanelControl2.vb" />
+    <Compile Update="adminPages\Retail\topPanelControl2.vb" />
+    <Compile Update="adminPages\Retail\retailDashboard.vb" />
     <Compile Update="LoginForm.vb" />
     <Compile Update="My Project\Application.Designer.vb">
       <DesignTime>True</DesignTime>

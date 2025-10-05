@@ -1,4 +1,4 @@
-﻿Public Class sidePanelControl
+﻿Public Class sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(230, 216, 177)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
 
@@ -26,7 +26,7 @@
     End Sub
 
     Private Sub Button8_Click(sender As Object, e As EventArgs) Handles Button8.Click
-        ChooseDashboard.Show()
+        chooseDashboard.Show()
         Dim hostForm As Form = Me.FindForm() ' find the form that hosts this UserControl
         If hostForm IsNot Nothing Then
             hostForm.Hide()
