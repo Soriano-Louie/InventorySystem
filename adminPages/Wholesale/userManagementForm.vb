@@ -8,6 +8,8 @@ Public Class userManagementForm
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
+    Dim dt As New DataTable()
+    Dim dv As New DataView()
     Dim bs As New BindingSource()
 
     Public Sub New()
@@ -130,7 +132,7 @@ Public Class userManagementForm
 
     Private Sub userManagementForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button7")
-        SetPlaceholder(TextBoxSearch, "Search...")
+        SetPlaceholder(TextBoxSearch, "Search Username...")
         SetRoundedRegion2(addUserButton, 20)
         SetRoundedRegion2(editUserButton, 20)
 
@@ -209,7 +211,7 @@ Public Class userManagementForm
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
             bs.Filter = ""   ' Show all rows
         Else
-            bs.Filter = String.Format("Name LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+            bs.Filter = String.Format("Username LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
 
@@ -237,10 +239,13 @@ Public Class userManagementForm
             End Using
         End Using
 
-        tableDataGridView.DataSource = dt       ' rebind to fresh DataTable
+        ' Re-bind DataView and BindingSource
+        dv = New DataView(dt)
+        bs.DataSource = dv
+        tableDataGridView.DataSource = bs
         tableDataGridView.Refresh()
 
-        ' Optional: set custom headers
+        ' ' rename headers
         tableDataGridView.Columns("UserID").HeaderText = "User ID"
         tableDataGridView.Columns("Username").HeaderText = "Username"
         tableDataGridView.Columns("Role").HeaderText = "User Role"

@@ -1,17 +1,15 @@
 ﻿Imports System.Drawing.Drawing2D
-Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
 
 
 Public Class retailDashboard
-    Dim topPanel As New topPanelControl()
-    Friend WithEvents sidePanel As sidePanelControl
+    Dim topPanel As New topPanelControl2()
+    Friend WithEvents sidePanel As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
 
     Public Sub New()
         InitializeComponent()
-        sidePanel = New sidePanelControl()
+        sidePanel = New sidePanelControl2()
         sidePanel.Dock = DockStyle.Left
         topPanel.Dock = DockStyle.Top
         Me.Controls.Add(topPanel)
@@ -115,9 +113,9 @@ Public Class retailDashboard
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of wholesaleDashboard)()
+                ShowSingleForm(Of retailDashboard)()
             Case "Button2"
-                
+                ShowSingleForm(Of inventoryRetail)()
             Case "Button3"
 
             Case "Button4"
@@ -134,7 +132,7 @@ Public Class retailDashboard
         End Select
     End Sub
 
-    Private Sub WholesaleDashboard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Sub retailDashboard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button1")
 
         ' Example: Make Panel1 have rounded corners with radius 30

@@ -1,5 +1,5 @@
 ﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class InventoryForm
+Partial Class inventoryRetail
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
@@ -23,24 +23,24 @@ Partial Class InventoryForm
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         dataGridViewPanel = New Panel()
-        addProductPanel = New Panel()
+        Panel1 = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
         btnPrintAllQRCodes = New Button()
         Button1 = New Button()
-        Panel1 = New Panel()
+        Panel2 = New Panel()
         TextBoxSearch = New TextBox()
         Button2 = New Button()
         tableDataGridView = New DataGridView()
         dataGridViewPanel.SuspendLayout()
-        addProductPanel.SuspendLayout()
-        TableLayoutPanel1.SuspendLayout()
         Panel1.SuspendLayout()
+        TableLayoutPanel1.SuspendLayout()
+        Panel2.SuspendLayout()
         CType(tableDataGridView, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
         ' dataGridViewPanel
         ' 
-        dataGridViewPanel.Controls.Add(addProductPanel)
+        dataGridViewPanel.Controls.Add(Panel1)
         dataGridViewPanel.Controls.Add(tableDataGridView)
         dataGridViewPanel.Dock = DockStyle.Fill
         dataGridViewPanel.Location = New Point(0, 0)
@@ -49,15 +49,14 @@ Partial Class InventoryForm
         dataGridViewPanel.Size = New Size(1684, 791)
         dataGridViewPanel.TabIndex = 0
         ' 
-        ' addProductPanel
+        ' Panel1
         ' 
-        addProductPanel.Anchor = AnchorStyles.Top
-        addProductPanel.Controls.Add(TableLayoutPanel1)
-        addProductPanel.Location = New Point(-63, 4)
-        addProductPanel.Margin = New Padding(3, 3, 3, 20)
-        addProductPanel.Name = "addProductPanel"
-        addProductPanel.Size = New Size(1810, 116)
-        addProductPanel.TabIndex = 2
+        Panel1.Anchor = AnchorStyles.Top
+        Panel1.Controls.Add(TableLayoutPanel1)
+        Panel1.Location = New Point(0, 0)
+        Panel1.Name = "Panel1"
+        Panel1.Size = New Size(1684, 114)
+        Panel1.TabIndex = 2
         ' 
         ' TableLayoutPanel1
         ' 
@@ -68,15 +67,15 @@ Partial Class InventoryForm
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
         TableLayoutPanel1.Controls.Add(btnPrintAllQRCodes, 1, 0)
         TableLayoutPanel1.Controls.Add(Button1, 0, 0)
-        TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
+        TableLayoutPanel1.Controls.Add(Panel2, 0, 1)
         TableLayoutPanel1.Controls.Add(Button2, 2, 0)
-        TableLayoutPanel1.Location = New Point(457, 11)
+        TableLayoutPanel1.Location = New Point(405, 8)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
         TableLayoutPanel1.RowCount = 2
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 60F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 40F))
         TableLayoutPanel1.Size = New Size(875, 99)
-        TableLayoutPanel1.TabIndex = 4
+        TableLayoutPanel1.TabIndex = 5
         ' 
         ' btnPrintAllQRCodes
         ' 
@@ -86,9 +85,9 @@ Partial Class InventoryForm
         btnPrintAllQRCodes.FlatAppearance.BorderSize = 0
         btnPrintAllQRCodes.FlatStyle = FlatStyle.Popup
         btnPrintAllQRCodes.Font = New Font("Segoe UI", 14F)
-        btnPrintAllQRCodes.Location = New Point(337, 8)
+        btnPrintAllQRCodes.Location = New Point(322, 8)
         btnPrintAllQRCodes.Name = "btnPrintAllQRCodes"
-        btnPrintAllQRCodes.Size = New Size(199, 42)
+        btnPrintAllQRCodes.Size = New Size(229, 42)
         btnPrintAllQRCodes.TabIndex = 3
         btnPrintAllQRCodes.Text = "Print All QR Codes"
         btnPrintAllQRCodes.UseVisualStyleBackColor = True
@@ -101,22 +100,22 @@ Partial Class InventoryForm
         Button1.FlatAppearance.BorderSize = 0
         Button1.FlatStyle = FlatStyle.Popup
         Button1.Font = New Font("Segoe UI", 14F)
-        Button1.Location = New Point(46, 8)
+        Button1.Location = New Point(70, 8)
         Button1.Name = "Button1"
-        Button1.Size = New Size(199, 42)
+        Button1.Size = New Size(151, 42)
         Button1.TabIndex = 0
         Button1.Text = "Add Item"
         Button1.UseVisualStyleBackColor = True
         ' 
-        ' Panel1
+        ' Panel2
         ' 
-        Panel1.Anchor = AnchorStyles.None
-        TableLayoutPanel1.SetColumnSpan(Panel1, 3)
-        Panel1.Controls.Add(TextBoxSearch)
-        Panel1.Location = New Point(337, 62)
-        Panel1.Name = "Panel1"
-        Panel1.Size = New Size(200, 34)
-        Panel1.TabIndex = 2
+        Panel2.Anchor = AnchorStyles.None
+        TableLayoutPanel1.SetColumnSpan(Panel2, 3)
+        Panel2.Controls.Add(TextBoxSearch)
+        Panel2.Location = New Point(337, 62)
+        Panel2.Name = "Panel2"
+        Panel2.Size = New Size(200, 34)
+        Panel2.TabIndex = 2
         ' 
         ' TextBoxSearch
         ' 
@@ -136,9 +135,9 @@ Partial Class InventoryForm
         Button2.FlatAppearance.BorderSize = 0
         Button2.FlatStyle = FlatStyle.Popup
         Button2.Font = New Font("Segoe UI", 14F)
-        Button2.Location = New Point(629, 8)
+        Button2.Location = New Point(654, 8)
         Button2.Name = "Button2"
-        Button2.Size = New Size(199, 42)
+        Button2.Size = New Size(149, 42)
         Button2.TabIndex = 1
         Button2.Text = "Edit Item"
         Button2.UseVisualStyleBackColor = True
@@ -157,36 +156,35 @@ Partial Class InventoryForm
         tableDataGridView.Name = "tableDataGridView"
         tableDataGridView.RowHeadersWidth = 51
         tableDataGridView.Size = New Size(1584, 651)
-        tableDataGridView.TabIndex = 0
+        tableDataGridView.TabIndex = 1
         ' 
-        ' InventoryForm
+        ' inventoryRetail
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1684, 791)
         Controls.Add(dataGridViewPanel)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
-        Name = "InventoryForm"
+        Name = "inventoryRetail"
         StartPosition = FormStartPosition.CenterScreen
-        Text = "Inventory"
         WindowState = FormWindowState.Maximized
         dataGridViewPanel.ResumeLayout(False)
-        addProductPanel.ResumeLayout(False)
+        Panel1.ResumeLayout(False)
         TableLayoutPanel1.ResumeLayout(False)
         TableLayoutPanel1.PerformLayout()
-        Panel1.ResumeLayout(False)
-        Panel1.PerformLayout()
+        Panel2.ResumeLayout(False)
+        Panel2.PerformLayout()
         CType(tableDataGridView, ComponentModel.ISupportInitialize).EndInit()
         ResumeLayout(False)
     End Sub
 
     Friend WithEvents dataGridViewPanel As Panel
     Friend WithEvents tableDataGridView As DataGridView
-    Friend WithEvents addProductPanel As Panel
-    Friend WithEvents TableLayoutPanel1 As TableLayoutPanel
-    Friend WithEvents Button1 As Button
-    Friend WithEvents Button2 As Button
     Friend WithEvents Panel1 As Panel
-    Friend WithEvents TextBoxSearch As TextBox
+    Friend WithEvents TableLayoutPanel1 As TableLayoutPanel
     Friend WithEvents btnPrintAllQRCodes As Button
+    Friend WithEvents Button1 As Button
+    Friend WithEvents Panel2 As Panel
+    Friend WithEvents TextBoxSearch As TextBox
+    Friend WithEvents Button2 As Button
 End Class

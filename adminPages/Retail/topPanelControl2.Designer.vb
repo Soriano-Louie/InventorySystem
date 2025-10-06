@@ -61,7 +61,7 @@ Partial Class topPanelControl2
         Label1.Name = "Label1"
         Label1.Size = New Size(432, 42)
         Label1.TabIndex = 2
-        Label1.Text = "WHOLESALE"
+        Label1.Text = "RETAIL"
         Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label2
@@ -97,9 +97,9 @@ Partial Class topPanelControl2
         titlePanel.Size = New Size(432, 42)
         titlePanel.TabIndex = 6
         ' 
-        ' topPanelControl
+        ' topPanelControl2
         ' 
-        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         AutoSize = True
         AutoSizeMode = AutoSizeMode.GrowAndShrink
@@ -108,7 +108,7 @@ Partial Class topPanelControl2
         Controls.Add(Label2)
         Controls.Add(adminImgPanel)
         Controls.Add(titlePanel)
-        Name = "topPanelControl"
+        Name = "topPanelControl2"
         Size = New Size(1810, 100)
         titlePanel.ResumeLayout(False)
         ResumeLayout(False)
