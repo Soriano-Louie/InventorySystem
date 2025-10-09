@@ -2,8 +2,9 @@
 Imports Microsoft.Data.SqlClient
 
 Public Class userManagementForm
-    Dim topPanel As New topPanelControl()
+    Dim topPanel As topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
+    Friend WithEvents sidePanel2 As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
     ' Dictionary to store placeholder texts for each TextBox
@@ -18,11 +19,11 @@ Public Class userManagementForm
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
-        sidePanel = New sidePanelControl()
-        sidePanel.Dock = DockStyle.Left
-        topPanel.Dock = DockStyle.Top
-        Me.Controls.Add(topPanel)
-        Me.Controls.Add(sidePanel)
+        'sidePanel = New sidePanelControl()
+        'sidePanel.Dock = DockStyle.Left
+        'topPanel.Dock = DockStyle.Top
+        'Me.Controls.Add(topPanel)
+        'Me.Controls.Add(sidePanel)
         Me.MaximizeBox = False
         Me.FormBorderStyle = FormBorderStyle.None
         Me.BackColor = Color.FromArgb(224, 166, 109)
@@ -90,21 +91,42 @@ Public Class userManagementForm
 
     End Sub
 
-    Private Sub userSettingsForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Application.Exit()
+    'Private Sub userSettingsForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+
+    'End Sub
+
+    Private Sub userMngmntFrm_ApplicationExit(sender As Object, e As EventArgs) Handles MyBase.FormClosed
+        chooseDashboard.globalPage = ""
     End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
-        For Each ctrl As Control In sidePanel.Controls
-            If TypeOf ctrl Is Button Then
-                ctrl.BackColor = colorClicked
-                ctrl.ForeColor = colorUnclicked
-            End If
-        Next
+        If sidePanel IsNot Nothing Then
+            For Each ctrl As Control In sidePanel.Controls
+                If TypeOf ctrl Is Button Then
+                    ctrl.BackColor = colorClicked
+                    ctrl.ForeColor = colorUnclicked
+                End If
+            Next
+        ElseIf sidePanel2 IsNot Nothing Then
+            For Each ctrl As Control In sidePanel2.Controls
+                If TypeOf ctrl Is Button Then
+                    ctrl.BackColor = colorClicked
+                    ctrl.ForeColor = colorUnclicked
+                End If
+            Next
+        End If
 
-        ' Highlight the selected one
-        Dim btn As Button = sidePanel.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
+
+        ' Highlight the selected button (for whichever panel is active)
+        Dim btn As Button = Nothing
+        If sidePanel IsNot Nothing Then
+            btn = sidePanel.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
+        ElseIf sidePanel2 IsNot Nothing Then
+            btn = sidePanel2.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
+        End If
+
+        ' Apply highlight colors
         If btn IsNot Nothing Then
             btn.BackColor = colorUnclicked
             btn.ForeColor = Color.FromArgb(79, 51, 40)
@@ -112,25 +134,76 @@ Public Class userManagementForm
     End Sub
 
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
-        Select Case btnName
-            Case "Button1"
-                ShowSingleForm(Of wholesaleDashboard)()
-            Case "Button2"
-                ShowSingleForm(Of InventoryForm)()
-            Case "Button3"
-                ShowSingleForm(Of categoriesForm)()
-            Case "Button4"
-                ShowSingleForm(Of deliveryLogsForm)()
-            Case "Button5"
-                ShowSingleForm(Of salesReport)()
-            Case "Button6"
-                ShowSingleForm(Of loginRecordsForm)()
-            Case "Button7"
-                ShowSingleForm(Of userManagementForm)()
-        End Select
+        Debug.WriteLine("CURRENT PAGE TYPE: " & chooseDashboard.globalPage)
+        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+            Select Case btnName
+                Case "Button1"
+                    ShowSingleForm(Of wholesaleDashboard)()
+                Case "Button2"
+                    ShowSingleForm(Of InventoryForm)()
+                Case "Button3"
+                    ShowSingleForm(Of categoriesForm)()
+                Case "Button4"
+                    ShowSingleForm(Of deliveryLogsForm)()
+                Case "Button5"
+                    ShowSingleForm(Of salesReport)()
+                Case "Button6"
+                    ShowSingleForm(Of loginRecordsForm)()
+                Case "Button7"
+                    ShowSingleForm(Of userManagementForm)()
+            End Select
+        Else
+            Select Case btnName
+                Case "Button1"
+                    ShowSingleForm(Of retailDashboard)()
+                Case "Button2"
+                    ShowSingleForm(Of inventoryRetail)()
+                Case "Button3"
+                    ShowSingleForm(Of categoriesForm)()
+                Case "Button4"
+                Case "Button5"
+                    'Dim form = ShowSingleForm(Of salesReport)()
+                    'DirectCast(form, salesReport).loadSalesReport()
+                Case "Button6"
+                    ShowSingleForm(Of loginRecordsForm)()
+                Case "Button7"
+                    ShowSingleForm(Of userManagementForm)()
+            End Select
+        End If
     End Sub
 
     Private Sub userManagementForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ' Clear old panels
+        For Each ctrl As Control In Me.Controls.OfType(Of Control).ToList()
+            If TypeOf ctrl Is topPanelControl OrElse
+           TypeOf ctrl Is sidePanelControl OrElse
+           TypeOf ctrl Is sidePanelControl2 Then
+                Me.Controls.Remove(ctrl)
+                ctrl.Dispose()
+            End If
+        Next
+        'MessageBox.Show(chooseDashboard.globalPage, "Current Dashboard")
+        ' Create new instances every time
+        Dim topPanel As topPanelControl = New topPanelControl()
+        topPanel.Dock = DockStyle.Top
+
+        If chooseDashboard.globalPage.Equals("wholesale", StringComparison.CurrentCultureIgnoreCase) Then
+            topPanel.Label1.Text = "WHOLESALE"
+            Dim sidePanel As sidePanelControl = New sidePanelControl()
+            sidePanel.Dock = DockStyle.Left
+            Me.Controls.Add(topPanel)
+            Me.Controls.Add(sidePanel)
+            AddHandler sidePanel.ButtonClicked, AddressOf SidePanel_ButtonClicked
+
+        ElseIf chooseDashboard.globalPage.Equals("retail", StringComparison.CurrentCultureIgnoreCase) Then
+            topPanel.Label1.Text = "RETAIL"
+            Dim sidePanel2 As sidePanelControl2 = New sidePanelControl2()
+            sidePanel2.Dock = DockStyle.Left
+            Me.Controls.Add(topPanel)
+            Me.Controls.Add(sidePanel2)
+            AddHandler sidePanel2.ButtonClicked, AddressOf SidePanel_ButtonClicked
+        End If
+
         HighlightButton("Button7")
         SetPlaceholder(TextBoxSearch, "Search Username...")
         SetRoundedRegion2(addUserButton, 20)

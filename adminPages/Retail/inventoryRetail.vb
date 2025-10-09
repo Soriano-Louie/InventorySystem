@@ -4,7 +4,7 @@ Imports Microsoft.Data.SqlClient
 Imports System.Drawing.Drawing2D
 
 Public Class inventoryRetail
-    Dim topPanel As New topPanelControl2()
+    Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
@@ -102,9 +102,9 @@ Public Class inventoryRetail
 
     End Sub
 
-    Private Sub inventoryRetail_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Application.Exit()
-    End Sub
+    'Private Sub inventoryRetail_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+    '    Application.Exit()
+    'End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
@@ -153,18 +153,16 @@ Public Class inventoryRetail
             Case "Button2"
                 ShowSingleForm(Of inventoryRetail)()
             Case "Button3"
-
+                ShowSingleForm(Of categoriesForm)()
             Case "Button4"
 
             Case "Button5"
-                Dim form = ShowSingleForm(Of salesReport)()
-                DirectCast(form, salesReport).loadSalesReport()
+                'Dim form = ShowSingleForm(Of salesReport)()
+                'DirectCast(form, salesReport).loadSalesReport()
             Case "Button6"
-                Dim form = ShowSingleForm(Of loginRecordsForm)()
-                DirectCast(form, loginRecordsForm).LoadLoginHistory()
+                ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
-                Dim form = ShowSingleForm(Of userManagementForm)()
-                DirectCast(form, userManagementForm).LoadUsers()
+                ShowSingleForm(Of userManagementForm)()
         End Select
     End Sub
 
@@ -676,6 +674,11 @@ Public Class inventoryRetail
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Dim popup As New addItemRetail(Me)
+        popup.ShowDialog(Me)
+    End Sub
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        Dim popup As New editItemRetail(Me)
         popup.ShowDialog(Me)
     End Sub
 End Class

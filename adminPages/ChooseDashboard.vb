@@ -1,6 +1,7 @@
 ﻿Imports System.Drawing.Drawing2D
 
 Public Class ChooseDashboard
+    Public Shared globalPage As String
     Public Sub New()
 
         ' This call is required by the designer.
@@ -9,6 +10,7 @@ Public Class ChooseDashboard
         ' Add any initialization after the InitializeComponent() call.
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(79, 51, 40)
+        Me.FormBorderStyle = FormBorderStyle.None
 
         Label1.ForeColor = Color.FromArgb(79, 51, 40)
 
@@ -23,6 +25,28 @@ Public Class ChooseDashboard
         chooseTableLayoutPanel1.BackColor = Color.FromArgb(224, 166, 109)
 
 
+    End Sub
+
+    Protected Overrides Sub WndProc(ByRef m As Message)
+        Const WM_SYSCOMMAND As Integer = &H112
+        Const SC_RESTORE As Integer = &HF120
+        Const SC_MOVE As Integer = &HF010
+
+        If m.Msg = WM_SYSCOMMAND Then
+            Dim command As Integer = (m.WParam.ToInt32() And &HFFF0)
+
+            ' Block restore
+            If command = SC_RESTORE Then
+                Return
+            End If
+
+            ' Block moving
+            If command = SC_MOVE Then
+                Return
+            End If
+        End If
+
+        MyBase.WndProc(m)
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -95,12 +119,18 @@ Public Class ChooseDashboard
     End Sub
 
     Private Sub wholeSaleButton_Click(sender As Object, e As EventArgs) Handles wholeSaleButton.Click
+        globalPage = "wholesale"
+        Debug.WriteLine(globalPage)
         Me.Hide()
-        WholesaleDashboard.Show()
+        wholesaleDashboard.Show()
+        wholesaleDashboard.BringToFront()
     End Sub
 
     Private Sub retailButton_Click(sender As Object, e As EventArgs) Handles retailButton.Click
+        globalPage = "retail"
+        Debug.WriteLine(globalPage)
         Me.Hide()
         retailDashboard.Show()
+        retailDashboard.BringToFront()
     End Sub
 End Class

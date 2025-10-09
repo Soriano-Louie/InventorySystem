@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <StartupObject>Sub Main</StartupObject>
+    <StartupObject>InventorySystem.My.MyApplication</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
     <ImportedNamespaces>System.Data=False,System.Data.SqlClient=False,System.Drawing=False,System.Windows.Forms=False,Microsoft.VisualBasic=True,System=True,System.Collections=True,System.Collections.Generic=True,System.Diagnostics=True,System.Linq=True,System.Xml.Linq=True,System.Threading.Tasks=True,InventorySystem=True</ImportedNamespaces>
@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <Compile Update="adminPages\Retail\addItemRetail.vb" />
+    <Compile Update="adminPages\Retail\editItemRetail.vb" />
     <Compile Update="adminPages\Retail\sidePanelControl2.vb" />
     <Compile Update="adminPages\Retail\topPanelControl2.vb" />
     <Compile Update="adminPages\Retail\retailDashboard.vb" />

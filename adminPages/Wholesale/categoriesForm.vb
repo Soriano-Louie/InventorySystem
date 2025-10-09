@@ -4,6 +4,7 @@ Imports Microsoft.Data.SqlClient
 Public Class categoriesForm
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
+    Friend WithEvents sidePanel2 As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
     Dim dt As New DataTable()
@@ -18,9 +19,9 @@ Public Class categoriesForm
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
-        sidePanel = New sidePanelControl()
-        sidePanel.Dock = DockStyle.Left
-        topPanel.Dock = DockStyle.Top
+        'sidePanel = New sidePanelControl()
+        'sidePanel.Dock = DockStyle.Left
+        'topPanel.Dock = DockStyle.Top
         Me.Controls.Add(topPanel)
         Me.Controls.Add(sidePanel)
         Me.MaximizeBox = False
@@ -94,21 +95,38 @@ Public Class categoriesForm
         ' No need to call HighlightButton here
     End Sub
 
-    Private Sub categoriesForm_Closed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Application.Exit()
-    End Sub
+    'Private Sub categoriesForm_Closed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+    '    Application.Exit()
+    'End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
-        For Each ctrl As Control In sidePanel.Controls
-            If TypeOf ctrl Is Button Then
-                ctrl.BackColor = colorClicked
-                ctrl.ForeColor = colorUnclicked
-            End If
-        Next
+        If sidePanel IsNot Nothing Then
+            For Each ctrl As Control In sidePanel.Controls
+                If TypeOf ctrl Is Button Then
+                    ctrl.BackColor = colorClicked
+                    ctrl.ForeColor = colorUnclicked
+                End If
+            Next
+        ElseIf sidePanel2 IsNot Nothing Then
+            For Each ctrl As Control In sidePanel2.Controls
+                If TypeOf ctrl Is Button Then
+                    ctrl.BackColor = colorClicked
+                    ctrl.ForeColor = colorUnclicked
+                End If
+            Next
+        End If
 
-        ' Highlight the selected one
-        Dim btn As Button = sidePanel.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
+
+        ' Highlight the selected button (for whichever panel is active)
+        Dim btn As Button = Nothing
+        If sidePanel IsNot Nothing Then
+            btn = sidePanel.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
+        ElseIf sidePanel2 IsNot Nothing Then
+            btn = sidePanel2.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
+        End If
+
+        ' Apply highlight colors
         If btn IsNot Nothing Then
             btn.BackColor = colorUnclicked
             btn.ForeColor = Color.FromArgb(79, 51, 40)
@@ -116,25 +134,67 @@ Public Class categoriesForm
     End Sub
 
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
-        Select Case btnName
-            Case "Button1"
-                ShowSingleForm(Of retailDashboard)()
-            Case "Button2"
-                ShowSingleForm(Of InventoryForm)()
-            Case "Button3"
-                ShowSingleForm(Of categoriesForm)()
-            Case "Button4"
-                ShowSingleForm(Of deliveryLogsForm)()
-            Case "Button5"
-                ShowSingleForm(Of salesReport)()
-            Case "Button6"
-                ShowSingleForm(Of loginRecordsForm)()
-            Case "Button7"
-                ShowSingleForm(Of userManagementForm)()
-        End Select
+        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+            Select Case btnName
+                Case "Button1"
+                    ShowSingleForm(Of retailDashboard)()
+                Case "Button2"
+                    ShowSingleForm(Of InventoryForm)()
+                Case "Button3"
+                    ShowSingleForm(Of categoriesForm)()
+                Case "Button4"
+                    ShowSingleForm(Of deliveryLogsForm)()
+                Case "Button5"
+                    ShowSingleForm(Of salesReport)()
+                Case "Button6"
+                    ShowSingleForm(Of loginRecordsForm)()
+                Case "Button7"
+                    ShowSingleForm(Of userManagementForm)()
+            End Select
+        ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
+            Select Case btnName
+                Case "Button1"
+                    ShowSingleForm(Of retailDashboard)()
+                Case "Button2"
+                    ShowSingleForm(Of inventoryRetail)()
+                Case "Button3"
+                    ShowSingleForm(Of categoriesForm)()
+                Case "Button4"
+
+                Case "Button5"
+                    ShowSingleForm(Of salesReport)()
+                Case "Button6"
+                    ShowSingleForm(Of loginRecordsForm)()
+                Case "Button7"
+                    ShowSingleForm(Of userManagementForm)()
+            End Select
+        End If
+
     End Sub
 
     Private Sub categoriesForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+            topPanel.Label1.Text = "WHOLESALE"
+            sidePanel = New sidePanelControl()
+            sidePanel.Dock = DockStyle.Left
+            topPanel.Dock = DockStyle.Top
+            Me.Controls.Add(topPanel)
+            Me.Controls.Add(sidePanel)
+
+            ' Attach event handler  
+            AddHandler sidePanel.ButtonClicked, AddressOf SidePanel_ButtonClicked
+
+        ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
+            topPanel.Label1.Text = "RETAIL"
+            sidePanel2 = New sidePanelControl2()
+            sidePanel2.Dock = DockStyle.Left
+            topPanel.Dock = DockStyle.Top
+            Me.Controls.Add(topPanel)
+            Me.Controls.Add(sidePanel2)
+
+            ' Attach event handler for sidePanel2
+            AddHandler sidePanel2.ButtonClicked, AddressOf SidePanel_ButtonClicked
+        End If
         HighlightButton("Button3")
 
         SetPlaceholder(TextBoxSearch, "Search Category Name...")

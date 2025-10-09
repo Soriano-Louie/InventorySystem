@@ -141,7 +141,6 @@ Public Class addItemRetail
             End Using
         End Using
 
-        MessageBox.Show("Product inserted with QR Code successfully!")
         ' Refresh parent form's product list    
         If parentForm IsNot Nothing Then
             parentForm.LoadProducts()
@@ -155,6 +154,7 @@ Public Class addItemRetail
             DirectCast(ctrl, ComboBox).SelectedIndex = -1
         ElseIf TypeOf ctrl Is DateTimePicker Then
             Dim picker As DateTimePicker = DirectCast(ctrl, DateTimePicker)
+            picker.Checked = False
 
             ' Use today's date but respect MinDate/MaxDate
             Dim today As Date = DateTime.Today
@@ -247,6 +247,7 @@ Public Class addItemRetail
         For Each ctrl As Control In Panel11.Controls
             ResetControl(ctrl)
         Next
+        ResetControl(DateTimePicker1)
         Me.BeginInvoke(Sub() skuTextBox.Focus())
 
 

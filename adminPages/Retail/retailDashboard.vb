@@ -2,7 +2,7 @@
 
 
 Public Class retailDashboard
-    Dim topPanel As New topPanelControl2()
+    Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
@@ -89,9 +89,9 @@ Public Class retailDashboard
 
     End Sub
 
-    Private Sub WholesaleDashboard_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Application.Exit()
-    End Sub
+    'Private Sub WholesaleDashboard_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+    '    Application.Exit()
+    'End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
@@ -117,12 +117,12 @@ Public Class retailDashboard
             Case "Button2"
                 ShowSingleForm(Of inventoryRetail)()
             Case "Button3"
-
+                ShowSingleForm(Of categoriesForm)()
             Case "Button4"
 
             Case "Button5"
-                Dim form = ShowSingleForm(Of salesReport)()
-                DirectCast(form, salesReport).loadSalesReport()
+                'Dim form = ShowSingleForm(Of salesReport)()
+                'DirectCast(form, salesReport).loadSalesReport()
             Case "Button6"
                 Dim form = ShowSingleForm(Of loginRecordsForm)()
                 DirectCast(form, loginRecordsForm).LoadLoginHistory()

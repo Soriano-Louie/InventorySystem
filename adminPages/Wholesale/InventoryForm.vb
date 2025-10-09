@@ -105,9 +105,9 @@ Public Class InventoryForm
 
     End Sub
 
-    Private Sub InventoryForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Application.Exit()
-    End Sub
+    'Private Sub InventoryForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+    '    Application.Exit()
+    'End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons

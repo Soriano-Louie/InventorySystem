@@ -59,9 +59,8 @@ Partial Class topPanelControl
         Label1.Font = New Font("Segoe UI", 21.75F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label1.Location = New Point(0, 0)
         Label1.Name = "Label1"
-        Label1.Size = New Size(432, 42)
+        Label1.Size = New Size(356, 42)
         Label1.TabIndex = 2
-        Label1.Text = "WHOLESALE"
         Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label2
@@ -89,17 +88,17 @@ Partial Class topPanelControl
         ' 
         ' titlePanel
         ' 
-        titlePanel.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
+        titlePanel.Anchor = AnchorStyles.None
         titlePanel.AutoSizeMode = AutoSizeMode.GrowAndShrink
         titlePanel.Controls.Add(Label1)
-        titlePanel.Location = New Point(670, 29)
+        titlePanel.Location = New Point(733, 29)
         titlePanel.Name = "titlePanel"
-        titlePanel.Size = New Size(432, 42)
+        titlePanel.Size = New Size(356, 42)
         titlePanel.TabIndex = 6
         ' 
         ' topPanelControl
         ' 
-        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         AutoSize = True
         AutoSizeMode = AutoSizeMode.GrowAndShrink

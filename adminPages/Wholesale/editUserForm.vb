@@ -190,6 +190,7 @@ Public Class editUserForm
             ResetControl(newUserText)
             ResetControl(newPasswordText)
             ResetControl(newRoleDropdown)
+            userDropDown.Focus()
             loadUserDetails() ' Refresh user list
             If parentForm IsNot Nothing Then
                 parentForm.LoadUsers()
@@ -201,35 +202,39 @@ Public Class editUserForm
 
 
     Private Sub deleteButton_Click(sender As Object, e As EventArgs) Handles deleteButton.Click
-        ' Prompt for admin password
-        Dim adminPassword As String = InputBox("Enter admin password to confirm changes:", "Verify Password")
+        ' prompt confirmation on deleting
+        Dim result = MessageBox.Show("Are you sure you want to delete this user? This action cannot be undone.", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+        If result <> DialogResult.Yes Then
+            ' Prompt for admin password
+            Dim adminPassword As String = InputBox("Enter admin password to confirm changes:", "Verify Password")
 
-        ' Cancel if empty
-        If String.IsNullOrWhiteSpace(adminPassword) Then
-            MessageBox.Show("Update cancelled. No password entered.")
-            Return
-        End If
+            ' Cancel if empty
+            If String.IsNullOrWhiteSpace(adminPassword) Then
+                MessageBox.Show("Update cancelled. No password entered.")
+                Return
+            End If
 
-        ' Verify password
-        If Not verifyPassword(adminPassword) Then
-            MessageBox.Show("Invalid admin password. Update cancelled.")
-            Return
-        End If
-        Try
-            Dim query As String = "DELETE FROM Users WHERE UserID = @UserID"
-            Using connection As New SqlConnection(GetConnectionString())
-                Using command As New SqlCommand(query, connection)
-                    command.Parameters.AddWithValue("@UserID", userDropDown.SelectedValue)
-                    connection.Open()
-                    command.ExecuteNonQuery()
-                    MessageBox.Show("User deleted successfully.")
-                    If parentForm IsNot Nothing Then
-                        parentForm.LoadUsers() ' Refresh user list in parent form
-                    End If
+            ' Verify password
+            If Not verifyPassword(adminPassword) Then
+                MessageBox.Show("Invalid admin password. Update cancelled.")
+                Return
+            End If
+            Try
+                Dim query As String = "DELETE FROM Users WHERE UserID = @UserID"
+                Using connection As New SqlConnection(GetConnectionString())
+                    Using command As New SqlCommand(query, connection)
+                        command.Parameters.AddWithValue("@UserID", userDropDown.SelectedValue)
+                        connection.Open()
+                        command.ExecuteNonQuery()
+                        MessageBox.Show("User deleted successfully.")
+                        If parentForm IsNot Nothing Then
+                            parentForm.LoadUsers() ' Refresh user list in parent form
+                        End If
+                    End Using
                 End Using
-            End Using
-        Catch ex As Exception
-            MessageBox.Show("Error deleting user: " & ex.Message)
-        End Try
+            Catch ex As Exception
+                MessageBox.Show("Error deleting user: " & ex.Message)
+            End Try
+        End If
     End Sub
 End Class

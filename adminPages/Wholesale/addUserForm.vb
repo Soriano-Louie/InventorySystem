@@ -129,6 +129,7 @@ Public Class addUserForm
             ResetControl(userNameText)
             ResetControl(passwordText)
             ResetControl(userRoleDropdown)
+            userNameText.Focus() ' Set focus back to username field
         Catch ex As Exception
             MessageBox.Show("Error creating user: " & ex.Message)
         End Try

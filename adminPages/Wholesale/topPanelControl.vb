@@ -15,8 +15,20 @@ Public Class topPanelControl
         dateLabel.Text = DateTime.Now.ToString("D")
     End Sub
 
+    Protected Overrides Sub Finalize()
+        Debug.WriteLine("TopPanelControl finalized: " & Me.Label1.Text)
+        MyBase.Finalize()
+    End Sub
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If chooseDashboard.globalPage.Equals("wholesale", StringComparison.CurrentCultureIgnoreCase) Then
+            Label1.Text = "WHOLESALE"
+        Else
+            Label1.Text = "RETAIL"
+        End If
+
         SetRoundedRegion2(titlePanel, 20)
+        SetRoundedRegion2(Label1, 20)
     End Sub
 
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
