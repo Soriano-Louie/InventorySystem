@@ -130,7 +130,7 @@ Partial Class retailDashboard
         Label7.Name = "Label7"
         Label7.Size = New Size(625, 32)
         Label7.TabIndex = 3
-        Label7.Text = "TODAY'S TOTAL SALES"
+        Label7.Text = "TOP PRODUCTS"
         Label7.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Panel4
@@ -215,14 +215,14 @@ Partial Class retailDashboard
         Label3.Text = "TODAY'S TOTAL ORDERS"
         Label3.TextAlign = ContentAlignment.MiddleCenter
         ' 
-        ' WholesaleDashboard
+        ' retailDashboard
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1717, 1020)
         Controls.Add(TableLayoutPanel1)
         FormBorderStyle = FormBorderStyle.FixedDialog
-        Name = "WholesaleDashboard"
+        Name = "retailDashboard"
         StartPosition = FormStartPosition.CenterScreen
         Text = "Wholesale Dashboard"
         WindowState = FormWindowState.Maximized

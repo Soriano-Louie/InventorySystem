@@ -95,9 +95,9 @@ Public Class categoriesForm
         ' No need to call HighlightButton here
     End Sub
 
-    'Private Sub categoriesForm_Closed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-    '    Application.Exit()
-    'End Sub
+    Private Sub categoriesForm_Closed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        chooseDashboard.globalPage = ""
+    End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
@@ -162,7 +162,7 @@ Public Class categoriesForm
                 Case "Button4"
 
                 Case "Button5"
-                    ShowSingleForm(Of salesReport)()
+                    ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"

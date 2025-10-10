@@ -2,7 +2,7 @@
 Imports Microsoft.Data.SqlClient
 
 Public Class userManagementForm
-    Dim topPanel As topPanelControl()
+    Dim topPanel As topPanelControl
     Friend WithEvents sidePanel As sidePanelControl
     Friend WithEvents sidePanel2 As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
@@ -108,7 +108,8 @@ Public Class userManagementForm
                     ctrl.ForeColor = colorUnclicked
                 End If
             Next
-        ElseIf sidePanel2 IsNot Nothing Then
+        End If
+        If sidePanel2 IsNot Nothing Then
             For Each ctrl As Control In sidePanel2.Controls
                 If TypeOf ctrl Is Button Then
                     ctrl.BackColor = colorClicked
@@ -117,12 +118,12 @@ Public Class userManagementForm
             Next
         End If
 
-
         ' Highlight the selected button (for whichever panel is active)
         Dim btn As Button = Nothing
         If sidePanel IsNot Nothing Then
             btn = sidePanel.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
-        ElseIf sidePanel2 IsNot Nothing Then
+        End If
+        If btn Is Nothing AndAlso sidePanel2 IsNot Nothing Then
             btn = sidePanel2.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
         End If
 
@@ -133,8 +134,7 @@ Public Class userManagementForm
         End If
     End Sub
 
-    Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
-        Debug.WriteLine("CURRENT PAGE TYPE: " & chooseDashboard.globalPage)
+    Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked, sidePanel2.ButtonClicked
         If chooseDashboard.globalPage.ToLower() = "wholesale" Then
             Select Case btnName
                 Case "Button1"
@@ -162,48 +162,46 @@ Public Class userManagementForm
                     ShowSingleForm(Of categoriesForm)()
                 Case "Button4"
                 Case "Button5"
-                    'Dim form = ShowSingleForm(Of salesReport)()
-                    'DirectCast(form, salesReport).loadSalesReport()
+                    ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"
                     ShowSingleForm(Of userManagementForm)()
             End Select
         End If
+
     End Sub
 
     Private Sub userManagementForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Clear old panels
         For Each ctrl As Control In Me.Controls.OfType(Of Control).ToList()
             If TypeOf ctrl Is topPanelControl OrElse
-           TypeOf ctrl Is sidePanelControl OrElse
-           TypeOf ctrl Is sidePanelControl2 Then
+               TypeOf ctrl Is sidePanelControl OrElse
+               TypeOf ctrl Is sidePanelControl2 Then
                 Me.Controls.Remove(ctrl)
                 ctrl.Dispose()
             End If
         Next
-        'MessageBox.Show(chooseDashboard.globalPage, "Current Dashboard")
-        ' Create new instances every time
-        Dim topPanel As topPanelControl = New topPanelControl()
-        topPanel.Dock = DockStyle.Top
 
-        If chooseDashboard.globalPage.Equals("wholesale", StringComparison.CurrentCultureIgnoreCase) Then
-            topPanel.Label1.Text = "WHOLESALE"
-            Dim sidePanel As sidePanelControl = New sidePanelControl()
-            sidePanel.Dock = DockStyle.Left
-            Me.Controls.Add(topPanel)
-            Me.Controls.Add(sidePanel)
-            AddHandler sidePanel.ButtonClicked, AddressOf SidePanel_ButtonClicked
+        ' Create and assign to class-level fields
+        Me.topPanel = New topPanelControl()
+        Me.topPanel.Dock = DockStyle.Top
 
-        ElseIf chooseDashboard.globalPage.Equals("retail", StringComparison.CurrentCultureIgnoreCase) Then
-            topPanel.Label1.Text = "RETAIL"
-            Dim sidePanel2 As sidePanelControl2 = New sidePanelControl2()
-            sidePanel2.Dock = DockStyle.Left
-            Me.Controls.Add(topPanel)
-            Me.Controls.Add(sidePanel2)
-            AddHandler sidePanel2.ButtonClicked, AddressOf SidePanel_ButtonClicked
+        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+            Me.topPanel.Label1.Text = "WHOLESALE"
+            Me.sidePanel = New sidePanelControl()
+            Me.sidePanel.Dock = DockStyle.Left
+            Me.Controls.Add(Me.topPanel)
+            Me.Controls.Add(Me.sidePanel)
+
+        ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
+            Me.topPanel.Label1.Text = "RETAIL"
+            Me.sidePanel2 = New sidePanelControl2()
+            Me.sidePanel2.Dock = DockStyle.Left
+            Me.Controls.Add(Me.topPanel)
+            Me.Controls.Add(Me.sidePanel2)
+
         End If
-
         HighlightButton("Button7")
         SetPlaceholder(TextBoxSearch, "Search Username...")
         SetRoundedRegion2(addUserButton, 20)

@@ -93,6 +93,24 @@ Public Class addUserForm
         End Using
     End Function
 
+    Private Function verifyPassword(password As String) As Boolean
+        Dim query As String = "SELECT passwordHash FROM Users WHERE userID = @userID"
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", LoginForm.globalUserID)
+                    conn.Open()
+                    Dim storedHash As String = Convert.ToString(cmd.ExecuteScalar())
+                    Dim inputHash As String = HashSHA256Base64(password)
+                    Return storedHash = inputHash
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error verifying password: " & ex.Message)
+            Return False
+        End Try
+    End Function
+
     Private Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
@@ -105,6 +123,21 @@ Public Class addUserForm
 
         If userRoleDropdown.SelectedValue Is Nothing Then
             MessageBox.Show("Please select a valid role from the list.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+
+        ' Prompt for admin password
+        Dim adminPassword As String = InputBoxPassword("Enter admin password to confirm changes:", "Verify Password")
+
+        ' Cancel if empty
+        If String.IsNullOrWhiteSpace(adminPassword) Then
+            MessageBox.Show("Creation cancelled. No password entered.")
+            Return
+        End If
+
+        ' Verify password
+        If Not verifyPassword(adminPassword) Then
+            MessageBox.Show("Invalid admin password. Creation cancelled.")
             Return
         End If
 
@@ -130,6 +163,9 @@ Public Class addUserForm
             ResetControl(passwordText)
             ResetControl(userRoleDropdown)
             userNameText.Focus() ' Set focus back to username field
+            If parentForm IsNot Nothing Then
+                parentForm.LoadUsers()
+            End If
         Catch ex As Exception
             MessageBox.Show("Error creating user: " & ex.Message)
         End Try
@@ -139,4 +175,57 @@ Public Class addUserForm
     Private Sub UserCreationForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         LoadRoles() ' Load roles when the form opens
     End Sub
+
+    Public Function InputBoxPassword(prompt As String, title As String) As String
+        ' Create a new form
+        Dim frm As New Form()
+        frm.Width = 350
+        frm.Height = 150
+        frm.Text = title
+        frm.FormBorderStyle = FormBorderStyle.FixedDialog
+        frm.StartPosition = FormStartPosition.CenterScreen
+        frm.MinimizeBox = False
+        frm.MaximizeBox = False
+
+        ' Create a label
+        Dim lbl As New Label()
+        lbl.Text = prompt
+        lbl.Left = 10
+        lbl.Top = 10
+        lbl.Width = 300
+        frm.Controls.Add(lbl)
+
+        ' Create a password TextBox
+        Dim txt As New TextBox()
+        txt.Left = 10
+        txt.Top = 40
+        txt.Width = 300
+        txt.UseSystemPasswordChar = True   ' hides characters
+        frm.Controls.Add(txt)
+
+        ' Create OK and Cancel buttons
+        Dim btnOK As New Button()
+        btnOK.Text = "OK"
+        btnOK.Left = 150
+        btnOK.Top = 75
+        btnOK.DialogResult = DialogResult.OK
+        frm.Controls.Add(btnOK)
+
+        Dim btnCancel As New Button()
+        btnCancel.Text = "Cancel"
+        btnCancel.Left = 235
+        btnCancel.Top = 75
+        btnCancel.DialogResult = DialogResult.Cancel
+        frm.Controls.Add(btnCancel)
+
+        frm.AcceptButton = btnOK
+        frm.CancelButton = btnCancel
+
+        ' Show dialog and return password
+        If frm.ShowDialog() = DialogResult.OK Then
+            Return txt.Text
+        Else
+            Return Nothing
+        End If
+    End Function
 End Class

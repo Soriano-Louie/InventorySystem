@@ -51,9 +51,9 @@ Partial Class wholesaleDashboard
         ' 
         TableLayoutPanel1.BackColor = Color.Transparent
         TableLayoutPanel1.ColumnCount = 3
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 30.0F))
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 30.0F))
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40.0F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 30F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 30F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40F))
         TableLayoutPanel1.Controls.Add(Panel7, 1, 2)
         TableLayoutPanel1.Controls.Add(Panel6, 0, 2)
         TableLayoutPanel1.Controls.Add(Panel5, 2, 1)
@@ -84,7 +84,7 @@ Partial Class wholesaleDashboard
         ' Label6
         ' 
         Label6.Dock = DockStyle.Bottom
-        Label6.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label6.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label6.Location = New Point(0, 226)
         Label6.Name = "Label6"
         Label6.Size = New Size(447, 32)
@@ -104,7 +104,7 @@ Partial Class wholesaleDashboard
         ' Label5
         ' 
         Label5.Dock = DockStyle.Bottom
-        Label5.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label5.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label5.Location = New Point(0, 226)
         Label5.Name = "Label5"
         Label5.Size = New Size(467, 32)
@@ -125,12 +125,12 @@ Partial Class wholesaleDashboard
         ' Label7
         ' 
         Label7.Dock = DockStyle.Top
-        Label7.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label7.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label7.Location = New Point(0, 30)
         Label7.Name = "Label7"
         Label7.Size = New Size(625, 32)
         Label7.TabIndex = 3
-        Label7.Text = "TODAY'S TOTAL SALES"
+        Label7.Text = "TOP PRODUCTS"
         Label7.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Panel4
@@ -145,7 +145,7 @@ Partial Class wholesaleDashboard
         ' Label4
         ' 
         Label4.Dock = DockStyle.Bottom
-        Label4.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label4.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label4.Location = New Point(0, 225)
         Label4.Margin = New Padding(3, 0, 3, 10)
         Label4.Name = "Label4"
@@ -166,7 +166,7 @@ Partial Class wholesaleDashboard
         ' Label2
         ' 
         Label2.Dock = DockStyle.Bottom
-        Label2.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label2.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label2.Location = New Point(0, 199)
         Label2.Name = "Label2"
         Label2.Size = New Size(625, 32)
@@ -187,7 +187,7 @@ Partial Class wholesaleDashboard
         ' Label1
         ' 
         Label1.Dock = DockStyle.Bottom
-        Label1.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label1.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label1.Location = New Point(0, 199)
         Label1.Name = "Label1"
         Label1.Size = New Size(908, 32)
@@ -207,7 +207,7 @@ Partial Class wholesaleDashboard
         ' Label3
         ' 
         Label3.Dock = DockStyle.Bottom
-        Label3.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label3.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label3.Location = New Point(0, 225)
         Label3.Name = "Label3"
         Label3.Size = New Size(467, 32)
@@ -215,14 +215,14 @@ Partial Class wholesaleDashboard
         Label3.Text = "TODAY'S TOTAL ORDERS"
         Label3.TextAlign = ContentAlignment.MiddleCenter
         ' 
-        ' WholesaleDashboard
+        ' wholesaleDashboard
         ' 
-        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1717, 1020)
         Controls.Add(TableLayoutPanel1)
         FormBorderStyle = FormBorderStyle.FixedDialog
-        Name = "WholesaleDashboard"
+        Name = "wholesaleDashboard"
         StartPosition = FormStartPosition.CenterScreen
         Text = "Wholesale Dashboard"
         WindowState = FormWindowState.Maximized

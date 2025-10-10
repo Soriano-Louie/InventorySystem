@@ -1,17 +1,14 @@
 ﻿Imports System.Drawing.Drawing2D
-Imports System.Drawing.Printing
 Imports System.IO
-Imports System.Reflection.Metadata
-Imports Microsoft.Data.SqlClient
-Imports Microsoft.Office.Interop
 Imports iTextSharp.text
 Imports iTextSharp.text.pdf
+Imports Microsoft.Data.SqlClient
+Imports Microsoft.Office.Interop
 Imports Document = iTextSharp.text.Document
 
-Public Class salesReport
-
+Public Class retailSalesReport
     Dim topPanel As New topPanelControl()
-    Friend WithEvents sidePanel As sidePanelControl
+    Friend WithEvents sidePanel As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
     Dim dt As New DataTable()
@@ -26,7 +23,7 @@ Public Class salesReport
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
-        sidePanel = New sidePanelControl()
+        sidePanel = New sidePanelControl2()
         sidePanel.Dock = DockStyle.Left
         topPanel.Dock = DockStyle.Top
         Me.Controls.Add(topPanel)
@@ -34,6 +31,7 @@ Public Class salesReport
         Me.MaximizeBox = False
         Me.FormBorderStyle = FormBorderStyle.None
         Me.BackColor = Color.FromArgb(224, 166, 109)
+
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
 
@@ -109,11 +107,6 @@ Public Class salesReport
         ' No need to call HighlightButton here
 
     End Sub
-
-    'Private Sub salesReport_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-    '    Application.Exit()
-    'End Sub
-
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
         For Each ctrl As Control In sidePanel.Controls
@@ -134,15 +127,15 @@ Public Class salesReport
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of wholesaleDashboard)()
+                ShowSingleForm(Of retailDashboard)()
             Case "Button2"
-                ShowSingleForm(Of InventoryForm)()
+                ShowSingleForm(Of inventoryRetail)()
             Case "Button3"
                 ShowSingleForm(Of categoriesForm)()
             Case "Button4"
-                ShowSingleForm(Of deliveryLogsForm)()
+
             Case "Button5"
-                ShowSingleForm(Of salesReport)()
+                ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
@@ -160,15 +153,15 @@ Public Class salesReport
         SELECT 
             sr.SaleID,
             sr.SaleDate,
-            p.ProductName,
+            rp.ProductName,
             c.CategoryName,
             sr.QuantitySold,
             sr.UnitPrice,
             sr.TotalAmount,
             sr.PaymentMethod,
             u.username AS HandledBy
-        FROM SalesReport sr
-        INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+        FROM RetailSalesReport sr
+        INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
         INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
         INNER JOIN Users u ON sr.HandledBy = u.userID
         ORDER BY sr.SaleDate DESC
@@ -310,15 +303,15 @@ Public Class salesReport
             SELECT 
                 sr.SaleID,
                 sr.SaleDate,
-                p.ProductName,
+                rp.ProductName,
                 c.CategoryName,
                 sr.QuantitySold,
                 sr.UnitPrice,
                 sr.TotalAmount,
                 sr.PaymentMethod,
                 u.username AS HandledBy
-            FROM SalesReport sr
-            INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+            FROM RetailSalesReport sr
+            INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
             INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
             INNER JOIN Users u ON sr.HandledBy = u.userID
             WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
@@ -371,7 +364,7 @@ Public Class salesReport
             ' Save file
             Dim saveDialog As New SaveFileDialog()
             saveDialog.Filter = "Excel Files|*.xlsx"
-            saveDialog.FileName = "SalesReport.xlsx"
+            saveDialog.FileName = "RetailSalesReport.xlsx"
 
             If saveDialog.ShowDialog() = DialogResult.OK Then
                 ' Auto fit columns and rows before saving
@@ -393,7 +386,7 @@ Public Class salesReport
         Try
             Dim saveDialog As New SaveFileDialog()
             saveDialog.Filter = "PDF Files|*.pdf"
-            saveDialog.FileName = "SalesReport.pdf"
+            saveDialog.FileName = "RetailSalesReport.pdf"
 
             If saveDialog.ShowDialog() = DialogResult.OK Then
                 Dim pdfTable As New PdfPTable(tableDataGridView.Columns.Count)

@@ -103,7 +103,8 @@ Public Class loginRecordsForm
                     ctrl.ForeColor = colorUnclicked
                 End If
             Next
-        ElseIf sidePanel2 IsNot Nothing Then
+        End If
+        If sidePanel2 IsNot Nothing Then
             For Each ctrl As Control In sidePanel2.Controls
                 If TypeOf ctrl Is Button Then
                     ctrl.BackColor = colorClicked
@@ -112,12 +113,12 @@ Public Class loginRecordsForm
             Next
         End If
 
-
         ' Highlight the selected button (for whichever panel is active)
         Dim btn As Button = Nothing
         If sidePanel IsNot Nothing Then
             btn = sidePanel.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
-        ElseIf sidePanel2 IsNot Nothing Then
+        End If
+        If btn Is Nothing AndAlso sidePanel2 IsNot Nothing Then
             btn = sidePanel2.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = buttonName)
         End If
 
@@ -128,7 +129,7 @@ Public Class loginRecordsForm
         End If
     End Sub
 
-    Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
+    Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked, sidePanel2.ButtonClicked
         If chooseDashboard.globalPage.ToLower() = "wholesale" Then
             Select Case btnName
                 Case "Button1"
@@ -156,8 +157,7 @@ Public Class loginRecordsForm
                     ShowSingleForm(Of categoriesForm)()
                 Case "Button4"
                 Case "Button5"
-                    'Dim form = ShowSingleForm(Of salesReport)()
-                    'DirectCast(form, salesReport).loadSalesReport()
+                    ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"
@@ -168,39 +168,37 @@ Public Class loginRecordsForm
     End Sub
 
     Private Sub logsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        MessageBox.Show(chooseDashboard.globalPage, "Current Page", MessageBoxButtons.OK, MessageBoxIcon.Information)
         ' Clear old panels
         For Each ctrl As Control In Me.Controls.OfType(Of Control).ToList()
             If TypeOf ctrl Is topPanelControl OrElse
-           TypeOf ctrl Is sidePanelControl OrElse
-           TypeOf ctrl Is sidePanelControl2 Then
+               TypeOf ctrl Is sidePanelControl OrElse
+               TypeOf ctrl Is sidePanelControl2 Then
                 Me.Controls.Remove(ctrl)
                 ctrl.Dispose()
             End If
         Next
 
-        ' Create new instances every time
-        Dim topPanel As topPanelControl = New topPanelControl()
-        topPanel.Dock = DockStyle.Top
+        ' Create and assign to class-level fields
+        Me.topPanel = New topPanelControl()
+        Me.topPanel.Dock = DockStyle.Top
 
         If chooseDashboard.globalPage.ToLower() = "wholesale" Then
-            topPanel.Label1.Text = "WHOLESALE"
-            Dim sidePanel As sidePanelControl = New sidePanelControl()
-            sidePanel.Dock = DockStyle.Left
-            Me.Controls.Add(topPanel)
-            Me.Controls.Add(sidePanel)
-            AddHandler sidePanel.ButtonClicked, AddressOf SidePanel_ButtonClicked
+            Me.topPanel.Label1.Text = "WHOLESALE"
+            Me.sidePanel = New sidePanelControl()
+            Me.sidePanel.Dock = DockStyle.Left
+            Me.Controls.Add(Me.topPanel)
+            Me.Controls.Add(Me.sidePanel)
 
         ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
-            topPanel.Label1.Text = "RETAIL"
-            Dim sidePanel2 As sidePanelControl2 = New sidePanelControl2()
-            sidePanel2.Dock = DockStyle.Left
-            Me.Controls.Add(topPanel)
-            Me.Controls.Add(sidePanel2)
-            AddHandler sidePanel2.ButtonClicked, AddressOf SidePanel_ButtonClicked
+            Me.topPanel.Label1.Text = "RETAIL"
+            Me.sidePanel2 = New sidePanelControl2()
+            Me.sidePanel2.Dock = DockStyle.Left
+            Me.Controls.Add(Me.topPanel)
+            Me.Controls.Add(Me.sidePanel2)
         End If
+
         HighlightButton("Button6")
-        ' Example data
+
         ' Initialize
         dt = New DataTable()
         dv = New DataView(dt)

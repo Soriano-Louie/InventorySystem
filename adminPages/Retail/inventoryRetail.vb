@@ -157,8 +157,7 @@ Public Class inventoryRetail
             Case "Button4"
 
             Case "Button5"
-                'Dim form = ShowSingleForm(Of salesReport)()
-                'DirectCast(form, salesReport).loadSalesReport()
+                ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"

@@ -97,7 +97,7 @@ Public Class addItemForm
             conn.Open()
 
             ' Updated query with CategoryID and ExpirationDate
-            Dim query As String = "INSERT INTO Products 
+            Dim query As String = "INSERT INTO wholesaleProducts 
                                (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
                                OUTPUT INSERTED.ProductID
                                VALUES 

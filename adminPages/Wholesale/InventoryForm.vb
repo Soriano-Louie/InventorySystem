@@ -161,7 +161,7 @@ Public Class InventoryForm
                    p.ReorderLevel, 
                    p.expirationDate, 
                    p.QRCodeImage
-            FROM Products p
+            FROM wholesaleProducts p
             INNER JOIN Categories c ON p.CategoryID = c.CategoryID
             ORDER BY 
             CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END, 
@@ -486,7 +486,7 @@ Public Class InventoryForm
 
         Using conn As New SqlConnection(GetConnectionString())
             conn.Open()
-            Dim query As String = "SELECT ProductName, QRCodeImage FROM Products"
+            Dim query As String = "SELECT ProductName, QRCodeImage FROM wholesaleProducts"
 
             Using cmd As New SqlCommand(query, conn)
                 Using rdr As SqlDataReader = cmd.ExecuteReader()

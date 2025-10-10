@@ -77,7 +77,7 @@ Public Class editItemForm
     End Sub
 
     Private Sub loadProducts()
-        Dim query As String = "SELECT ProductID, ProductName FROM Products ORDER BY ProductName"
+        Dim query As String = "SELECT ProductID, ProductName FROM wholesaleProducts ORDER BY ProductName"
         Dim connString As String = GetConnectionString()
 
         Try
@@ -164,7 +164,7 @@ Public Class editItemForm
         'End If
 
         Dim query As String = "
-        UPDATE Products
+        UPDATE wholesaleProducts
         SET 
             ProductName    = COALESCE(@ProductName, ProductName),
             CategoryID     = COALESCE(@CategoryID, CategoryID),
@@ -362,7 +362,7 @@ Public Class editItemForm
     End Sub
 
     Private Sub DeleteProduct(productID As Integer)
-        Dim query As String = "DELETE FROM Products WHERE ProductID = @ProductID"
+        Dim query As String = "DELETE FROM wholesaleProducts WHERE ProductID = @ProductID"
 
         Using conn As New SqlConnection(GetConnectionString())
             Using cmd As New SqlCommand(query, conn)

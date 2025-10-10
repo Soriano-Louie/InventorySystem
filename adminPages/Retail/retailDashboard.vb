@@ -121,8 +121,7 @@ Public Class retailDashboard
             Case "Button4"
 
             Case "Button5"
-                'Dim form = ShowSingleForm(Of salesReport)()
-                'DirectCast(form, salesReport).loadSalesReport()
+                ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
                 Dim form = ShowSingleForm(Of loginRecordsForm)()
                 DirectCast(form, loginRecordsForm).LoadLoginHistory()
