@@ -25,7 +25,6 @@ Partial Class sidePanelControl2
         Button7 = New Button()
         Button6 = New Button()
         Button5 = New Button()
-        Button4 = New Button()
         Button2 = New Button()
         Button1 = New Button()
         PictureBox1 = New PictureBox()
@@ -42,7 +41,7 @@ Partial Class sidePanelControl2
         Button7.FlatAppearance.BorderSize = 0
         Button7.FlatStyle = FlatStyle.Flat
         Button7.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button7.Location = New Point(1, 773)
+        Button7.Location = New Point(1, 712)
         Button7.Name = "Button7"
         Button7.Padding = New Padding(20, 0, 0, 0)
         Button7.Size = New Size(241, 39)
@@ -58,7 +57,7 @@ Partial Class sidePanelControl2
         Button6.FlatAppearance.BorderSize = 0
         Button6.FlatStyle = FlatStyle.Flat
         Button6.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button6.Location = New Point(1, 710)
+        Button6.Location = New Point(1, 649)
         Button6.Name = "Button6"
         Button6.Padding = New Padding(20, 0, 0, 0)
         Button6.Size = New Size(232, 39)
@@ -74,7 +73,7 @@ Partial Class sidePanelControl2
         Button5.FlatAppearance.BorderSize = 0
         Button5.FlatStyle = FlatStyle.Flat
         Button5.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button5.Location = New Point(1, 642)
+        Button5.Location = New Point(1, 581)
         Button5.Name = "Button5"
         Button5.Padding = New Padding(20, 0, 0, 0)
         Button5.Size = New Size(232, 39)
@@ -82,22 +81,6 @@ Partial Class sidePanelControl2
         Button5.Text = "Sales Report"
         Button5.TextAlign = ContentAlignment.MiddleLeft
         Button5.UseVisualStyleBackColor = True
-        ' 
-        ' Button4
-        ' 
-        Button4.AutoSize = True
-        Button4.Cursor = Cursors.Hand
-        Button4.FlatAppearance.BorderSize = 0
-        Button4.FlatStyle = FlatStyle.Flat
-        Button4.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button4.Location = New Point(1, 579)
-        Button4.Name = "Button4"
-        Button4.Padding = New Padding(20, 0, 0, 0)
-        Button4.Size = New Size(232, 39)
-        Button4.TabIndex = 18
-        Button4.Text = "Delivery Logs"
-        Button4.TextAlign = ContentAlignment.MiddleLeft
-        Button4.UseVisualStyleBackColor = True
         ' 
         ' Button2
         ' 
@@ -180,7 +163,7 @@ Partial Class sidePanelControl2
         Button9.FlatAppearance.BorderSize = 0
         Button9.FlatStyle = FlatStyle.Flat
         Button9.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button9.Location = New Point(0, 829)
+        Button9.Location = New Point(0, 769)
         Button9.Name = "Button9"
         Button9.Padding = New Padding(20, 0, 0, 0)
         Button9.Size = New Size(241, 39)
@@ -199,7 +182,6 @@ Partial Class sidePanelControl2
         Controls.Add(Button7)
         Controls.Add(Button6)
         Controls.Add(Button5)
-        Controls.Add(Button4)
         Controls.Add(Button3)
         Controls.Add(Button2)
         Controls.Add(Button1)
@@ -213,7 +195,6 @@ Partial Class sidePanelControl2
     Friend WithEvents Button7 As Button
     Friend WithEvents Button6 As Button
     Friend WithEvents Button5 As Button
-    Friend WithEvents Button4 As Button
     Friend WithEvents Button2 As Button
     Friend WithEvents Button1 As Button
     Friend WithEvents PictureBox1 As PictureBox
