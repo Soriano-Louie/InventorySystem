@@ -94,7 +94,7 @@ Partial Class sidePanelControl2
         Button2.Padding = New Padding(20, 0, 0, 0)
         Button2.Size = New Size(232, 39)
         Button2.TabIndex = 16
-        Button2.Text = "Inventorys"
+        Button2.Text = "Inventory"
         Button2.TextAlign = ContentAlignment.MiddleLeft
         Button2.UseVisualStyleBackColor = True
         ' 
@@ -163,6 +163,7 @@ Partial Class sidePanelControl2
         Button9.FlatAppearance.BorderSize = 0
         Button9.FlatStyle = FlatStyle.Flat
         Button9.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
+        Button9.ForeColor = SystemColors.ActiveCaptionText
         Button9.Location = New Point(0, 769)
         Button9.Name = "Button9"
         Button9.Padding = New Padding(20, 0, 0, 0)

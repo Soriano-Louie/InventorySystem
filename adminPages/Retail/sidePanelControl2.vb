@@ -10,6 +10,13 @@
 
     Private Sub sidePanelControl_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         For Each btn As Button In Me.Controls.OfType(Of Button)()
+            If btn.Name = "Button9" Then
+                btn.Padding = New Padding(10, 0, 10, 0)
+                btn.BackColor = colorClicked
+                AddHandler btn.Click, AddressOf Button_Click
+                btn.Tag = false
+                btn.ForeColor = Color.FromArgb(255, 0, 0)
+            End If
             btn.Padding = New Padding(10, 0, 10, 0)
             btn.BackColor = colorClicked
             btn.ForeColor = colorUnclicked

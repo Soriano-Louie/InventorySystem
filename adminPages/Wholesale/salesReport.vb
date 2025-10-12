@@ -161,6 +161,7 @@ Public Class salesReport
             sr.SaleID,
             sr.SaleDate,
             p.ProductName,
+            p.unit,
             c.CategoryName,
             sr.QuantitySold,
             sr.UnitPrice,
@@ -193,6 +194,7 @@ Public Class salesReport
                         .Columns("SaleID").HeaderText = "Sale ID"
                         .Columns("SaleDate").HeaderText = "Date"
                         .Columns("ProductName").HeaderText = "Product"
+                        .Columns("unit").HeaderText = "Unit"
                         .Columns("CategoryName").HeaderText = "Category"
                         .Columns("QuantitySold").HeaderText = "Quantity"
                         .Columns("UnitPrice").HeaderText = "Unit Price"

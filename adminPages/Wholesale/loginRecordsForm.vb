@@ -28,6 +28,8 @@ Public Class loginRecordsForm
 
         filterButton.BackColor = Color.FromArgb(147, 53, 53)
         filterButton.ForeColor = Color.FromArgb(230, 216, 177)
+        resetButton.BackColor = Color.FromArgb(147, 53, 53)
+        resetButton.ForeColor = Color.FromArgb(230, 216, 177)
 
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
@@ -267,5 +269,14 @@ Public Class loginRecordsForm
                 da.Fill(dt)               ' fills the same dt bound to dv/bs/grid
             End Using
         End Using
+    End Sub
+
+    Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
+        ' Reset the DateTimePickers to today's date
+        DateTimePickerFrom.Value = DateTime.Today
+        DateTimePickerTo.Value = DateTime.Today
+
+        ' Reload all records
+        LoadLoginHistory()
     End Sub
 End Class

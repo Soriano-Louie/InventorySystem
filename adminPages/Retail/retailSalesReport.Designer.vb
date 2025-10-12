@@ -23,7 +23,6 @@ Partial Class retailSalesReport
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         mainPanel = New Panel()
-        tableDataGridView = New DataGridView()
         Panel1 = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
         Button2 = New Button()
@@ -39,14 +38,15 @@ Partial Class retailSalesReport
         Panel4 = New Panel()
         DateTimePickerFrom = New DateTimePicker()
         Label1 = New Label()
+        tableDataGridView = New DataGridView()
         mainPanel.SuspendLayout()
-        CType(tableDataGridView, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
         Panel2.SuspendLayout()
         Panel3.SuspendLayout()
         Panel5.SuspendLayout()
         Panel4.SuspendLayout()
+        CType(tableDataGridView, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
         ' mainPanel
@@ -59,18 +59,6 @@ Partial Class retailSalesReport
         mainPanel.Padding = New Padding(50, 120, 50, 20)
         mainPanel.Size = New Size(1810, 792)
         mainPanel.TabIndex = 0
-        ' 
-        ' tableDataGridView
-        ' 
-        tableDataGridView.AllowUserToAddRows = False
-        tableDataGridView.AllowUserToDeleteRows = False
-        tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        tableDataGridView.Dock = DockStyle.Fill
-        tableDataGridView.Location = New Point(50, 120)
-        tableDataGridView.Name = "tableDataGridView"
-        tableDataGridView.ReadOnly = True
-        tableDataGridView.Size = New Size(1710, 652)
-        tableDataGridView.TabIndex = 0
         ' 
         ' Panel1
         ' 
@@ -250,6 +238,21 @@ Partial Class retailSalesReport
         Label1.Text = "From:"
         Label1.TextAlign = ContentAlignment.MiddleLeft
         ' 
+        ' tableDataGridView
+        ' 
+        tableDataGridView.AllowUserToAddRows = False
+        tableDataGridView.AllowUserToDeleteRows = False
+        tableDataGridView.AllowUserToResizeColumns = False
+        tableDataGridView.AllowUserToResizeRows = False
+        tableDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+        tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
+        tableDataGridView.Dock = DockStyle.Fill
+        tableDataGridView.Location = New Point(50, 120)
+        tableDataGridView.Name = "tableDataGridView"
+        tableDataGridView.ReadOnly = True
+        tableDataGridView.Size = New Size(1710, 652)
+        tableDataGridView.TabIndex = 0
+        ' 
         ' retailSalesReport
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
@@ -262,7 +265,6 @@ Partial Class retailSalesReport
         Text = "an"
         WindowState = FormWindowState.Maximized
         mainPanel.ResumeLayout(False)
-        CType(tableDataGridView, ComponentModel.ISupportInitialize).EndInit()
         Panel1.ResumeLayout(False)
         TableLayoutPanel1.ResumeLayout(False)
         TableLayoutPanel1.PerformLayout()
@@ -273,6 +275,7 @@ Partial Class retailSalesReport
         Panel5.PerformLayout()
         Panel4.ResumeLayout(False)
         Panel4.PerformLayout()
+        CType(tableDataGridView, ComponentModel.ISupportInitialize).EndInit()
         ResumeLayout(False)
     End Sub
 

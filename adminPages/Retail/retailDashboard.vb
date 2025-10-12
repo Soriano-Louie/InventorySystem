@@ -27,7 +27,7 @@ Public Class retailDashboard
         Panel6.BackColor = Color.FromArgb(230, 216, 177)
         Panel7.BackColor = Color.FromArgb(230, 216, 177)
 
-        Label1.ForeColor = Color.FromArgb(79, 51, 40)
+
         Label3.ForeColor = Color.FromArgb(79, 51, 40)
         Label2.ForeColor = Color.FromArgb(230, 216, 177)
         Label4.ForeColor = Color.FromArgb(79, 51, 40)

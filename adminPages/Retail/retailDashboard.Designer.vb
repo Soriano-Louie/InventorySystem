@@ -34,7 +34,6 @@ Partial Class retailDashboard
         Panel2 = New Panel()
         Label2 = New Label()
         Panel1 = New Panel()
-        Label1 = New Label()
         Panel3 = New Panel()
         Label3 = New Label()
         TableLayoutPanel1.SuspendLayout()
@@ -43,7 +42,6 @@ Partial Class retailDashboard
         Panel5.SuspendLayout()
         Panel4.SuspendLayout()
         Panel2.SuspendLayout()
-        Panel1.SuspendLayout()
         Panel3.SuspendLayout()
         SuspendLayout()
         ' 
@@ -177,23 +175,11 @@ Partial Class retailDashboard
         ' Panel1
         ' 
         TableLayoutPanel1.SetColumnSpan(Panel1, 2)
-        Panel1.Controls.Add(Label1)
         Panel1.Location = New Point(73, 73)
         Panel1.Name = "Panel1"
         Panel1.Padding = New Padding(0, 0, 0, 30)
         Panel1.Size = New Size(908, 261)
         Panel1.TabIndex = 0
-        ' 
-        ' Label1
-        ' 
-        Label1.Dock = DockStyle.Bottom
-        Label1.Font = New Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label1.Location = New Point(0, 199)
-        Label1.Name = "Label1"
-        Label1.Size = New Size(908, 32)
-        Label1.TabIndex = 0
-        Label1.Text = "TODAY'S TOTAL SALES"
-        Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Panel3
         ' 
@@ -232,7 +218,6 @@ Partial Class retailDashboard
         Panel5.ResumeLayout(False)
         Panel4.ResumeLayout(False)
         Panel2.ResumeLayout(False)
-        Panel1.ResumeLayout(False)
         Panel3.ResumeLayout(False)
         ResumeLayout(False)
     End Sub
@@ -245,7 +230,6 @@ Partial Class retailDashboard
     Friend WithEvents Panel7 As Panel
     Friend WithEvents Panel6 As Panel
     Friend WithEvents Panel5 As Panel
-    Friend WithEvents Label1 As Label
     Friend WithEvents Label2 As Label
     Friend WithEvents Label6 As Label
     Friend WithEvents Label5 As Label
