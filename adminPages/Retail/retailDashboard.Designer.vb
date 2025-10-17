@@ -24,17 +24,21 @@ Partial Class retailDashboard
     Private Sub InitializeComponent()
         TableLayoutPanel1 = New TableLayoutPanel()
         Panel7 = New Panel()
+        Label10 = New Label()
         Label6 = New Label()
         Panel6 = New Panel()
+        Label9 = New Label()
         Label5 = New Label()
         Panel5 = New Panel()
         Label7 = New Label()
         Panel4 = New Panel()
         Label4 = New Label()
         Panel2 = New Panel()
+        Label1 = New Label()
         Label2 = New Label()
         Panel1 = New Panel()
         Panel3 = New Panel()
+        Label8 = New Label()
         Label3 = New Label()
         TableLayoutPanel1.SuspendLayout()
         Panel7.SuspendLayout()
@@ -72,12 +76,23 @@ Partial Class retailDashboard
         ' 
         ' Panel7
         ' 
+        Panel7.Controls.Add(Label10)
         Panel7.Controls.Add(Label6)
         Panel7.Location = New Point(546, 659)
         Panel7.Name = "Panel7"
         Panel7.Padding = New Padding(0, 0, 0, 30)
         Panel7.Size = New Size(447, 288)
         Panel7.TabIndex = 3
+        ' 
+        ' Label10
+        ' 
+        Label10.Font = New Font("Segoe UI", 24F, FontStyle.Bold)
+        Label10.Location = New Point(3, 99)
+        Label10.Margin = New Padding(3, 0, 3, 10)
+        Label10.Name = "Label10"
+        Label10.Size = New Size(441, 47)
+        Label10.TabIndex = 5
+        Label10.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label6
         ' 
@@ -92,12 +107,23 @@ Partial Class retailDashboard
         ' 
         ' Panel6
         ' 
+        Panel6.Controls.Add(Label9)
         Panel6.Controls.Add(Label5)
         Panel6.Location = New Point(73, 659)
         Panel6.Name = "Panel6"
         Panel6.Padding = New Padding(0, 0, 0, 30)
         Panel6.Size = New Size(467, 288)
         Panel6.TabIndex = 2
+        ' 
+        ' Label9
+        ' 
+        Label9.Font = New Font("Segoe UI", 24F, FontStyle.Bold)
+        Label9.Location = New Point(0, 99)
+        Label9.Margin = New Padding(3, 0, 3, 10)
+        Label9.Name = "Label9"
+        Label9.Size = New Size(464, 47)
+        Label9.TabIndex = 5
+        Label9.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label5
         ' 
@@ -154,12 +180,23 @@ Partial Class retailDashboard
         ' 
         ' Panel2
         ' 
+        Panel2.Controls.Add(Label1)
         Panel2.Controls.Add(Label2)
         Panel2.Location = New Point(1019, 73)
         Panel2.Name = "Panel2"
         Panel2.Padding = New Padding(0, 0, 0, 30)
         Panel2.Size = New Size(625, 261)
         Panel2.TabIndex = 0
+        ' 
+        ' Label1
+        ' 
+        Label1.Font = New Font("Segoe UI", 24F, FontStyle.Bold)
+        Label1.Location = New Point(0, 82)
+        Label1.Margin = New Padding(3, 0, 3, 10)
+        Label1.Name = "Label1"
+        Label1.Size = New Size(625, 47)
+        Label1.TabIndex = 3
+        Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label2
         ' 
@@ -183,12 +220,23 @@ Partial Class retailDashboard
         ' 
         ' Panel3
         ' 
+        Panel3.Controls.Add(Label8)
         Panel3.Controls.Add(Label3)
         Panel3.Location = New Point(73, 366)
         Panel3.Name = "Panel3"
         Panel3.Padding = New Padding(0, 0, 0, 30)
         Panel3.Size = New Size(467, 287)
         Panel3.TabIndex = 1
+        ' 
+        ' Label8
+        ' 
+        Label8.Font = New Font("Segoe UI", 24F, FontStyle.Bold)
+        Label8.Location = New Point(0, 100)
+        Label8.Margin = New Padding(3, 0, 3, 10)
+        Label8.Name = "Label8"
+        Label8.Size = New Size(467, 47)
+        Label8.TabIndex = 4
+        Label8.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' Label3
         ' 
@@ -236,4 +284,8 @@ Partial Class retailDashboard
     Friend WithEvents Label4 As Label
     Friend WithEvents Label3 As Label
     Friend WithEvents Label7 As Label
+    Friend WithEvents Label1 As Label
+    Friend WithEvents Label10 As Label
+    Friend WithEvents Label9 As Label
+    Friend WithEvents Label8 As Label
 End Class

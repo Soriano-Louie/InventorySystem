@@ -66,7 +66,7 @@ Public Class categoriesForm
         MyBase.WndProc(m)
     End Sub
 
-    Private Sub ShowSingleForm(Of T As {Form, New})()
+    Private Function ShowSingleForm(Of T As {Form, New})() As T
         ' Hide all forms except the one to show
         Dim formToShow As Form = Nothing
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
@@ -89,7 +89,9 @@ Public Class categoriesForm
         If formToShow IsNot Me Then
             Me.Hide()
         End If
-    End Sub
+
+        Return DirectCast(formToShow, T)
+    End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
         ' No need to call HighlightButton here
@@ -137,24 +139,30 @@ Public Class categoriesForm
         If chooseDashboard.globalPage.ToLower() = "wholesale" Then
             Select Case btnName
                 Case "Button1"
-                    ShowSingleForm(Of retailDashboard)()
+                    Dim form = ShowSingleForm(Of wholesaleDashboard)()
+                    form.LoadDashboardData()
                 Case "Button2"
-                    ShowSingleForm(Of InventoryForm)()
+                    Dim form = ShowSingleForm(Of InventoryForm)()
+                    form.LoadProducts()
                 Case "Button3"
                     ShowSingleForm(Of categoriesForm)()
                 Case "Button4"
                     ShowSingleForm(Of deliveryLogsForm)()
                 Case "Button5"
-                    ShowSingleForm(Of salesReport)()
+                    Dim form = ShowSingleForm(Of salesReport)()
+                    form.loadSalesReport()
                 Case "Button6"
-                    ShowSingleForm(Of loginRecordsForm)()
+                    Dim form = ShowSingleForm(Of loginRecordsForm)()
+                    form.LoadLoginHistory()
                 Case "Button7"
-                    ShowSingleForm(Of userManagementForm)()
+                    Dim form = ShowSingleForm(Of userManagementForm)()
+                    form.LoadUsers()
             End Select
         ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
             Select Case btnName
                 Case "Button1"
-                    ShowSingleForm(Of retailDashboard)()
+                    Dim form = ShowSingleForm(Of retailDashboard)()
+                    form.LoadDashboardData()
                 Case "Button2"
                     ShowSingleForm(Of inventoryRetail)()
                 Case "Button3"
@@ -164,12 +172,13 @@ Public Class categoriesForm
                 Case "Button5"
                     ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
-                    ShowSingleForm(Of loginRecordsForm)()
+                    Dim form = ShowSingleForm(Of loginRecordsForm)()
+                    form.LoadLoginHistory()
                 Case "Button7"
-                    ShowSingleForm(Of userManagementForm)()
+                    Dim form = ShowSingleForm(Of userManagementForm)()
+                    form.LoadUsers()
             End Select
         End If
-
     End Sub
 
     Private Sub categoriesForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load

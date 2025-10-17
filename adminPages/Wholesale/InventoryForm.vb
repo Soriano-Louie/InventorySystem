@@ -72,7 +72,7 @@ Public Class InventoryForm
         MyBase.WndProc(m)
     End Sub
 
-    Private Function ShowSingleForm(Of T As {Form, New})() As Form
+    Private Function ShowSingleForm(Of T As {Form, New})() As T
         Dim formToShow As Form = Nothing
 
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
@@ -96,7 +96,7 @@ Public Class InventoryForm
             Me.Hide()
         End If
 
-        Return formToShow ' return the form instance
+        Return DirectCast(formToShow, T)
     End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
@@ -129,19 +129,24 @@ Public Class InventoryForm
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of wholesaleDashboard)()
+                Dim form = ShowSingleForm(Of wholesaleDashboard)()
+                form.LoadDashboardData()
             Case "Button2"
                 ShowSingleForm(Of InventoryForm)()
             Case "Button3"
-                ShowSingleForm(Of categoriesForm)()
+                Dim form = ShowSingleForm(Of categoriesForm)()
+                form.loadCategories()
             Case "Button4"
                 ShowSingleForm(Of deliveryLogsForm)()
             Case "Button5"
-                ShowSingleForm(Of salesReport)()
+                Dim form = ShowSingleForm(Of salesReport)()
+                form.loadSalesReport()
             Case "Button6"
-                ShowSingleForm(Of loginRecordsForm)()
+                Dim form = ShowSingleForm(Of loginRecordsForm)()
+                form.LoadLoginHistory()
             Case "Button7"
-                ShowSingleForm(Of userManagementForm)()
+                Dim form = ShowSingleForm(Of userManagementForm)()
+                form.LoadUsers()
         End Select
     End Sub
     Private Function GetConnectionString() As String

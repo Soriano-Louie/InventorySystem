@@ -61,7 +61,7 @@ Public Class loginRecordsForm
         MyBase.WndProc(m)
     End Sub
 
-    Private Sub ShowSingleForm(Of T As {Form, New})()
+    Private Function ShowSingleForm(Of T As {Form, New})() As T
         ' Hide all forms except the one to show
         Dim formToShow As Form = Nothing
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
@@ -84,7 +84,9 @@ Public Class loginRecordsForm
         If formToShow IsNot Me Then
             Me.Hide()
         End If
-    End Sub
+
+        Return DirectCast(formToShow, T)
+    End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
 
@@ -135,38 +137,45 @@ Public Class loginRecordsForm
         If chooseDashboard.globalPage.ToLower() = "wholesale" Then
             Select Case btnName
                 Case "Button1"
-                    ShowSingleForm(Of wholesaleDashboard)()
+                    Dim form = ShowSingleForm(Of wholesaleDashboard)()
+                    form.LoadDashboardData()
                 Case "Button2"
-                    ShowSingleForm(Of InventoryForm)()
+                    Dim form = ShowSingleForm(Of InventoryForm)()
+                    form.LoadProducts()
                 Case "Button3"
-                    ShowSingleForm(Of categoriesForm)()
+                    Dim form = ShowSingleForm(Of categoriesForm)()
+                    form.loadCategories()
                 Case "Button4"
                     ShowSingleForm(Of deliveryLogsForm)()
                 Case "Button5"
-                    ShowSingleForm(Of salesReport)()
+                    Dim form = ShowSingleForm(Of salesReport)()
+                    form.loadSalesReport()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"
-                    ShowSingleForm(Of userManagementForm)()
+                    Dim form = ShowSingleForm(Of userManagementForm)()
+                    form.LoadUsers()
             End Select
         Else
             Select Case btnName
                 Case "Button1"
-                    ShowSingleForm(Of retailDashboard)()
+                    Dim form = ShowSingleForm(Of retailDashboard)()
+                    form.LoadDashboardData()
                 Case "Button2"
                     ShowSingleForm(Of inventoryRetail)()
                 Case "Button3"
-                    ShowSingleForm(Of categoriesForm)()
+                    Dim form = ShowSingleForm(Of categoriesForm)()
+                    form.loadCategories()
                 Case "Button4"
                 Case "Button5"
                     ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"
-                    ShowSingleForm(Of userManagementForm)()
+                    Dim form = ShowSingleForm(Of userManagementForm)()
+                    form.LoadUsers()
             End Select
         End If
-
     End Sub
 
     Private Sub logsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
