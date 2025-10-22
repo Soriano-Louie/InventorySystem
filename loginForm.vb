@@ -259,7 +259,7 @@ Public Class LoginForm
                                     If userRole.ToLower() = "admin" Then
                                         chooseDashboard.Show()
                                     ElseIf userRole.ToLower() = "cashier" Then
-                                        'cashierPage.Show()
+                                        posForm.Show()
                                     End If
                                 Else
                                     MessageBox.Show("Username or password incorrect.")
