@@ -112,7 +112,7 @@ Public Class editUserForm
         Try
             Using conn As New SqlConnection(GetConnectionString())
                 Using cmd As New SqlCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@userID", LoginForm.globalUserID)
+                    cmd.Parameters.AddWithValue("@userID", GlobalUserSession.CurrentUserID)
                     conn.Open()
                     Dim storedHash As String = Convert.ToString(cmd.ExecuteScalar())
                     Dim inputHash As String = HashSHA256Base64(password)

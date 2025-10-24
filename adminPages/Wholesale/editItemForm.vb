@@ -21,6 +21,11 @@ Public Class editItemForm
         cancelButton.ForeColor = Color.FromArgb(79, 51, 40)
         editDiscountButton.BackColor = Color.FromArgb(224, 166, 109)
         editDiscountButton.ForeColor = Color.FromArgb(79, 51, 40)
+
+        ' Set up the DateTimePicker with checkbox
+        newDateText.ShowCheckBox = True
+        newDateText.Checked = False
+        newDateText.MinDate = DateTime.Now.AddDays(1)
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -111,57 +116,8 @@ Public Class editItemForm
                            Optional newCost As Decimal? = Nothing,
                            Optional newRetailPrice As Decimal? = Nothing,
                            Optional newReorder As Integer? = Nothing,
-                           Optional newExpDate As Date? = Nothing)
-
-        'Dim updates As New List(Of String)
-        'Dim parameters As New List(Of SqlParameter)
-
-        '' Build query dynamically only with non-null params
-        'If Not String.IsNullOrWhiteSpace(newProductName) Then
-        '    updates.Add("ProductName = @ProductName")
-        '    parameters.Add(New SqlParameter("@ProductName", newProductName))
-        'End If
-
-        'If newCategory IsNot Nothing Then
-        '    updates.Add("CategoryID = @CategoryID")
-        '    parameters.Add(New SqlParameter("@CategoryID", newCategory))
-        'End If
-
-        'If newQuantity.HasValue Then
-        '    updates.Add("StockQuantity = @Quantity")
-        '    parameters.Add(New SqlParameter("@Quantity", newQuantity.Value))
-        'End If
-
-        'If newUnit IsNot Nothing Then
-        '    updates.Add("Unit = @Unit")
-        '    parameters.Add(New SqlParameter("@Unit", newUnit))
-        'End If
-
-        'If newCost.HasValue Then
-        '    updates.Add("Cost = @Cost")
-        '    parameters.Add(New SqlParameter("@Cost", newCost.Value))
-        'End If
-
-        'If newRetailPrice.HasValue Then
-        '    updates.Add("RetailPrice = @RetailPrice")
-        '    parameters.Add(New SqlParameter("@RetailPrice", newRetailPrice.Value))
-        'End If
-
-        'If newReorder.HasValue Then
-        '    updates.Add("ReorderLevel = @Reorder")
-        '    parameters.Add(New SqlParameter("@Reorder", newReorder.Value))
-        'End If
-
-        'If newExpDate.HasValue Then
-        '    updates.Add("ExpirationDate = @ExpDate")
-        '    parameters.Add(New SqlParameter("@ExpDate", newExpDate.Value))
-        'End If
-
-        '' Exit if nothing to update
-        'If updates.Count = 0 Then
-        '    MessageBox.Show("No fields provided to update.")
-        '    Return
-        'End If
+                           Optional newExpDate As Date? = Nothing,
+                           Optional updateExpDate As Boolean = False)
 
         Dim query As String = "
         UPDATE wholesaleProducts
@@ -172,8 +128,9 @@ Public Class editItemForm
             Unit           = COALESCE(@Unit, Unit),
             Cost           = COALESCE(@Cost, Cost),
             RetailPrice    = COALESCE(@RetailPrice, RetailPrice),
-            ReorderLevel   = COALESCE(@Reorder, ReorderLevel),
-            ExpirationDate = COALESCE(@ExpDate, ExpirationDate)
+            ReorderLevel   = COALESCE(@Reorder, ReorderLevel)" &
+            If(updateExpDate, ",
+            ExpirationDate = @ExpDate", "") & "
         WHERE ProductID = @ProductID;
     "
 
@@ -188,7 +145,11 @@ Public Class editItemForm
                 cmd.Parameters.AddWithValue("@Cost", If(newCost.HasValue, newCost.Value, DBNull.Value))
                 cmd.Parameters.AddWithValue("@RetailPrice", If(newRetailPrice.HasValue, newRetailPrice.Value, DBNull.Value))
                 cmd.Parameters.AddWithValue("@Reorder", If(newReorder.HasValue, newReorder.Value, DBNull.Value))
-                cmd.Parameters.AddWithValue("@ExpDate", If(newExpDate.HasValue, newExpDate.Value, DBNull.Value))
+
+                ' Only add ExpDate parameter if we're updating it
+                If updateExpDate Then
+                    cmd.Parameters.AddWithValue("@ExpDate", If(newExpDate.HasValue, newExpDate.Value, DBNull.Value))
+                End If
 
                 ' WHERE condition
                 cmd.Parameters.AddWithValue("@ProductID", productID)
@@ -205,6 +166,119 @@ Public Class editItemForm
         End If
     End Sub
 
+    ' New method to insert a product batch with different expiration date
+    Private Sub InsertProductBatch(baseProductID As Integer, additionalQuantity As Integer, expirationDate As Date?, editedBy As Integer, editReason As String)
+        ' First, get the details from the base product
+        Dim connString As String = GetConnectionString()
+        Dim sku As String = ""
+        Dim productName As String = ""
+        Dim categoryID As Integer = 0
+        Dim unit As String = ""
+        Dim cost As Decimal = 0
+        Dim retailPrice As Decimal = 0
+        Dim reorderLevel As Integer = 0
+        Dim qrCodeImage As Byte() = Nothing
+        Dim oldQuantity As Decimal = 0
+
+        Using conn As New SqlConnection(connString)
+            conn.Open()
+            Dim selectQuery As String = "SELECT SKU, ProductName, CategoryID, Unit, Cost, RetailPrice, ReorderLevel, QRCodeImage, StockQuantity FROM wholesaleProducts WHERE ProductID = @ProductID"
+
+            Using cmd As New SqlCommand(selectQuery, conn)
+                cmd.Parameters.AddWithValue("@ProductID", baseProductID)
+
+                Using reader As SqlDataReader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        sku = reader("SKU").ToString() & "-BATCH-" & DateTime.Now.ToString("yyyyMMddHHmmss")
+                        productName = reader("ProductName").ToString()
+                        categoryID = Convert.ToInt32(reader("CategoryID"))
+                        unit = reader("Unit").ToString()
+                        cost = Convert.ToDecimal(reader("Cost"))
+                        retailPrice = Convert.ToDecimal(reader("RetailPrice"))
+                        reorderLevel = Convert.ToInt32(reader("ReorderLevel"))
+                        oldQuantity = Convert.ToDecimal(reader("StockQuantity"))
+
+                        If Not IsDBNull(reader("QRCodeImage")) Then
+                            qrCodeImage = DirectCast(reader("QRCodeImage"), Byte())
+                        End If
+                    Else
+                        MessageBox.Show("Product not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        Return
+                    End If
+                End Using
+            End Using
+        End Using
+
+        ' Now insert the new batch with the same details but different expiration date and quantity
+        Using conn As New SqlConnection(connString)
+            conn.Open()
+            Dim insertQuery As String = "INSERT INTO wholesaleProducts 
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
+                               VALUES 
+                               (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
+
+            Using cmd As New SqlCommand(insertQuery, conn)
+                cmd.Parameters.AddWithValue("@SKU", sku)
+                cmd.Parameters.AddWithValue("@ProductName", productName)
+                cmd.Parameters.AddWithValue("@Unit", unit)
+                cmd.Parameters.AddWithValue("@RetailPrice", retailPrice)
+                cmd.Parameters.AddWithValue("@Cost", cost)
+                cmd.Parameters.AddWithValue("@StockQuantity", additionalQuantity)
+                cmd.Parameters.AddWithValue("@ReorderLevel", reorderLevel)
+                cmd.Parameters.AddWithValue("@CategoryID", categoryID)
+
+                If expirationDate.HasValue Then
+                    cmd.Parameters.AddWithValue("@ExpirationDate", expirationDate.Value)
+                Else
+                    cmd.Parameters.AddWithValue("@ExpirationDate", DBNull.Value)
+                End If
+
+                ' Properly handle varbinary parameter
+                Dim qrParam As New SqlParameter("@QRCodeImage", SqlDbType.VarBinary)
+                If qrCodeImage IsNot Nothing Then
+                    qrParam.Value = qrCodeImage
+                Else
+                    qrParam.Value = DBNull.Value
+                End If
+                cmd.Parameters.Add(qrParam)
+
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+
+        ' Log the stock edit in wholesaleStockEditLogs
+        InsertStockEditLog(baseProductID, oldQuantity, oldQuantity + additionalQuantity, unit, editedBy, editReason)
+
+        ' Refresh UI
+        loadProducts()
+        If parentForm IsNot Nothing Then
+            parentForm.LoadProducts()
+        End If
+    End Sub
+
+    ' Method to log stock edits to wholesaleStockEditLogs table
+    Private Sub InsertStockEditLog(productID As Integer, oldQty As Decimal, newQty As Decimal, unitType As String, editedBy As Integer, editReason As String)
+        Dim connString As String = GetConnectionString()
+
+        Using conn As New SqlConnection(connString)
+            conn.Open()
+            Dim logQuery As String = "INSERT INTO wholesaleStockEditLogs 
+                                     (wholesaleProductId, oldQuantity, newQuantity, unitType, editedBy, editReason, editDate) 
+                                     VALUES 
+                                     (@ProductID, @OldQty, @NewQty, @UnitType, @EditedBy, @EditReason, GETDATE())"
+
+            Using cmd As New SqlCommand(logQuery, conn)
+                cmd.Parameters.AddWithValue("@ProductID", productID)
+                cmd.Parameters.AddWithValue("@OldQty", oldQty)
+                cmd.Parameters.AddWithValue("@NewQty", newQty)
+                cmd.Parameters.AddWithValue("@UnitType", If(String.IsNullOrWhiteSpace(unitType), DBNull.Value, unitType))
+                cmd.Parameters.AddWithValue("@EditedBy", editedBy)
+                cmd.Parameters.AddWithValue("@EditReason", If(String.IsNullOrWhiteSpace(editReason), DBNull.Value, editReason))
+
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
 
     Private Sub editItemForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         loadProducts()
@@ -219,8 +293,13 @@ Public Class editItemForm
         ElseIf TypeOf ctrl Is DateTimePicker Then
             Dim picker As DateTimePicker = DirectCast(ctrl, DateTimePicker)
 
+            ' Reset checkbox if it has one
+            If picker.ShowCheckBox Then
+                picker.Checked = False
+            End If
+
             ' Use today's date but respect MinDate/MaxDate
-            Dim today As Date = DateTime.Today
+            Dim today As Date = DateTime.Today.AddDays(1)
             If today < picker.MinDate Then
                 picker.Value = picker.MinDate
             ElseIf today > picker.MaxDate Then
@@ -249,15 +328,22 @@ Public Class editItemForm
         Dim newProductName As String = newProductText.Text.Trim()
         Dim newCategory As Object = If(newCategoryDropdown.SelectedValue Is Nothing, Nothing, newCategoryDropdown.SelectedValue)
         Dim newUnit As String = newUnitText.Text.Trim()
-        Dim newExpDate As Date = newDateText.Value
+        Dim newExpDate As Date? = Nothing
+        Dim updateExpDate As Boolean = newDateText.Checked
+
+        If updateExpDate Then
+            newExpDate = newDateText.Value
+        End If
 
         ' Safe parsing with default fallback
         ' Quantity
         Dim newQuantity As Integer? = Nothing
+        Dim isQuantityEdit As Boolean = False
         If Not String.IsNullOrWhiteSpace(newQuantityText.Text) Then
             Dim parsed As Integer
             If Integer.TryParse(newQuantityText.Text.Trim(), parsed) Then
                 newQuantity = parsed
+                isQuantityEdit = True
             Else
                 MessageBox.Show("Invalid quantity value.")
                 Return
@@ -300,47 +386,110 @@ Public Class editItemForm
             End If
         End If
 
-
-        ' (Optional) validate required fields
-        'If String.IsNullOrWhiteSpace(newProductName) Then
-        '    MessageBox.Show("Product name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        '    Exit Sub
-        'End If
-
-        If newCost < 0 Then
+        ' Validation
+        If newCost.HasValue AndAlso newCost < 0 Then
             MessageBox.Show("Cost cannot be negative.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Exit Sub
         End If
 
-        If newRetailPrice < 0 Then
+        If newRetailPrice.HasValue AndAlso newRetailPrice < 0 Then
             MessageBox.Show("Retail Price cannot be negative.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Exit Sub
         End If
 
-        If newQuantity < 0 Then
+        If newQuantity.HasValue AndAlso newQuantity < 0 Then
             MessageBox.Show("Stock Quantity cannot be negative.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Exit Sub
         End If
 
-        ' 4. Call update method
-        Try
-            UpdateProducts(productID, newProductName, newCategory, newQuantity, newUnit, newCost, newRetailPrice, newReorder, newExpDate)
-            MessageBox.Show("Product updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            ' 5. Reset form controls
-            ResetControl(newProductText)
-            ResetControl(newCategoryDropdown)
-            ResetControl(newQuantityText)
-            ResetControl(newUnitText)
-            ResetControl(newCostText)
-            ResetControl(newRetailText)
-            ResetControl(newReorderText)
-            For Each ctrl As Control In Panel8.Controls
-                ResetControl(ctrl)
-            Next
-        Catch ex As Exception
-            MessageBox.Show("Error updating product: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
+        ' 4. Handle quantity edit with batch tracking and logging
+        If isQuantityEdit Then
+            ' Get user ID 
+            Dim currentUserID As Integer = GetCurrentUserID()
+
+            ' Ensure user is logged in
+            If currentUserID = 0 Then
+                Exit Sub
+            End If
+
+            ' Prompt for edit reason
+            Dim editReason As String = InputBox("Please provide a reason for this stock adjustment:", "Edit Reason", "")
+
+            If String.IsNullOrWhiteSpace(editReason) Then
+                MessageBox.Show("Edit reason is required for stock quantity changes.", "Required Field", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Exit Sub
+            End If
+
+            ' When editing quantity, require expiration date to be checked
+            If Not updateExpDate Then
+                MessageBox.Show("When editing stock quantity, you must specify an expiration date for the new batch." & vbCrLf &
+                               "Please check the expiration date checkbox and select a date.",
+                               "Expiration Date Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Exit Sub
+            End If
+
+            ' Confirm batch creation
+            Dim confirmMsg As String = String.Format(
+                "You are adding {0} units as a new batch with expiration date {1}." & vbCrLf & vbCrLf &
+                "This will create a separate inventory entry for tracking purposes." & vbCrLf &
+                "Reason: {2}" & vbCrLf & vbCrLf &
+                "Do you want to continue?",
+                newQuantity.Value,
+                newExpDate.Value.ToShortDateString(),
+                editReason)
+
+            If MessageBox.Show(confirmMsg, "Confirm Batch Creation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then
+                Exit Sub
+            End If
+
+            Try
+                ' Insert new batch instead of updating existing quantity
+                InsertProductBatch(productID, newQuantity.Value, newExpDate, currentUserID, editReason)
+
+                ' Update other fields (except quantity) if provided
+                UpdateProducts(productID, newProductName, newCategory, Nothing, newUnit, newCost, newRetailPrice, newReorder, Nothing, False)
+
+                MessageBox.Show("New product batch created successfully!" & vbCrLf &
+                               "The quantity has been added as a separate batch." & vbCrLf &
+                               "Stock edit has been logged.",
+                               "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Catch ex As Exception
+                MessageBox.Show("Error creating product batch: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        Else
+            ' 5. Normal update without quantity change
+            Try
+                UpdateProducts(productID, newProductName, newCategory, Nothing, newUnit, newCost, newRetailPrice, newReorder, newExpDate, updateExpDate)
+                MessageBox.Show("Product updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Catch ex As Exception
+                MessageBox.Show("Error updating product: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End If
+
+        ' 6. Reset form controls
+        ResetControl(newProductText)
+        ResetControl(newCategoryDropdown)
+        ResetControl(newQuantityText)
+        ResetControl(newUnitText)
+        ResetControl(newCostText)
+        ResetControl(newRetailText)
+        ResetControl(newReorderText)
+        For Each ctrl As Control In Panel8.Controls
+            ResetControl(ctrl)
+        Next
+        newDateText.Checked = False
     End Sub
+
+    ' Helper method to get current logged-in user ID
+    Private Function GetCurrentUserID() As Integer
+        ' Check if user is logged in
+        If GlobalUserSession.IsUserLoggedIn() Then
+            Return GlobalUserSession.CurrentUserID
+        Else
+            MessageBox.Show("User session not found. Please log in again.", "Session Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return 0
+        End If
+    End Function
 
     Private Sub deleteButton_Click(sender As Object, e As EventArgs) Handles deleteButton.Click
         ' Ensure a product is selected

@@ -35,10 +35,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="adminPages\ChooseDashboard2.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="adminPages\Retail\addItemRetail.vb" />
     <Compile Update="adminPages\Retail\editItemRetail.vb" />
     <Compile Update="adminPages\Retail\sidePanelControl2.vb" />
     <Compile Update="adminPages\Retail\retailDashboard.vb" />
+    <Compile Update="adminPages\Retail\retailStockEditLogs.vb" />
     <Compile Update="LoginForm.vb" />
     <Compile Update="My Project\Application.Designer.vb">
       <DesignTime>True</DesignTime>

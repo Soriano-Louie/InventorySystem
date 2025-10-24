@@ -70,7 +70,7 @@ Public Class inventoryRetail
         MyBase.WndProc(m)
     End Sub
 
-    Private Function ShowSingleForm(Of T As {Form, New})() As Form
+    Private Function ShowSingleForm(Of T As {Form, New})() As T
         Dim formToShow As Form = Nothing
 
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
@@ -94,7 +94,7 @@ Public Class inventoryRetail
             Me.Hide()
         End If
 
-        Return formToShow ' return the form instance
+        Return DirectCast(formToShow, T)
     End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
@@ -149,19 +149,25 @@ Public Class inventoryRetail
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of retailDashboard)()
+                Dim form = ShowSingleForm(Of retailDashboard)()
+                ' Add any load method if needed
             Case "Button2"
                 ShowSingleForm(Of inventoryRetail)()
             Case "Button3"
-                ShowSingleForm(Of categoriesForm)()
+                Dim form = ShowSingleForm(Of categoriesForm)()
+                ' Add any load method if needed
             Case "Button4"
-
+                Dim form = ShowSingleForm(Of retailStockEditLogs)()
+                form.loadStockEditLogs()
             Case "Button5"
-                ShowSingleForm(Of retailSalesReport)()
+                Dim form = ShowSingleForm(Of retailSalesReport)()
+                ' Add any load method if needed
             Case "Button6"
-                ShowSingleForm(Of loginRecordsForm)()
+                Dim form = ShowSingleForm(Of loginRecordsForm)()
+                ' Add any load method if needed
             Case "Button7"
-                ShowSingleForm(Of userManagementForm)()
+                Dim form = ShowSingleForm(Of userManagementForm)()
+                ' Add any load method if needed
         End Select
     End Sub
 

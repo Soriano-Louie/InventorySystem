@@ -11,7 +11,7 @@ Public Class LoginForm
     '    brownPanel.BackColor = Color.FromArgb(79, 51, 40) ' Custom purple color
     'End Sub
 
-    Public globalUserID As Integer = 1
+    'Public globalUserID As Integer = 1
 
     Public Sub New()
 
@@ -30,12 +30,18 @@ Public Class LoginForm
         projectTitle.TextAlign = ContentAlignment.TopLeft
         projectTitle.ForeColor = Color.FromArgb(79, 51, 40)
         projectTitle2.ForeColor = Color.FromArgb(79, 51, 40)
+        Label1.ForeColor = Color.FromArgb(79, 51, 40)
+        Label1.BackColor = Color.Transparent
         userLabel.ForeColor = Color.FromArgb(79, 51, 40)
         passwordLabel.ForeColor = Color.FromArgb(79, 51, 40)
         loginButton.BackColor = Color.FromArgb(79, 51, 40)
         loginButton.ForeColor = Color.White
         loginButton.FlatAppearance.BorderSize = 0
         loginButton.Cursor = Cursors.Hand
+        cancelButton.BackColor = Color.FromArgb(79, 51, 40)
+        cancelButton.ForeColor = Color.White
+        cancelButton.FlatAppearance.BorderSize = 0
+        cancelButton.Cursor = Cursors.Hand
 
         psswrdTxtBx.PasswordChar = "*"
 
@@ -254,10 +260,13 @@ Public Class LoginForm
 
                                     ' Success
                                     MessageBox.Show("Login successful!")
-                                    'globalUserID = 1 'userID
+
+                                    ' Set global user session
+                                    GlobalUserSession.SetUserSession(userID, username, userRole)
+
                                     Me.Hide()
                                     If userRole.ToLower() = "admin" Then
-                                        chooseDashboard.Show()
+                                        chooseDashboard2.Show()
                                     ElseIf userRole.ToLower() = "cashier" Then
                                         posForm.Show()
                                     End If
@@ -287,4 +296,10 @@ Public Class LoginForm
         End Using
     End Sub
 
+    Private Sub cancelButton_Click(sender As Object, e As EventArgs) Handles cancelButton.Click
+        'clear input fields of login form
+        usrnmTxtBx.Text = ""
+        psswrdTxtBx.Text = ""
+        usrnmTxtBx.Focus()
+    End Sub
 End Class

@@ -77,7 +77,7 @@ Public Class retailSalesReport
         MyBase.WndProc(m)
     End Sub
 
-    Private Sub ShowSingleForm(Of T As {Form, New})()
+    Private Function ShowSingleForm(Of T As {Form, New})() As T
         ' Hide all forms except the one to show
         Dim formToShow As Form = Nothing
         For Each frm As Form In Application.OpenForms.Cast(Of Form).ToList()
@@ -100,7 +100,9 @@ Public Class retailSalesReport
         If formToShow IsNot Me Then
             Me.Hide()
         End If
-    End Sub
+
+        Return DirectCast(formToShow, T)
+    End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
 
@@ -127,19 +129,25 @@ Public Class retailSalesReport
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of retailDashboard)()
+                Dim form = ShowSingleForm(Of retailDashboard)()
+                ' Add any load method if needed: form.LoadDashboardData()
             Case "Button2"
-                ShowSingleForm(Of inventoryRetail)()
+                Dim form = ShowSingleForm(Of inventoryRetail)()
+                ' Add any load method if needed: form.LoadProducts()
             Case "Button3"
-                ShowSingleForm(Of categoriesForm)()
+                Dim form = ShowSingleForm(Of categoriesForm)()
+                ' Add any load method if needed: form.loadCategories()
             Case "Button4"
-
+                Dim form = ShowSingleForm(Of retailStockEditLogs)()
+                form.loadStockEditLogs()
             Case "Button5"
                 ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
-                ShowSingleForm(Of loginRecordsForm)()
+                Dim form = ShowSingleForm(Of loginRecordsForm)()
+                ' Add any load method if needed: form.LoadLoginHistory()
             Case "Button7"
-                ShowSingleForm(Of userManagementForm)()
+                Dim form = ShowSingleForm(Of userManagementForm)()
+                ' Add any load method if needed: form.LoadUsers()
         End Select
     End Sub
 

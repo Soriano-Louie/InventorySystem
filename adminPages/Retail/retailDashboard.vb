@@ -163,7 +163,8 @@ Public Class retailDashboard
                 Dim form = ShowSingleForm(Of categoriesForm)()
                 form.loadCategories()
             Case "Button4"
-
+                Dim form = ShowSingleForm(Of retailStockEditLogs)()
+                form.loadStockEditLogs()
             Case "Button5"
                 ShowSingleForm(Of retailSalesReport)()
             Case "Button6"

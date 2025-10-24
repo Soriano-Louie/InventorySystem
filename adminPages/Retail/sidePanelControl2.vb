@@ -34,14 +34,14 @@
 
     Private Sub Button8_Click(sender As Object, e As EventArgs) Handles Button8.Click
         ' Reset global page
-        chooseDashboard.globalPage = ""
-        Debug.WriteLine("current value is: " & chooseDashboard.globalPage)
+        chooseDashboard2.globalPage = ""
+        'Debug.WriteLine("current value is: " & chooseDashboard2.globalPage)
 
         ' Ensure dashboard is shown
-        If Not chooseDashboard.Visible Then
-            chooseDashboard.Show()
+        If Not chooseDashboard2.Visible Then
+            chooseDashboard2.Show()
         End If
-        chooseDashboard.BringToFront()
+        chooseDashboard2.BringToFront()
 
         ' Keep LoginForm (startup form) and chooseDashboard alive; close others
         Dim login As Form = Nothing
@@ -52,7 +52,7 @@
         End Try
 
         For Each frm As Form In Application.OpenForms.Cast(Of Form)().ToList()
-            If frm Is chooseDashboard OrElse (login IsNot Nothing AndAlso frm Is login) Then
+            If frm Is chooseDashboard2 OrElse (login IsNot Nothing AndAlso frm Is login) Then
                 Continue For
             End If
 
@@ -67,8 +67,8 @@
         Next
 
         ' Bring dashboard to front again
-        chooseDashboard.Show()
-        chooseDashboard.BringToFront()
+        chooseDashboard2.Show()
+        chooseDashboard2.BringToFront()
     End Sub
 
 

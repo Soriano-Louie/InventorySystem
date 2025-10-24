@@ -21,7 +21,7 @@ Public Class topPanelControl
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        If chooseDashboard.globalPage.Equals("wholesale", StringComparison.CurrentCultureIgnoreCase) Then
+        If chooseDashboard2.globalPage.Equals("wholesale", StringComparison.CurrentCultureIgnoreCase) Then
             Label1.Text = "WHOLESALE"
         Else
             Label1.Text = "RETAIL"

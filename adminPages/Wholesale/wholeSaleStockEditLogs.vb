@@ -1,15 +1,12 @@
-﻿Imports System.Drawing.Drawing2D
-Imports System.Drawing.Printing
-Imports System.IO
-Imports System.Reflection.Metadata
-Imports Microsoft.Data.SqlClient
+﻿Imports Microsoft.Data.SqlClient
 Imports Microsoft.Office.Interop
 Imports iTextSharp.text
 Imports iTextSharp.text.pdf
 Imports Document = iTextSharp.text.Document
+Imports System.Drawing.Drawing2D
+Imports System.IO
 
-Public Class salesReport
-
+Public Class wholeSaleStockEditLogs
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
@@ -19,7 +16,6 @@ Public Class salesReport
     Dim bs As New BindingSource()
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
-
     Public Sub New()
 
         ' This call is required by the designer.
@@ -112,10 +108,6 @@ Public Class salesReport
 
     End Sub
 
-    'Private Sub salesReport_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-    '    Application.Exit()
-    'End Sub
-
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
         For Each ctrl As Control In sidePanel.Controls
@@ -146,11 +138,12 @@ Public Class salesReport
                 form.loadCategories()
             Case "Button4"
                 ShowSingleForm(Of deliveryLogsForm)()
-            Case "Button10"
+            Case "Button5"
                 Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
                 form.loadStockEditLogs()
-            Case "Button5"
-                ShowSingleForm(Of salesReport)()
+            Case "Button10"
+                Dim form = ShowSingleForm(Of salesReport)()
+                form.loadSalesReport()
             Case "Button6"
                 Dim form = ShowSingleForm(Of loginRecordsForm)()
                 form.LoadLoginHistory()
@@ -164,68 +157,16 @@ Public Class salesReport
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
 
-    Public Sub loadSalesReport()
-        Dim connStr As String = GetConnectionString()
-        Dim query As String = "
-        SELECT 
-            sr.SaleID,
-            sr.SaleDate,
-            p.ProductName,
-            p.unit,
-            c.CategoryName,
-            sr.QuantitySold,
-            sr.UnitPrice,
-            sr.TotalAmount,
-            sr.PaymentMethod,
-            u.username AS HandledBy
-        FROM SalesReport sr
-        INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
-        INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-        INNER JOIN Users u ON sr.HandledBy = u.userID
-        ORDER BY sr.SaleDate DESC
-    "
-
-        Try
-            Using conn As New SqlConnection(connStr)
-                Using da As New SqlDataAdapter(query, conn)
-                    ' Ensure dt exists
-                    If dt Is Nothing Then
-                        dt = New DataTable()
-                    Else
-                        dt.Clear()
-                    End If
-
-                    da.Fill(dt)
-
-
-                    ' Optional formatting
-                    With tableDataGridView
-                        .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-                        .Columns("SaleID").HeaderText = "Sale ID"
-                        .Columns("SaleDate").HeaderText = "Date"
-                        .Columns("ProductName").HeaderText = "Product"
-                        .Columns("unit").HeaderText = "Unit"
-                        .Columns("CategoryName").HeaderText = "Category"
-                        .Columns("QuantitySold").HeaderText = "Quantity"
-                        .Columns("UnitPrice").HeaderText = "Unit Price"
-                        .Columns("TotalAmount").HeaderText = "Total"
-                        .Columns("PaymentMethod").HeaderText = "Payment"
-                        .Columns("HandledBy").HeaderText = "Handled By"
-                    End With
-                End Using
-            End Using
-        Catch ex As Exception
-            MessageBox.Show("Error loading sales report: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
-
-    Private Sub salesReport_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Sub stockEditLogs_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button5")
         SetPlaceholder(TextBoxSearch, "Search...")
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
 
-        ' Example data
+        ' Set default date range (last 30 days)
+        DateTimePickerTo.Value = DateTime.Now
+        DateTimePickerFrom.Value = DateTime.Now.AddDays(-30)
+
         ' Initialize
         dt = New DataTable()
         dv = New DataView(dt)
@@ -235,10 +176,22 @@ Public Class salesReport
         bs.DataSource = dv
         tableDataGridView.DataSource = bs
 
-
         ' Load data
-        loadSalesReport()
+        loadStockEditLogs()
     End Sub
+
+    Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
+        ' Reset date range to last 30 days
+        DateTimePickerTo.Value = DateTime.Now
+        DateTimePickerFrom.Value = DateTime.Now.AddDays(-30)
+
+        ' Clear search box
+        TextBoxSearch.Text = ""
+
+        ' Reload all stock edit logs
+        loadStockEditLogs()
+    End Sub
+
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
         Dim rect As New System.Drawing.Rectangle(0, 0, ctrl.Width, ctrl.Height)
         Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
@@ -312,7 +265,7 @@ Public Class salesReport
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
             bs.Filter = ""   ' Show all rows
         Else
-            bs.Filter = String.Format("ProductName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+            bs.Filter = String.Format("[Product Name] LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
 
@@ -320,41 +273,114 @@ Public Class salesReport
         Using con As New SqlConnection(GetConnectionString())
             Dim query As String = "
             SELECT 
-                sr.SaleID,
-                sr.SaleDate,
-                p.ProductName,
-                c.CategoryName,
-                sr.QuantitySold,
-                sr.UnitPrice,
-                sr.TotalAmount,
-                sr.PaymentMethod,
-                u.username AS HandledBy
-            FROM SalesReport sr
-            INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
-            INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-            INNER JOIN Users u ON sr.HandledBy = u.userID
-            WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
-            ORDER BY sr.SaleDate DESC"
+                wsel.logId AS 'Log ID',
+                wsel.editDate AS 'Edit Date',
+                p.ProductName AS 'Product Name',
+                c.CategoryName AS 'Category',
+                wsel.oldQuantity AS 'Old Quantity',
+                wsel.newQuantity AS 'New Quantity',
+                (wsel.newQuantity - wsel.oldQuantity) AS 'Change',
+                wsel.unitType AS 'Unit',
+                u.username AS 'Edited By',
+                wsel.editReason AS 'Edit Reason'
+            FROM wholesaleStockEditLogs wsel
+            INNER JOIN wholesaleProducts p ON wsel.wholesaleProductId = p.ProductID
+            INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+            INNER JOIN Users u ON wsel.editedBy = u.userID
+            WHERE wsel.editDate BETWEEN @FromDate AND @ToDate
+            ORDER BY wsel.editDate DESC"
 
             Using cmd As New SqlCommand(query, con)
                 cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
-                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date)
+                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date.AddDays(1).AddSeconds(-1))
 
                 Dim da As New SqlDataAdapter(cmd)
                 dt.Clear()                ' reuse class-level dt (mybase load) to keep the same binding
                 da.Fill(dt)               ' fills the same dt bound to dv/bs/grid
             End Using
         End Using
+
+        ' Update column headers
+        UpdateColumnHeaders()
     End Sub
 
-    ' Reset button (show all records + reset pickers)
-    Private Sub btnReset_Click(sender As Object, e As EventArgs) Handles resetButton.Click
-        ' Reset the DateTimePickers to today's date
-        DateTimePickerFrom.Value = DateTime.Today
-        DateTimePickerTo.Value = DateTime.Today
+    Public Sub loadStockEditLogs()
+        Dim connString As String = GetConnectionString()
+        Dim query As String = "
+            SELECT 
+                wsel.logId AS 'Log ID',
+                wsel.editDate AS 'Edit Date',
+                p.ProductName AS 'Product Name',
+                c.CategoryName AS 'Category',
+                wsel.oldQuantity AS 'Old Quantity',
+                wsel.newQuantity AS 'New Quantity',
+                (wsel.newQuantity - wsel.oldQuantity) AS 'Change',
+                wsel.unitType AS 'Unit',
+                u.username AS 'Edited By',
+                wsel.editReason AS 'Edit Reason'
+            FROM wholesaleStockEditLogs wsel
+            INNER JOIN wholesaleProducts p ON wsel.wholesaleProductId = p.ProductID
+            INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+            INNER JOIN Users u ON wsel.editedBy = u.userID
+            ORDER BY wsel.editDate DESC"
 
-        ' Reload all records
-        loadSalesReport()
+        Try
+            Using conn As New SqlConnection(connString)
+                Using da As New SqlDataAdapter(query, conn)
+                    dt.Clear() ' clear old data
+                    da.Fill(dt)
+                End Using
+            End Using
+
+            ' Re-bind DataView and BindingSource
+            dv = New DataView(dt)
+            bs.DataSource = dv
+            tableDataGridView.DataSource = bs
+
+            ' Update column headers and formatting
+            UpdateColumnHeaders()
+
+        Catch ex As Exception
+            MessageBox.Show("Error loading stock edit logs: " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub UpdateColumnHeaders()
+        Try
+            With tableDataGridView
+                .EnableHeadersVisualStyles = False
+                .ColumnHeadersDefaultCellStyle.Font = New System.Drawing.Font(.Font, FontStyle.Bold)
+
+                If .Columns.Contains("Log ID") Then
+                    .Columns("Log ID").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                End If
+
+                If .Columns.Contains("Edit Date") Then
+                    .Columns("Edit Date").DefaultCellStyle.Format = "yyyy-MM-dd HH:mm:ss"
+                    .Columns("Edit Date").Width = 150
+                End If
+
+                If .Columns.Contains("Product Name") Then
+                    .Columns("Product Name").Width = 200
+                End If
+
+                If .Columns.Contains("Change") Then
+                    .Columns("Change").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+                End If
+
+                If .Columns.Contains("Old Quantity") Then
+                    .Columns("Old Quantity").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+                End If
+
+                If .Columns.Contains("New Quantity") Then
+                    .Columns("New Quantity").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+                End If
+            End With
+
+            tableDataGridView.Refresh()
+        Catch ex As Exception
+            ' Ignore if columns don't exist yet
+        End Try
     End Sub
 
     Private Sub ExportToExcel()
@@ -383,7 +409,7 @@ Public Class salesReport
             ' Save file
             Dim saveDialog As New SaveFileDialog()
             saveDialog.Filter = "Excel Files|*.xlsx"
-            saveDialog.FileName = "SalesReport.xlsx"
+            saveDialog.FileName = "stockEditLogs.xlsx"
 
             If saveDialog.ShowDialog() = DialogResult.OK Then
                 ' Auto fit columns and rows before saving
@@ -405,7 +431,7 @@ Public Class salesReport
         Try
             Dim saveDialog As New SaveFileDialog()
             saveDialog.Filter = "PDF Files|*.pdf"
-            saveDialog.FileName = "SalesReport.pdf"
+            saveDialog.FileName = "stockEditLogs.pdf"
 
             If saveDialog.ShowDialog() = DialogResult.OK Then
                 Dim pdfTable As New PdfPTable(tableDataGridView.Columns.Count)
@@ -465,4 +491,32 @@ Public Class salesReport
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         ExportToPDF()
     End Sub
+
+    ' Color-code the Change column: green for positive, red for negative
+    Private Sub tableDataGridView_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs) Handles tableDataGridView.CellFormatting
+        If tableDataGridView.Columns(e.ColumnIndex).Name = "Change" AndAlso e.Value IsNot Nothing Then
+            Try
+                Dim changeValue As Decimal = Convert.ToDecimal(e.Value)
+
+                If changeValue > 0 Then
+                    ' Positive change (stock added) - Green
+                    e.CellStyle.BackColor = Color.LightGreen
+                    e.CellStyle.ForeColor = Color.DarkGreen
+                    e.CellStyle.Font = New System.Drawing.Font(e.CellStyle.Font, FontStyle.Bold)
+                ElseIf changeValue < 0 Then
+                    ' Negative change (stock removed) - Red
+                    e.CellStyle.BackColor = Color.LightCoral
+                    e.CellStyle.ForeColor = Color.DarkRed
+                    e.CellStyle.Font = New System.Drawing.Font(e.CellStyle.Font, FontStyle.Bold)
+                Else
+                    ' No change
+                    e.CellStyle.BackColor = Color.LightGray
+                    e.CellStyle.ForeColor = Color.Black
+                End If
+            Catch ex As Exception
+                ' Ignore formatting errors
+            End Try
+        End If
+    End Sub
+
 End Class

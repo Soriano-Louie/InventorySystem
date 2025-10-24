@@ -139,6 +139,9 @@ Public Class InventoryForm
             Case "Button4"
                 ShowSingleForm(Of deliveryLogsForm)()
             Case "Button5"
+                Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
+                form.loadStockEditLogs()
+            Case "Button10"
                 Dim form = ShowSingleForm(Of salesReport)()
                 form.loadSalesReport()
             Case "Button6"

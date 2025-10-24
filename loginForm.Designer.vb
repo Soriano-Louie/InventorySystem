@@ -26,12 +26,14 @@ Partial Class loginForm
         BindingSource1 = New BindingSource(components)
         brownPanel = New Panel()
         formPanel = New Panel()
+        cancelButton = New Button()
         loginButton = New Button()
         passwordLabel = New Label()
         psswrdTxtBx = New TextBox()
         userLabel = New Label()
         usrnmTxtBx = New TextBox()
         Panel1 = New Panel()
+        Label1 = New Label()
         projectTitle = New Label()
         projectTitle2 = New Label()
         pawPrintPictureBox = New PictureBox()
@@ -49,101 +51,127 @@ Partial Class loginForm
         brownPanel.Controls.Add(formPanel)
         brownPanel.Controls.Add(pawPrintPictureBox)
         brownPanel.Location = New Point(0, 0)
-        brownPanel.Margin = New Padding(3, 4, 3, 4)
         brownPanel.Name = "brownPanel"
-        brownPanel.Size = New Size(736, 972)
+        brownPanel.Size = New Size(644, 729)
         brownPanel.TabIndex = 0
         ' 
         ' formPanel
         ' 
         formPanel.Anchor = AnchorStyles.None
+        formPanel.Controls.Add(cancelButton)
         formPanel.Controls.Add(loginButton)
         formPanel.Controls.Add(passwordLabel)
         formPanel.Controls.Add(psswrdTxtBx)
         formPanel.Controls.Add(userLabel)
         formPanel.Controls.Add(usrnmTxtBx)
         formPanel.Controls.Add(Panel1)
-        formPanel.Location = New Point(113, 133)
-        formPanel.Margin = New Padding(3, 4, 3, 4)
+        formPanel.Location = New Point(99, 100)
         formPanel.Name = "formPanel"
-        formPanel.Size = New Size(507, 707)
+        formPanel.Size = New Size(444, 530)
         formPanel.TabIndex = 1
+        ' 
+        ' cancelButton
+        ' 
+        cancelButton.Anchor = AnchorStyles.None
+        cancelButton.AutoSize = True
+        cancelButton.FlatStyle = FlatStyle.Flat
+        cancelButton.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        cancelButton.Location = New Point(238, 410)
+        cancelButton.Name = "cancelButton"
+        cancelButton.Size = New Size(78, 33)
+        cancelButton.TabIndex = 4
+        cancelButton.Text = "Cancel"
+        cancelButton.UseVisualStyleBackColor = True
         ' 
         ' loginButton
         ' 
         loginButton.Anchor = AnchorStyles.None
         loginButton.AutoSize = True
         loginButton.FlatStyle = FlatStyle.Flat
-        loginButton.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        loginButton.Location = New Point(203, 557)
-        loginButton.Margin = New Padding(3, 4, 3, 4)
+        loginButton.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        loginButton.Location = New Point(128, 410)
         loginButton.Name = "loginButton"
-        loginButton.Size = New Size(102, 53)
-        loginButton.TabIndex = 2
+        loginButton.Size = New Size(78, 33)
+        loginButton.TabIndex = 3
         loginButton.Text = "Login"
         loginButton.UseVisualStyleBackColor = True
         ' 
         ' passwordLabel
         ' 
         passwordLabel.AutoSize = True
-        passwordLabel.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        passwordLabel.Location = New Point(121, 453)
+        passwordLabel.Font = New Font("Segoe UI Semibold", 12.0F, FontStyle.Bold)
+        passwordLabel.Location = New Point(106, 340)
         passwordLabel.Name = "passwordLabel"
-        passwordLabel.Size = New Size(97, 28)
+        passwordLabel.Size = New Size(79, 21)
         passwordLabel.TabIndex = 6
         passwordLabel.Text = "Password"
         ' 
         ' psswrdTxtBx
         ' 
         psswrdTxtBx.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
-        psswrdTxtBx.Location = New Point(121, 491)
-        psswrdTxtBx.Margin = New Padding(3, 4, 3, 4)
+        psswrdTxtBx.Location = New Point(106, 368)
         psswrdTxtBx.Name = "psswrdTxtBx"
-        psswrdTxtBx.Size = New Size(263, 27)
-        psswrdTxtBx.TabIndex = 5
+        psswrdTxtBx.Size = New Size(231, 23)
+        psswrdTxtBx.TabIndex = 2
         ' 
         ' userLabel
         ' 
         userLabel.AutoSize = True
-        userLabel.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        userLabel.Location = New Point(120, 352)
+        userLabel.Font = New Font("Segoe UI Semibold", 12.0F, FontStyle.Bold)
+        userLabel.Location = New Point(105, 264)
         userLabel.Name = "userLabel"
-        userLabel.Size = New Size(104, 28)
+        userLabel.Size = New Size(83, 21)
         userLabel.TabIndex = 4
         userLabel.Text = "Username"
         ' 
         ' usrnmTxtBx
         ' 
         usrnmTxtBx.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
-        usrnmTxtBx.Location = New Point(120, 389)
-        usrnmTxtBx.Margin = New Padding(3, 4, 3, 4)
+        usrnmTxtBx.Location = New Point(105, 292)
         usrnmTxtBx.Name = "usrnmTxtBx"
-        usrnmTxtBx.Size = New Size(263, 27)
-        usrnmTxtBx.TabIndex = 3
+        usrnmTxtBx.Size = New Size(231, 23)
+        usrnmTxtBx.TabIndex = 1
         ' 
         ' Panel1
         ' 
+        Panel1.Controls.Add(Label1)
         Panel1.Controls.Add(projectTitle)
         Panel1.Controls.Add(projectTitle2)
         Panel1.Dock = DockStyle.Top
         Panel1.Location = New Point(0, 0)
+        Panel1.Margin = New Padding(3, 2, 3, 2)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(507, 254)
+        Panel1.Size = New Size(444, 227)
         Panel1.TabIndex = 7
+        ' 
+        ' Label1
+        ' 
+        Label1.Anchor = AnchorStyles.None
+        Label1.AutoSize = True
+        Label1.BackColor = Color.Transparent
+        Label1.Font = New Font("Segoe UI", 20.0F, FontStyle.Bold)
+        Label1.ForeColor = Color.White
+        Label1.Location = New Point(65, 125)
+        Label1.Margin = New Padding(0)
+        Label1.Name = "Label1"
+        Label1.Size = New Size(337, 37)
+        Label1.TabIndex = 3
+        Label1.Text = "Operations Management"
+        Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' projectTitle
         ' 
         projectTitle.Anchor = AnchorStyles.None
         projectTitle.AutoSize = True
         projectTitle.BackColor = Color.Transparent
-        projectTitle.Font = New Font("Segoe UI", 20F, FontStyle.Bold)
+        projectTitle.Font = New Font("Segoe UI", 20.0F, FontStyle.Bold)
         projectTitle.ForeColor = Color.White
-        projectTitle.Location = New Point(71, 78)
+        projectTitle.Location = New Point(95, 80)
         projectTitle.Margin = New Padding(0)
         projectTitle.Name = "projectTitle"
-        projectTitle.Size = New Size(397, 46)
+        projectTitle.Size = New Size(255, 37)
         projectTitle.TabIndex = 1
-        projectTitle.Text = "Inventory Management"
+        projectTitle.Text = "Baldo Pet Supplies"
         projectTitle.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' projectTitle2
@@ -151,24 +179,23 @@ Partial Class loginForm
         projectTitle2.Anchor = AnchorStyles.None
         projectTitle2.AutoSize = True
         projectTitle2.BackColor = Color.Transparent
-        projectTitle2.Font = New Font("Segoe UI", 20F, FontStyle.Bold)
+        projectTitle2.Font = New Font("Segoe UI", 20.0F, FontStyle.Bold)
         projectTitle2.ForeColor = Color.White
-        projectTitle2.Location = New Point(191, 144)
+        projectTitle2.Location = New Point(118, 171)
         projectTitle2.Margin = New Padding(0)
         projectTitle2.Name = "projectTitle2"
-        projectTitle2.Size = New Size(133, 46)
+        projectTitle2.Size = New Size(206, 37)
         projectTitle2.TabIndex = 2
-        projectTitle2.Text = "System"
+        projectTitle2.Text = "System (BROS)"
         projectTitle2.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' pawPrintPictureBox
         ' 
         pawPrintPictureBox.BackgroundImage = My.Resources.Resources.luxa_org_opacity_changed__opacityPawPrints
         pawPrintPictureBox.BackgroundImageLayout = ImageLayout.Stretch
-        pawPrintPictureBox.Location = New Point(-175, -179)
-        pawPrintPictureBox.Margin = New Padding(3, 4, 3, 4)
+        pawPrintPictureBox.Location = New Point(-153, -134)
         pawPrintPictureBox.Name = "pawPrintPictureBox"
-        pawPrintPictureBox.Size = New Size(1064, 1333)
+        pawPrintPictureBox.Size = New Size(931, 1000)
         pawPrintPictureBox.TabIndex = 0
         pawPrintPictureBox.TabStop = False
         ' 
@@ -176,23 +203,21 @@ Partial Class loginForm
         ' 
         logoPictureBox.BackgroundImage = My.Resources.Resources.Untitled_design
         logoPictureBox.BackgroundImageLayout = ImageLayout.Stretch
-        logoPictureBox.Location = New Point(739, 0)
-        logoPictureBox.Margin = New Padding(3, 4, 3, 4)
+        logoPictureBox.Location = New Point(647, 0)
         logoPictureBox.Name = "logoPictureBox"
-        logoPictureBox.Size = New Size(773, 972)
+        logoPictureBox.Size = New Size(676, 729)
         logoPictureBox.SizeMode = PictureBoxSizeMode.StretchImage
         logoPictureBox.TabIndex = 10
         logoPictureBox.TabStop = False
         ' 
         ' LoginForm
         ' 
-        AutoScaleDimensions = New SizeF(8F, 20F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1501, 969)
+        ClientSize = New Size(1313, 727)
         Controls.Add(logoPictureBox)
         Controls.Add(brownPanel)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
-        Margin = New Padding(3, 4, 3, 4)
         Name = "LoginForm"
         StartPosition = FormStartPosition.CenterScreen
         Text = "Login"
@@ -222,5 +247,7 @@ Partial Class loginForm
     Friend WithEvents loginButton As Button
     Friend WithEvents logoPictureBox As PictureBox
     Friend WithEvents Panel1 As Panel
+    Friend WithEvents cancelButton As Button
+    Friend WithEvents Label1 As Label
 
 End Class

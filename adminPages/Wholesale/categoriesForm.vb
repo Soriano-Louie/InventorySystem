@@ -98,7 +98,7 @@ Public Class categoriesForm
     End Sub
 
     Private Sub categoriesForm_Closed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        chooseDashboard.globalPage = ""
+        chooseDashboard2.globalPage = ""
     End Sub
 
     Private Sub HighlightButton(buttonName As String)
@@ -136,7 +136,7 @@ Public Class categoriesForm
     End Sub
 
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
-        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+        If chooseDashboard2.globalPage.ToLower() = "wholesale" Then
             Select Case btnName
                 Case "Button1"
                     Dim form = ShowSingleForm(Of wholesaleDashboard)()
@@ -158,7 +158,7 @@ Public Class categoriesForm
                     Dim form = ShowSingleForm(Of userManagementForm)()
                     form.LoadUsers()
             End Select
-        ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
+        ElseIf chooseDashboard2.globalPage.ToLower() = "retail" Then
             Select Case btnName
                 Case "Button1"
                     Dim form = ShowSingleForm(Of retailDashboard)()
@@ -168,8 +168,10 @@ Public Class categoriesForm
                 Case "Button3"
                     ShowSingleForm(Of categoriesForm)()
                 Case "Button4"
-
                 Case "Button5"
+                    Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
+                    form.loadStockEditLogs()
+                Case "Button10"
                     ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
                     Dim form = ShowSingleForm(Of loginRecordsForm)()
@@ -182,7 +184,7 @@ Public Class categoriesForm
     End Sub
 
     Private Sub categoriesForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+        If chooseDashboard2.globalPage.ToLower() = "wholesale" Then
             topPanel.Label1.Text = "WHOLESALE"
             sidePanel = New sidePanelControl()
             sidePanel.Dock = DockStyle.Left
@@ -193,7 +195,7 @@ Public Class categoriesForm
             ' Attach event handler  
             AddHandler sidePanel.ButtonClicked, AddressOf SidePanel_ButtonClicked
 
-        ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
+        ElseIf chooseDashboard2.globalPage.ToLower() = "retail" Then
             topPanel.Label1.Text = "RETAIL"
             sidePanel2 = New sidePanelControl2()
             sidePanel2.Dock = DockStyle.Left

@@ -214,6 +214,8 @@ Partial Class editItemRetail
         newDateText.Location = New Point(4, 30)
         newDateText.MinDate = New Date(2025, 9, 24, 0, 0, 0, 0)
         newDateText.Name = "newDateText"
+        newDateText.ShowCheckBox = True
+        newDateText.Checked = False
         newDateText.Size = New Size(200, 23)
         newDateText.TabIndex = 9
         ' 

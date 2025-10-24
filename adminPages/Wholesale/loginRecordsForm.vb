@@ -95,7 +95,7 @@ Public Class loginRecordsForm
     End Sub
 
     Private Sub logsForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        chooseDashboard.globalPage = ""
+        chooseDashboard2.globalPage = ""
     End Sub
 
     Private Sub HighlightButton(buttonName As String)
@@ -134,7 +134,7 @@ Public Class loginRecordsForm
     End Sub
 
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked, sidePanel2.ButtonClicked
-        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+        If chooseDashboard2.globalPage.ToLower() = "wholesale" Then
             Select Case btnName
                 Case "Button1"
                     Dim form = ShowSingleForm(Of wholesaleDashboard)()
@@ -167,7 +167,12 @@ Public Class loginRecordsForm
                     Dim form = ShowSingleForm(Of categoriesForm)()
                     form.loadCategories()
                 Case "Button4"
+                    Dim form = ShowSingleForm(Of retailStockEditLogs)()
+                    form.loadStockEditLogs()
                 Case "Button5"
+                    Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
+                    form.loadStockEditLogs()
+                Case "Button10"
                     ShowSingleForm(Of retailSalesReport)()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
@@ -193,14 +198,14 @@ Public Class loginRecordsForm
         Me.topPanel = New topPanelControl()
         Me.topPanel.Dock = DockStyle.Top
 
-        If chooseDashboard.globalPage.ToLower() = "wholesale" Then
+        If chooseDashboard2.globalPage.ToLower() = "wholesale" Then
             Me.topPanel.Label1.Text = "WHOLESALE"
             Me.sidePanel = New sidePanelControl()
             Me.sidePanel.Dock = DockStyle.Left
             Me.Controls.Add(Me.topPanel)
             Me.Controls.Add(Me.sidePanel)
 
-        ElseIf chooseDashboard.globalPage.ToLower() = "retail" Then
+        ElseIf chooseDashboard2.globalPage.ToLower() = "retail" Then
             Me.topPanel.Label1.Text = "RETAIL"
             Me.sidePanel2 = New sidePanelControl2()
             Me.sidePanel2.Dock = DockStyle.Left

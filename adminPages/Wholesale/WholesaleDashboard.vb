@@ -165,6 +165,9 @@ Public Class wholesaleDashboard
             Case "Button4"
                 ShowSingleForm(Of deliveryLogsForm)()
             Case "Button5"
+                Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
+                DirectCast(form, wholeSaleStockEditLogs).loadStockEditLogs()
+            Case "Button10"
                 Dim form = ShowSingleForm(Of salesReport)()
                 DirectCast(form, salesReport).loadSalesReport()
             Case "Button6"
