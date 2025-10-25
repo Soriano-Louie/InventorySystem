@@ -23,19 +23,19 @@ Public Class editCategoryForm
 
     Protected Overrides Sub WndProc(ByRef m As Message)
         Const WM_SYSCOMMAND As Integer = &H112
+        Const SC_MAXIMIZE As Integer = &HF030
         Const SC_RESTORE As Integer = &HF120
-        Const SC_MOVE As Integer = &HF010
 
         If m.Msg = WM_SYSCOMMAND Then
             Dim command As Integer = (m.WParam.ToInt32() And &HFFF0)
 
-            ' Block restore
-            If command = SC_RESTORE Then
+            ' Block maximize
+            If command = SC_MAXIMIZE Then
                 Return
             End If
 
-            ' Block moving
-            If command = SC_MOVE Then
+            ' Block restore (prevents double-click maximize)
+            If command = SC_RESTORE Then
                 Return
             End If
         End If

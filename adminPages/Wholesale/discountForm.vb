@@ -24,6 +24,28 @@ Public Class discountForm
 
     End Sub
 
+    Protected Overrides Sub WndProc(ByRef m As Message)
+        Const WM_SYSCOMMAND As Integer = &H112
+        Const SC_MAXIMIZE As Integer = &HF030
+        Const SC_RESTORE As Integer = &HF120
+
+        If m.Msg = WM_SYSCOMMAND Then
+            Dim command As Integer = (m.WParam.ToInt32() And &HFFF0)
+
+            ' Block maximize
+            If command = SC_MAXIMIZE Then
+                Return
+            End If
+
+            ' Block restore (prevents double-click maximize)
+            If command = SC_RESTORE Then
+                Return
+            End If
+        End If
+
+        MyBase.WndProc(m)
+    End Sub
+
     Private Sub discountForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Show product name on form title or label
         Dim title As String = "Manage Discounts - " & _productName

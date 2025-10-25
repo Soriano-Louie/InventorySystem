@@ -1,4 +1,6 @@
 ﻿Imports Microsoft.Data.SqlClient
+Imports QRCoder
+Imports System.IO
 
 Public Class editItemForm
     Private parentForm As InventoryForm
@@ -30,19 +32,19 @@ Public Class editItemForm
 
     Protected Overrides Sub WndProc(ByRef m As Message)
         Const WM_SYSCOMMAND As Integer = &H112
+        Const SC_MAXIMIZE As Integer = &HF030
         Const SC_RESTORE As Integer = &HF120
-        Const SC_MOVE As Integer = &HF010
 
         If m.Msg = WM_SYSCOMMAND Then
             Dim command As Integer = (m.WParam.ToInt32() And &HFFF0)
 
-            ' Block restore
-            If command = SC_RESTORE Then
+            ' Block maximize
+            If command = SC_MAXIMIZE Then
                 Return
             End If
 
-            ' Block moving
-            If command = SC_MOVE Then
+            ' Block restore (prevents double-click maximize)
+            If command = SC_RESTORE Then
                 Return
             End If
         End If
@@ -177,18 +179,18 @@ Public Class editItemForm
         Dim cost As Decimal = 0
         Dim retailPrice As Decimal = 0
         Dim reorderLevel As Integer = 0
-        Dim qrCodeImage As Byte() = Nothing
         Dim oldQuantity As Decimal = 0
 
         Using conn As New SqlConnection(connString)
             conn.Open()
-            Dim selectQuery As String = "SELECT SKU, ProductName, CategoryID, Unit, Cost, RetailPrice, ReorderLevel, QRCodeImage, StockQuantity FROM wholesaleProducts WHERE ProductID = @ProductID"
+            Dim selectQuery As String = "SELECT SKU, ProductName, CategoryID, Unit, Cost, RetailPrice, ReorderLevel, StockQuantity FROM wholesaleProducts WHERE ProductID = @ProductID"
 
             Using cmd As New SqlCommand(selectQuery, conn)
                 cmd.Parameters.AddWithValue("@ProductID", baseProductID)
 
                 Using reader As SqlDataReader = cmd.ExecuteReader()
                     If reader.Read() Then
+                        ' Create unique SKU for the batch
                         sku = reader("SKU").ToString() & "-BATCH-" & DateTime.Now.ToString("yyyyMMddHHmmss")
                         productName = reader("ProductName").ToString()
                         categoryID = Convert.ToInt32(reader("CategoryID"))
@@ -197,10 +199,6 @@ Public Class editItemForm
                         retailPrice = Convert.ToDecimal(reader("RetailPrice"))
                         reorderLevel = Convert.ToInt32(reader("ReorderLevel"))
                         oldQuantity = Convert.ToDecimal(reader("StockQuantity"))
-
-                        If Not IsDBNull(reader("QRCodeImage")) Then
-                            qrCodeImage = DirectCast(reader("QRCodeImage"), Byte())
-                        End If
                     Else
                         MessageBox.Show("Product not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         Return
@@ -209,7 +207,22 @@ Public Class editItemForm
             End Using
         End Using
 
-        ' Now insert the new batch with the same details but different expiration date and quantity
+        ' Generate QR code for the new batch using the unique SKU
+        Dim qrData As Byte()
+        Using qrGen As New QRCodeGenerator()
+            Using qrCodeData = qrGen.CreateQrCode(sku, QRCodeGenerator.ECCLevel.Q)
+                Using qrCode As New QRCode(qrCodeData)
+                    Using qrImage As Bitmap = qrCode.GetGraphic(20)
+                        Using ms As New MemoryStream()
+                            qrImage.Save(ms, Imaging.ImageFormat.Png)
+                            qrData = ms.ToArray()
+                        End Using
+                    End Using
+                End Using
+            End Using
+        End Using
+
+        ' Now insert the new batch with the new QR code
         Using conn As New SqlConnection(connString)
             conn.Open()
             Dim insertQuery As String = "INSERT INTO wholesaleProducts 
@@ -233,13 +246,9 @@ Public Class editItemForm
                     cmd.Parameters.AddWithValue("@ExpirationDate", DBNull.Value)
                 End If
 
-                ' Properly handle varbinary parameter
+                ' Add the newly generated QR code
                 Dim qrParam As New SqlParameter("@QRCodeImage", SqlDbType.VarBinary)
-                If qrCodeImage IsNot Nothing Then
-                    qrParam.Value = qrCodeImage
-                Else
-                    qrParam.Value = DBNull.Value
-                End If
+                qrParam.Value = qrData
                 cmd.Parameters.Add(qrParam)
 
                 cmd.ExecuteNonQuery()
@@ -420,23 +429,44 @@ Public Class editItemForm
                 Exit Sub
             End If
 
-            ' When editing quantity, require expiration date to be checked
-            If Not updateExpDate Then
-                MessageBox.Show("When editing stock quantity, you must specify an expiration date for the new batch." & vbCrLf &
-                               "Please check the expiration date checkbox and select a date.",
-                               "Expiration Date Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Exit Sub
+            ' Check if product has expiration date in database
+            Dim productHasExpirationDate As Boolean = CheckProductHasExpirationDate(productID)
+
+            ' Handle expiration date based on product type
+            If productHasExpirationDate Then
+                ' Product has expiration date, require user to specify one for the new batch
+                If Not updateExpDate Then
+                    MessageBox.Show("This product requires an expiration date." & vbCrLf &
+                                   "Please check the expiration date checkbox and select a date.",
+                                   "Expiration Date Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Exit Sub
+                End If
+            Else
+                ' Product doesn't have expiration date, use Nothing
+                newExpDate = Nothing
+                updateExpDate = False
             End If
 
-            ' Confirm batch creation
-            Dim confirmMsg As String = String.Format(
-                "You are adding {0} units as a new batch with expiration date {1}." & vbCrLf & vbCrLf &
-                "This will create a separate inventory entry for tracking purposes." & vbCrLf &
-                "Reason: {2}" & vbCrLf & vbCrLf &
-                "Do you want to continue?",
-                newQuantity.Value,
-                newExpDate.Value.ToShortDateString(),
-                editReason)
+            ' Build confirmation message
+            Dim confirmMsg As String
+            If productHasExpirationDate AndAlso newExpDate.HasValue Then
+                confirmMsg = String.Format(
+                    "You are adding {0} units as a new batch with expiration date {1}." & vbCrLf & vbCrLf &
+                    "This will create a separate inventory entry for tracking purposes." & vbCrLf &
+                    "Reason: {2}" & vbCrLf & vbCrLf &
+                    "Do you want to continue?",
+                    newQuantity.Value,
+                    newExpDate.Value.ToShortDateString(),
+                    editReason)
+            Else
+                confirmMsg = String.Format(
+                    "You are adding {0} units as a new batch without an expiration date." & vbCrLf & vbCrLf &
+                    "This will create a separate inventory entry for tracking purposes." & vbCrLf &
+                    "Reason: {1}" & vbCrLf & vbCrLf &
+                    "Do you want to continue?",
+                    newQuantity.Value,
+                    editReason)
+            End If
 
             If MessageBox.Show(confirmMsg, "Confirm Batch Creation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then
                 Exit Sub
@@ -479,6 +509,34 @@ Public Class editItemForm
         Next
         newDateText.Checked = False
     End Sub
+
+    ' Helper method to check if product has expiration date set in database
+    Private Function CheckProductHasExpirationDate(productID As Integer) As Boolean
+        Dim hasExpirationDate As Boolean = False
+        Dim connString As String = GetConnectionString()
+
+        Try
+            Using conn As New SqlConnection(connString)
+                conn.Open()
+                Dim query As String = "SELECT ExpirationDate FROM wholesaleProducts WHERE ProductID = @ProductID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+
+                    Dim result = cmd.ExecuteScalar()
+
+                    ' If ExpirationDate is not NULL, the product has an expiration date
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        hasExpirationDate = True
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error checking product expiration date: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
+        Return hasExpirationDate
+    End Function
 
     ' Helper method to get current logged-in user ID
     Private Function GetCurrentUserID() As Integer

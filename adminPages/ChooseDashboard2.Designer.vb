@@ -122,12 +122,12 @@ Partial Class chooseDashboard2
         ' Label1
         ' 
         Label1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
-        Label1.Font = New Font("Segoe UI", 80F, FontStyle.Bold)
-        Label1.Location = New Point(184, 157)
+        Label1.Font = New Font("Segoe UI", 50F, FontStyle.Bold)
+        Label1.Location = New Point(142, 125)
         Label1.Name = "Label1"
-        Label1.Size = New Size(538, 207)
+        Label1.Size = New Size(641, 245)
         Label1.TabIndex = 3
-        Label1.Text = "B.R.O.S"
+        Label1.Text = "Kuya Baldo Pet Supplies"
         Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' TableLayoutPanel2
