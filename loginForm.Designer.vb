@@ -88,7 +88,7 @@ Partial Class loginForm
         loginButton.Anchor = AnchorStyles.None
         loginButton.AutoSize = True
         loginButton.FlatStyle = FlatStyle.Flat
-        loginButton.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        loginButton.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         loginButton.Location = New Point(128, 410)
         loginButton.Name = "loginButton"
         loginButton.Size = New Size(78, 33)
@@ -99,7 +99,7 @@ Partial Class loginForm
         ' passwordLabel
         ' 
         passwordLabel.AutoSize = True
-        passwordLabel.Font = New Font("Segoe UI Semibold", 12.0F, FontStyle.Bold)
+        passwordLabel.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
         passwordLabel.Location = New Point(106, 340)
         passwordLabel.Name = "passwordLabel"
         passwordLabel.Size = New Size(79, 21)
@@ -117,7 +117,7 @@ Partial Class loginForm
         ' userLabel
         ' 
         userLabel.AutoSize = True
-        userLabel.Font = New Font("Segoe UI Semibold", 12.0F, FontStyle.Bold)
+        userLabel.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
         userLabel.Location = New Point(105, 264)
         userLabel.Name = "userLabel"
         userLabel.Size = New Size(83, 21)
@@ -149,7 +149,7 @@ Partial Class loginForm
         Label1.Anchor = AnchorStyles.None
         Label1.AutoSize = True
         Label1.BackColor = Color.Transparent
-        Label1.Font = New Font("Segoe UI", 20.0F, FontStyle.Bold)
+        Label1.Font = New Font("Segoe UI", 20F, FontStyle.Bold)
         Label1.ForeColor = Color.White
         Label1.Location = New Point(65, 125)
         Label1.Margin = New Padding(0)
@@ -164,7 +164,7 @@ Partial Class loginForm
         projectTitle.Anchor = AnchorStyles.None
         projectTitle.AutoSize = True
         projectTitle.BackColor = Color.Transparent
-        projectTitle.Font = New Font("Segoe UI", 20.0F, FontStyle.Bold)
+        projectTitle.Font = New Font("Segoe UI", 20F, FontStyle.Bold)
         projectTitle.ForeColor = Color.White
         projectTitle.Location = New Point(95, 80)
         projectTitle.Margin = New Padding(0)
@@ -179,14 +179,14 @@ Partial Class loginForm
         projectTitle2.Anchor = AnchorStyles.None
         projectTitle2.AutoSize = True
         projectTitle2.BackColor = Color.Transparent
-        projectTitle2.Font = New Font("Segoe UI", 20.0F, FontStyle.Bold)
+        projectTitle2.Font = New Font("Segoe UI", 20F, FontStyle.Bold)
         projectTitle2.ForeColor = Color.White
-        projectTitle2.Location = New Point(118, 171)
+        projectTitle2.Location = New Point(169, 171)
         projectTitle2.Margin = New Padding(0)
         projectTitle2.Name = "projectTitle2"
-        projectTitle2.Size = New Size(206, 37)
+        projectTitle2.Size = New Size(109, 37)
         projectTitle2.TabIndex = 2
-        projectTitle2.Text = "System (BROS)"
+        projectTitle2.Text = "System"
         projectTitle2.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' pawPrintPictureBox

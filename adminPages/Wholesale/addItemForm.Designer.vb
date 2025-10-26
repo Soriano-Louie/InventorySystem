@@ -24,6 +24,9 @@ Partial Class addItemForm
     Private Sub InitializeComponent()
         mainPanel = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
+        Panel5 = New Panel()
+        Label6 = New Label()
+        VATCheckBox = New CheckBox()
         Panel7 = New Panel()
         Label8 = New Label()
         reorderTextBox = New TextBox()
@@ -59,6 +62,7 @@ Partial Class addItemForm
         Label1 = New Label()
         mainPanel.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
+        Panel5.SuspendLayout()
         Panel7.SuspendLayout()
         Panel11.SuspendLayout()
         Panel10.SuspendLayout()
@@ -80,7 +84,7 @@ Partial Class addItemForm
         mainPanel.Dock = DockStyle.Fill
         mainPanel.Location = New Point(0, 0)
         mainPanel.Name = "mainPanel"
-        mainPanel.Size = New Size(363, 735)
+        mainPanel.Size = New Size(363, 758)
         mainPanel.TabIndex = 0
         ' 
         ' TableLayoutPanel1
@@ -88,6 +92,7 @@ Partial Class addItemForm
         TableLayoutPanel1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
         TableLayoutPanel1.ColumnCount = 1
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
+        TableLayoutPanel1.Controls.Add(Panel5, 0, 9)
         TableLayoutPanel1.Controls.Add(Panel7, 0, 7)
         TableLayoutPanel1.Controls.Add(Panel11, 0, 5)
         TableLayoutPanel1.Controls.Add(Panel10, 0, 0)
@@ -97,10 +102,10 @@ Partial Class addItemForm
         TableLayoutPanel1.Controls.Add(Panel2, 0, 2)
         TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
         TableLayoutPanel1.Controls.Add(Panel6, 0, 6)
-        TableLayoutPanel1.Controls.Add(TableLayoutPanel2, 0, 9)
+        TableLayoutPanel1.Controls.Add(TableLayoutPanel2, 0, 10)
         TableLayoutPanel1.Location = New Point(0, 69)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
-        TableLayoutPanel1.RowCount = 10
+        TableLayoutPanel1.RowCount = 11
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
@@ -111,17 +116,50 @@ Partial Class addItemForm
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
-        TableLayoutPanel1.Size = New Size(362, 666)
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
+        TableLayoutPanel1.Size = New Size(362, 689)
         TableLayoutPanel1.TabIndex = 3
+        ' 
+        ' Panel5
+        ' 
+        Panel5.Controls.Add(Label6)
+        Panel5.Controls.Add(VATCheckBox)
+        Panel5.Dock = DockStyle.Fill
+        Panel5.Location = New Point(3, 561)
+        Panel5.Name = "Panel5"
+        Panel5.Size = New Size(356, 56)
+        Panel5.TabIndex = 11
+        ' 
+        ' Label6
+        ' 
+        Label6.AutoSize = True
+        Label6.Location = New Point(3, 10)
+        Label6.Name = "Label6"
+        Label6.Size = New Size(220, 15)
+        Label6.TabIndex = 17
+        Label6.Text = "Check if VAT is applicable to the product"
+        Label6.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' VATCheckBox
+        ' 
+        VATCheckBox.Anchor = AnchorStyles.Left
+        VATCheckBox.AutoSize = True
+        VATCheckBox.Font = New Font("Segoe UI", 9F)
+        VATCheckBox.Location = New Point(8, 30)
+        VATCheckBox.Name = "VATCheckBox"
+        VATCheckBox.Size = New Size(80, 19)
+        VATCheckBox.TabIndex = 16
+        VATCheckBox.Text = "Apply VAT"
+        VATCheckBox.UseVisualStyleBackColor = True
         ' 
         ' Panel7
         ' 
         Panel7.Controls.Add(Label8)
         Panel7.Controls.Add(reorderTextBox)
         Panel7.Dock = DockStyle.Fill
-        Panel7.Location = New Point(3, 465)
+        Panel7.Location = New Point(3, 437)
         Panel7.Name = "Panel7"
-        Panel7.Size = New Size(356, 60)
+        Panel7.Size = New Size(356, 56)
         Panel7.TabIndex = 9
         ' 
         ' Label8
@@ -147,9 +185,9 @@ Partial Class addItemForm
         Panel11.Controls.Add(Label11)
         Panel11.Controls.Add(costTextBox)
         Panel11.Dock = DockStyle.Fill
-        Panel11.Location = New Point(3, 333)
+        Panel11.Location = New Point(3, 313)
         Panel11.Name = "Panel11"
-        Panel11.Size = New Size(356, 60)
+        Panel11.Size = New Size(356, 56)
         Panel11.TabIndex = 6
         ' 
         ' Label11
@@ -177,7 +215,7 @@ Partial Class addItemForm
         Panel10.Dock = DockStyle.Fill
         Panel10.Location = New Point(3, 3)
         Panel10.Name = "Panel10"
-        Panel10.Size = New Size(356, 60)
+        Panel10.Size = New Size(356, 56)
         Panel10.TabIndex = 15
         ' 
         ' Label10
@@ -202,9 +240,9 @@ Partial Class addItemForm
         ' 
         Panel9.Controls.Add(Panel8)
         Panel9.Dock = DockStyle.Fill
-        Panel9.Location = New Point(3, 531)
+        Panel9.Location = New Point(3, 499)
         Panel9.Name = "Panel9"
-        Panel9.Size = New Size(356, 60)
+        Panel9.Size = New Size(356, 56)
         Panel9.TabIndex = 12
         ' 
         ' Panel8
@@ -214,7 +252,7 @@ Partial Class addItemForm
         Panel8.Dock = DockStyle.Fill
         Panel8.Location = New Point(0, 0)
         Panel8.Name = "Panel8"
-        Panel8.Size = New Size(356, 60)
+        Panel8.Size = New Size(356, 56)
         Panel8.TabIndex = 10
         ' 
         ' DateTimePicker1
@@ -230,9 +268,9 @@ Partial Class addItemForm
         Label9.AutoSize = True
         Label9.Location = New Point(3, 10)
         Label9.Name = "Label9"
-        Label9.Size = New Size(151, 15)
+        Label9.Size = New Size(161, 15)
         Label9.TabIndex = 1
-        Label9.Text = "Expiration Date (REQUIRED)"
+        Label9.Text = "Expiration Date (if applicable)"
         Label9.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' Panel4
@@ -240,9 +278,9 @@ Partial Class addItemForm
         Panel4.Controls.Add(Label5)
         Panel4.Controls.Add(unitTextBox)
         Panel4.Dock = DockStyle.Fill
-        Panel4.Location = New Point(3, 267)
+        Panel4.Location = New Point(3, 251)
         Panel4.Name = "Panel4"
-        Panel4.Size = New Size(356, 60)
+        Panel4.Size = New Size(356, 56)
         Panel4.TabIndex = 5
         ' 
         ' Label5
@@ -268,9 +306,9 @@ Partial Class addItemForm
         Panel3.Controls.Add(Label4)
         Panel3.Controls.Add(quantityTextBox)
         Panel3.Dock = DockStyle.Fill
-        Panel3.Location = New Point(3, 201)
+        Panel3.Location = New Point(3, 189)
         Panel3.Name = "Panel3"
-        Panel3.Size = New Size(356, 60)
+        Panel3.Size = New Size(356, 56)
         Panel3.TabIndex = 4
         ' 
         ' Label4
@@ -296,9 +334,9 @@ Partial Class addItemForm
         Panel2.Controls.Add(categoryDropDown)
         Panel2.Controls.Add(Label3)
         Panel2.Dock = DockStyle.Fill
-        Panel2.Location = New Point(3, 135)
+        Panel2.Location = New Point(3, 127)
         Panel2.Name = "Panel2"
-        Panel2.Size = New Size(356, 60)
+        Panel2.Size = New Size(356, 56)
         Panel2.TabIndex = 3
         ' 
         ' categoryDropDown
@@ -325,9 +363,9 @@ Partial Class addItemForm
         Panel1.Controls.Add(productTextBox)
         Panel1.Controls.Add(Label2)
         Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(3, 69)
+        Panel1.Location = New Point(3, 65)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(356, 60)
+        Panel1.Size = New Size(356, 56)
         Panel1.TabIndex = 2
         ' 
         ' productTextBox
@@ -353,9 +391,9 @@ Partial Class addItemForm
         Panel6.Controls.Add(Label7)
         Panel6.Controls.Add(retailTextBox)
         Panel6.Dock = DockStyle.Fill
-        Panel6.Location = New Point(3, 399)
+        Panel6.Location = New Point(3, 375)
         Panel6.Name = "Panel6"
-        Panel6.Size = New Size(356, 60)
+        Panel6.Size = New Size(356, 56)
         Panel6.TabIndex = 8
         ' 
         ' Label7
@@ -384,11 +422,11 @@ Partial Class addItemForm
         TableLayoutPanel2.Controls.Add(cancelButton, 1, 0)
         TableLayoutPanel2.Controls.Add(addButton, 0, 0)
         TableLayoutPanel2.Dock = DockStyle.Fill
-        TableLayoutPanel2.Location = New Point(3, 597)
+        TableLayoutPanel2.Location = New Point(3, 623)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
         TableLayoutPanel2.RowCount = 1
         TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
-        TableLayoutPanel2.Size = New Size(356, 66)
+        TableLayoutPanel2.Size = New Size(356, 63)
         TableLayoutPanel2.TabIndex = 11
         ' 
         ' cancelButton
@@ -399,7 +437,7 @@ Partial Class addItemForm
         cancelButton.FlatAppearance.BorderSize = 0
         cancelButton.FlatStyle = FlatStyle.Popup
         cancelButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        cancelButton.Location = New Point(220, 17)
+        cancelButton.Location = New Point(220, 16)
         cancelButton.Name = "cancelButton"
         cancelButton.Size = New Size(93, 31)
         cancelButton.TabIndex = 12
@@ -414,7 +452,7 @@ Partial Class addItemForm
         addButton.FlatAppearance.BorderSize = 0
         addButton.FlatStyle = FlatStyle.Popup
         addButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
-        addButton.Location = New Point(51, 17)
+        addButton.Location = New Point(51, 16)
         addButton.Name = "addButton"
         addButton.Size = New Size(75, 31)
         addButton.TabIndex = 11
@@ -445,13 +483,15 @@ Partial Class addItemForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(363, 735)
+        ClientSize = New Size(363, 758)
         Controls.Add(mainPanel)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
         Name = "addItemForm"
         StartPosition = FormStartPosition.CenterParent
         mainPanel.ResumeLayout(False)
         TableLayoutPanel1.ResumeLayout(False)
+        Panel5.ResumeLayout(False)
+        Panel5.PerformLayout()
         Panel7.ResumeLayout(False)
         Panel7.PerformLayout()
         Panel11.ResumeLayout(False)
@@ -512,4 +552,7 @@ Partial Class addItemForm
     Friend WithEvents Label10 As Label
     Friend WithEvents skuTextBox As TextBox
     Friend WithEvents productTextBox As TextBox
+    Friend WithEvents VATCheckBox As CheckBox
+    Friend WithEvents Panel5 As Panel
+    Friend WithEvents Label6 As Label
 End Class

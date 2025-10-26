@@ -31,6 +31,9 @@ Public Class addItemForm
 
         DateTimePicker1.ShowCheckBox = True
         DateTimePicker1.Checked = False
+
+        ' Initialize VAT checkbox
+        VATCheckBox.Checked = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -57,6 +60,28 @@ Public Class addItemForm
 
     Private Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+    Private Function GetVATRate() As Decimal
+        Dim vatRate As Decimal = 0.12 ' Default VAT rate
+        Dim connString As String = GetConnectionString()
+
+        Try
+            Using conn As New SqlConnection(connString)
+                conn.Open()
+                Dim query As String = "SELECT TOP 1 VAT FROM Settings"
+                Using cmd As New SqlCommand(query, conn)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        vatRate = Convert.ToDecimal(result)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error retrieving VAT rate: " & ex.Message & vbCrLf & "Using default VAT rate of 12%.")
+        End Try
+
+        Return vatRate
     End Function
 
     Private Sub LoadCategories()
@@ -88,7 +113,7 @@ Public Class addItemForm
 
     Private Sub InsertProductWithQRCode(sku As String, productName As String, unit As String, retail As Decimal, cost As Decimal,
                                     qty As Integer, reorder As Integer, expirationDate As Object,
-                                    categoryID As Integer)
+                                    categoryID As Integer, isVATApplicable As Boolean)
 
         Dim connString As String = GetConnectionString()
         Dim newProductID As Integer = -1
@@ -96,12 +121,12 @@ Public Class addItemForm
         Using conn As New SqlConnection(connString)
             conn.Open()
 
-            ' Updated query with CategoryID and ExpirationDate
+            ' Updated query with CategoryID, ExpirationDate, and IsVATApplicable
             Dim query As String = "INSERT INTO wholesaleProducts 
-                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage, IsVATApplicable) 
                                OUTPUT INSERTED.ProductID
                                VALUES 
-                               (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
+                               (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage, @IsVATApplicable)"
 
             Using cmd As New SqlCommand(query, conn)
 
@@ -135,13 +160,22 @@ Public Class addItemForm
                 End If
                 cmd.Parameters.AddWithValue("@CategoryID", categoryID)
                 cmd.Parameters.Add("@QRCodeImage", SqlDbType.VarBinary).Value = qrData
+                cmd.Parameters.AddWithValue("@IsVATApplicable", isVATApplicable)
 
                 ' This executes insert and gets the new ProductID
                 newProductID = Convert.ToInt32(cmd.ExecuteScalar())
             End Using
         End Using
 
-        MessageBox.Show("Product inserted with QR Code successfully!")
+        Dim vatMessage As String = ""
+        If isVATApplicable Then
+            Dim vatRate As Decimal = GetVATRate()
+            vatMessage = $" (VAT {vatRate:P} applicable)"
+        Else
+            vatMessage = " (VAT not applicable)"
+        End If
+
+        MessageBox.Show("Product inserted with QR Code successfully!" & vatMessage)
         If MessageBox.Show("Do you want to set discounts for this product now?",
                    "Add Discounts", MessageBoxButtons.YesNo) = DialogResult.Yes Then
             Dim discountForm As New discountForm(newProductID, productName)
@@ -214,7 +248,8 @@ Public Class addItemForm
             Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
             Integer.Parse(reorderTextBox.Text),        ' Reorder Level
             expDate,                                   ' Expiration Date or NULL
-            Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID
+            Convert.ToInt32(categoryDropDown.SelectedValue), ' CategoryID
+            VATCheckBox.Checked                        ' IsVATApplicable
         )
             MessageBox.Show("Product inserted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
@@ -252,11 +287,16 @@ Public Class addItemForm
         For Each ctrl As Control In Panel11.Controls
             ResetControl(ctrl)
         Next
+
+        ' Reset VAT checkbox
+        VATCheckBox.Checked = False
+
         Me.BeginInvoke(Sub() skuTextBox.Focus())
 
 
         ' Refresh the DataGridView
         InventoryForm.LoadProducts()
     End Sub
+
 
 End Class

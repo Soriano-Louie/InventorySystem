@@ -32,6 +32,7 @@ Partial Class sidePanelControl2
         Button8 = New Button()
         Button9 = New Button()
         Button4 = New Button()
+        Button11 = New Button()
         CType(PictureBox1, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
@@ -42,7 +43,7 @@ Partial Class sidePanelControl2
         Button7.FlatAppearance.BorderSize = 0
         Button7.FlatStyle = FlatStyle.Flat
         Button7.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button7.Location = New Point(1, 731)
+        Button7.Location = New Point(1, 777)
         Button7.Name = "Button7"
         Button7.Padding = New Padding(20, 0, 0, 0)
         Button7.Size = New Size(241, 39)
@@ -58,7 +59,7 @@ Partial Class sidePanelControl2
         Button6.FlatAppearance.BorderSize = 0
         Button6.FlatStyle = FlatStyle.Flat
         Button6.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
-        Button6.Location = New Point(1, 668)
+        Button6.Location = New Point(1, 718)
         Button6.Name = "Button6"
         Button6.Padding = New Padding(20, 0, 0, 0)
         Button6.Size = New Size(232, 39)
@@ -165,7 +166,7 @@ Partial Class sidePanelControl2
         Button9.FlatStyle = FlatStyle.Flat
         Button9.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
         Button9.ForeColor = SystemColors.ActiveCaptionText
-        Button9.Location = New Point(0, 788)
+        Button9.Location = New Point(0, 834)
         Button9.Name = "Button9"
         Button9.Padding = New Padding(20, 0, 0, 0)
         Button9.Size = New Size(241, 39)
@@ -190,10 +191,26 @@ Partial Class sidePanelControl2
         Button4.TextAlign = ContentAlignment.MiddleLeft
         Button4.UseVisualStyleBackColor = True
         ' 
+        ' Button11
+        ' 
+        Button11.Cursor = Cursors.Hand
+        Button11.FlatAppearance.BorderSize = 0
+        Button11.FlatStyle = FlatStyle.Flat
+        Button11.Font = New Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Button11.Location = New Point(0, 660)
+        Button11.Name = "Button11"
+        Button11.Padding = New Padding(20, 0, 0, 0)
+        Button11.Size = New Size(232, 39)
+        Button11.TabIndex = 25
+        Button11.Text = "Set VAT"
+        Button11.TextAlign = ContentAlignment.MiddleLeft
+        Button11.UseVisualStyleBackColor = True
+        ' 
         ' sidePanelControl2
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        Controls.Add(Button11)
         Controls.Add(Button4)
         Controls.Add(Button9)
         Controls.Add(Button8)
@@ -221,5 +238,6 @@ Partial Class sidePanelControl2
     Friend WithEvents Button8 As Button
     Friend WithEvents Button9 As Button
     Friend WithEvents Button4 As Button
+    Friend WithEvents Button11 As Button
 
 End Class

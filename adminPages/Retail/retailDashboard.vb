@@ -156,7 +156,8 @@ Public Class retailDashboard
     Private Sub SidePanel_ButtonClicked(sender As Object, btnName As String) Handles sidePanel.ButtonClicked
         Select Case btnName
             Case "Button1"
-                ShowSingleForm(Of retailDashboard)()
+                Dim form = ShowSingleForm(Of retailDashboard)()
+                form.LoadDashboardData()
             Case "Button2"
                 ShowSingleForm(Of inventoryRetail)()
             Case "Button3"
@@ -166,13 +167,17 @@ Public Class retailDashboard
                 Dim form = ShowSingleForm(Of retailStockEditLogs)()
                 form.loadStockEditLogs()
             Case "Button5"
+                Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
+                form.loadStockEditLogs()
+            Case "Button10"
                 ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
-                Dim form = ShowSingleForm(Of loginRecordsForm)()
-                form.LoadLoginHistory()
+                ShowSingleForm(Of loginRecordsForm)()
             Case "Button7"
                 Dim form = ShowSingleForm(Of userManagementForm)()
                 form.LoadUsers()
+            Case "Button11"
+                SetVATRate()
         End Select
     End Sub
 
@@ -312,7 +317,7 @@ Public Class retailDashboard
     End Sub
 
     Private Function GetConnectionString() As String
-        Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+        Return SharedUtilities.GetConnectionString()
     End Function
 
     Private Sub LoadSalesData()
@@ -1180,4 +1185,67 @@ Public Class retailDashboard
                     (panel.Width - messageSize.Width) / 2,
                     (panel.Height - messageSize.Height) / 2)
     End Sub
+
+    Private Sub SetVATRate()
+        Try
+            ' Get current VAT rate from database
+            Dim currentVAT As Decimal = GetCurrentVATRate()
+
+            ' Show input box with current VAT rate
+            Dim input As String = InputBox($"Enter VAT Rate (%):{vbCrLf}Current VAT: {currentVAT:N2}%",
+                                          "Set VAT Rate",
+                                          currentVAT.ToString())
+
+            ' Check if user cancelled
+            If String.IsNullOrWhiteSpace(input) Then
+                Return
+            End If
+
+            ' Validate input
+            Dim newVATRate As Decimal
+            If Not Decimal.TryParse(input, newVATRate) Then
+                MessageBox.Show("Please enter a valid numeric value for VAT rate.",
+                              "Invalid Input",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Validate range (0 to 100)
+            If newVATRate < 0 OrElse newVATRate > 100 Then
+                MessageBox.Show("VAT rate must be between 0 and 100.",
+                              "Invalid Range",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Save to database
+            If SaveVATRate(newVATRate) Then
+                MessageBox.Show($"VAT rate successfully set to {newVATRate:N2}%",
+                              "Success",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Information)
+            Else
+                MessageBox.Show("Failed to save VAT rate. Please try again.",
+                              "Error",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Error)
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show($"Error setting VAT rate: {ex.Message}",
+                          "Error",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Function GetCurrentVATRate() As Decimal
+        Return SharedUtilities.GetCurrentVATRate()
+    End Function
+
+    Private Function SaveVATRate(vatRate As Decimal) As Boolean
+        Return SharedUtilities.SaveVATRate(vatRate)
+    End Function
 End Class
