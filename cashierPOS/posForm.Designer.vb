@@ -28,8 +28,18 @@ Partial Class posForm
         Panel2 = New Panel()
         bottomPanel = New Panel()
         TableLayoutPanel3 = New TableLayoutPanel()
-        timeLabel = New Label()
+        Panel4 = New Panel()
         dateYearLabel = New Label()
+        Panel3 = New Panel()
+        timeLabel = New Label()
+        Panel5 = New Panel()
+        VATLabel = New Label()
+        totalDiscountLabel = New Label()
+        totalSalesLabel = New Label()
+        Label4 = New Label()
+        Label3 = New Label()
+        Label2 = New Label()
+        Label1 = New Label()
         featuresPanel = New Panel()
         TableLayoutPanel2 = New TableLayoutPanel()
         Button5 = New Button()
@@ -37,18 +47,18 @@ Partial Class posForm
         Button3 = New Button()
         Button2 = New Button()
         Button1 = New Button()
-        Panel3 = New Panel()
-        Panel4 = New Panel()
+        vatableLabel = New Label()
         Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         Panel2.SuspendLayout()
         bottomPanel.SuspendLayout()
         TableLayoutPanel3.SuspendLayout()
+        Panel4.SuspendLayout()
+        Panel3.SuspendLayout()
+        Panel5.SuspendLayout()
         featuresPanel.SuspendLayout()
         TableLayoutPanel2.SuspendLayout()
-        Panel3.SuspendLayout()
-        Panel4.SuspendLayout()
         SuspendLayout()
         ' 
         ' Panel1
@@ -117,6 +127,7 @@ Partial Class posForm
         TableLayoutPanel3.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
         TableLayoutPanel3.Controls.Add(Panel4, 0, 1)
         TableLayoutPanel3.Controls.Add(Panel3, 0, 0)
+        TableLayoutPanel3.Controls.Add(Panel5, 1, 0)
         TableLayoutPanel3.Dock = DockStyle.Fill
         TableLayoutPanel3.Location = New Point(0, 0)
         TableLayoutPanel3.Name = "TableLayoutPanel3"
@@ -126,15 +137,15 @@ Partial Class posForm
         TableLayoutPanel3.Size = New Size(1651, 202)
         TableLayoutPanel3.TabIndex = 3
         ' 
-        ' timeLabel
+        ' Panel4
         ' 
-        timeLabel.Dock = DockStyle.Fill
-        timeLabel.Font = New Font("Segoe UI", 28F)
-        timeLabel.Location = New Point(50, 0)
-        timeLabel.Name = "timeLabel"
-        timeLabel.Size = New Size(769, 95)
-        timeLabel.TabIndex = 1
-        timeLabel.TextAlign = ContentAlignment.MiddleLeft
+        Panel4.Controls.Add(dateYearLabel)
+        Panel4.Dock = DockStyle.Fill
+        Panel4.Location = New Point(3, 104)
+        Panel4.Name = "Panel4"
+        Panel4.Padding = New Padding(50, 0, 0, 0)
+        Panel4.Size = New Size(819, 95)
+        Panel4.TabIndex = 4
         ' 
         ' dateYearLabel
         ' 
@@ -144,7 +155,116 @@ Partial Class posForm
         dateYearLabel.Name = "dateYearLabel"
         dateYearLabel.Size = New Size(769, 95)
         dateYearLabel.TabIndex = 2
-        dateYearLabel.TextAlign = ContentAlignment.MiddleLeft
+        dateYearLabel.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' Panel3
+        ' 
+        Panel3.Controls.Add(timeLabel)
+        Panel3.Dock = DockStyle.Fill
+        Panel3.Location = New Point(3, 3)
+        Panel3.Name = "Panel3"
+        Panel3.Padding = New Padding(50, 0, 0, 0)
+        Panel3.Size = New Size(819, 95)
+        Panel3.TabIndex = 3
+        ' 
+        ' timeLabel
+        ' 
+        timeLabel.Dock = DockStyle.Fill
+        timeLabel.Font = New Font("Segoe UI", 35F)
+        timeLabel.Location = New Point(50, 0)
+        timeLabel.Name = "timeLabel"
+        timeLabel.Size = New Size(769, 95)
+        timeLabel.TabIndex = 1
+        timeLabel.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' Panel5
+        ' 
+        Panel5.Controls.Add(vatableLabel)
+        Panel5.Controls.Add(VATLabel)
+        Panel5.Controls.Add(totalDiscountLabel)
+        Panel5.Controls.Add(totalSalesLabel)
+        Panel5.Controls.Add(Label4)
+        Panel5.Controls.Add(Label3)
+        Panel5.Controls.Add(Label2)
+        Panel5.Controls.Add(Label1)
+        Panel5.Dock = DockStyle.Fill
+        Panel5.Location = New Point(828, 3)
+        Panel5.Name = "Panel5"
+        Panel5.Padding = New Padding(20)
+        TableLayoutPanel3.SetRowSpan(Panel5, 2)
+        Panel5.Size = New Size(820, 196)
+        Panel5.TabIndex = 5
+        ' 
+        ' VATLabel
+        ' 
+        VATLabel.Anchor = AnchorStyles.None
+        VATLabel.Font = New Font("Segoe UI", 14F)
+        VATLabel.Location = New Point(530, 70)
+        VATLabel.Name = "VATLabel"
+        VATLabel.Size = New Size(278, 23)
+        VATLabel.TabIndex = 6
+        ' 
+        ' totalDiscountLabel
+        ' 
+        totalDiscountLabel.Anchor = AnchorStyles.None
+        totalDiscountLabel.Font = New Font("Segoe UI", 14F)
+        totalDiscountLabel.Location = New Point(178, 110)
+        totalDiscountLabel.Name = "totalDiscountLabel"
+        totalDiscountLabel.Size = New Size(245, 23)
+        totalDiscountLabel.TabIndex = 5
+        ' 
+        ' totalSalesLabel
+        ' 
+        totalSalesLabel.Anchor = AnchorStyles.None
+        totalSalesLabel.Font = New Font("Segoe UI", 14F)
+        totalSalesLabel.Location = New Point(192, 70)
+        totalSalesLabel.Name = "totalSalesLabel"
+        totalSalesLabel.Size = New Size(245, 23)
+        totalSalesLabel.TabIndex = 4
+        ' 
+        ' Label4
+        ' 
+        Label4.Anchor = AnchorStyles.None
+        Label4.AutoSize = True
+        Label4.Font = New Font("Segoe UI", 14F)
+        Label4.Location = New Point(476, 108)
+        Label4.Name = "Label4"
+        Label4.Size = New Size(89, 25)
+        Label4.TabIndex = 3
+        Label4.Text = "VATABLE:"
+        ' 
+        ' Label3
+        ' 
+        Label3.Anchor = AnchorStyles.None
+        Label3.AutoSize = True
+        Label3.Font = New Font("Segoe UI", 14F)
+        Label3.Location = New Point(476, 70)
+        Label3.Name = "Label3"
+        Label3.Size = New Size(48, 25)
+        Label3.TabIndex = 2
+        Label3.Text = "VAT:"
+        ' 
+        ' Label2
+        ' 
+        Label2.Anchor = AnchorStyles.None
+        Label2.AutoSize = True
+        Label2.Font = New Font("Segoe UI", 14F)
+        Label2.Location = New Point(66, 108)
+        Label2.Name = "Label2"
+        Label2.Size = New Size(106, 25)
+        Label2.TabIndex = 1
+        Label2.Text = "DISCOUNT:"
+        ' 
+        ' Label1
+        ' 
+        Label1.Anchor = AnchorStyles.None
+        Label1.AutoSize = True
+        Label1.Font = New Font("Segoe UI", 14F)
+        Label1.Location = New Point(66, 70)
+        Label1.Name = "Label1"
+        Label1.Size = New Size(124, 25)
+        Label1.TabIndex = 0
+        Label1.Text = "SALES TOTAL:"
         ' 
         ' featuresPanel
         ' 
@@ -247,25 +367,14 @@ Partial Class posForm
         Button1.Text = "[F1] Seach Product"
         Button1.UseVisualStyleBackColor = True
         ' 
-        ' Panel3
+        ' vatableLabel
         ' 
-        Panel3.Controls.Add(timeLabel)
-        Panel3.Dock = DockStyle.Fill
-        Panel3.Location = New Point(3, 3)
-        Panel3.Name = "Panel3"
-        Panel3.Padding = New Padding(50, 0, 0, 0)
-        Panel3.Size = New Size(819, 95)
-        Panel3.TabIndex = 3
-        ' 
-        ' Panel4
-        ' 
-        Panel4.Controls.Add(dateYearLabel)
-        Panel4.Dock = DockStyle.Fill
-        Panel4.Location = New Point(3, 104)
-        Panel4.Name = "Panel4"
-        Panel4.Padding = New Padding(50, 0, 0, 0)
-        Panel4.Size = New Size(819, 95)
-        Panel4.TabIndex = 4
+        vatableLabel.Anchor = AnchorStyles.None
+        vatableLabel.Font = New Font("Segoe UI", 14F)
+        vatableLabel.Location = New Point(571, 110)
+        vatableLabel.Name = "vatableLabel"
+        vatableLabel.Size = New Size(237, 23)
+        vatableLabel.TabIndex = 7
         ' 
         ' posForm
         ' 
@@ -284,10 +393,12 @@ Partial Class posForm
         Panel2.ResumeLayout(False)
         bottomPanel.ResumeLayout(False)
         TableLayoutPanel3.ResumeLayout(False)
+        Panel4.ResumeLayout(False)
+        Panel3.ResumeLayout(False)
+        Panel5.ResumeLayout(False)
+        Panel5.PerformLayout()
         featuresPanel.ResumeLayout(False)
         TableLayoutPanel2.ResumeLayout(False)
-        Panel3.ResumeLayout(False)
-        Panel4.ResumeLayout(False)
         ResumeLayout(False)
     End Sub
 
@@ -308,4 +419,13 @@ Partial Class posForm
     Friend WithEvents TableLayoutPanel3 As TableLayoutPanel
     Friend WithEvents Panel4 As Panel
     Friend WithEvents Panel3 As Panel
+    Friend WithEvents Panel5 As Panel
+    Friend WithEvents Label3 As Label
+    Friend WithEvents Label2 As Label
+    Friend WithEvents Label1 As Label
+    Friend WithEvents Label4 As Label
+    Friend WithEvents VATLabel As Label
+    Friend WithEvents totalDiscountLabel As Label
+    Friend WithEvents totalSalesLabel As Label
+    Friend WithEvents vatableLabel As Label
 End Class
