@@ -15,13 +15,12 @@ Public Class QRScannerForm
     Private parentForm As posForm
     Private lastScannedCode As String = ""
     Private lastScanTime As DateTime = DateTime.MinValue
-    Private scanCooldownSeconds As Integer = 3 ' Cooldown after successful scan
+    Private scanCooldownSeconds As Integer = 1 ' Reduced cooldown for faster continuous scanning
 
     ' Controls
     Private WithEvents pictureBoxCamera As PictureBox
     Private WithEvents labelStatus As Label
     Private WithEvents btnClose As Button
-    Private WithEvents btnResumeScan As Button
 
     Public Sub New(parent As posForm)
         InitializeComponent()
@@ -66,22 +65,10 @@ Public Class QRScannerForm
         labelStatus.ForeColor = Color.FromArgb(79, 51, 40)
         Me.Controls.Add(labelStatus)
 
-        ' Resume Scan Button
-        btnResumeScan = New Button()
-        btnResumeScan.Text = "Resume Scanning (SPACE)"
-        btnResumeScan.Location = New Point(240, 555)
-        btnResumeScan.Size = New Size(200, 40)
-        btnResumeScan.BackColor = Color.FromArgb(144, 238, 144) ' Light green
-        btnResumeScan.ForeColor = Color.FromArgb(79, 51, 40)
-        btnResumeScan.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        btnResumeScan.Visible = False ' Hidden by default
-        AddHandler btnResumeScan.Click, AddressOf BtnResumeScan_Click
-        Me.Controls.Add(btnResumeScan)
-
-        ' Close Button
+        ' Close Button (centered since no resume button)
         btnClose = New Button()
         btnClose.Text = "Close (ESC)"
-        btnClose.Location = New Point(460, 555)
+        btnClose.Location = New Point(340, 555)
         btnClose.Size = New Size(120, 40)
         btnClose.BackColor = Color.FromArgb(230, 216, 177)
         btnClose.ForeColor = Color.FromArgb(79, 51, 40)
@@ -102,7 +89,7 @@ Public Class QRScannerForm
 
             If videoDevices.Count = 0 Then
                 MessageBox.Show("No camera detected on this device.", "Camera Error",
-                  MessageBoxButtons.OK, MessageBoxIcon.Error)
+              MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Me.Close()
                 Return
             End If
@@ -115,7 +102,7 @@ Public Class QRScannerForm
             labelStatus.Text = "Ready to scan QR code..."
         Catch ex As Exception
             MessageBox.Show("Error initializing camera: " & ex.Message, "Camera Error",
-                     MessageBoxButtons.OK, MessageBoxIcon.Error)
+                 MessageBoxButtons.OK, MessageBoxIcon.Error)
             Me.Close()
         End Try
     End Sub
@@ -181,62 +168,56 @@ Public Class QRScannerForm
 
     Private Sub ProcessScannedQRCode(scannedData As String)
         Try
-            ' Stop scanning immediately
+            ' Stop scanning temporarily during processing
             isScanning = False
 
             labelStatus.Text = "QR Code detected! Validating..."
+            labelStatus.ForeColor = Color.Blue
 
             ' Validate QR code against database
             Dim productInfo = ValidateQRCodeInDatabase(scannedData)
 
             If productInfo.IsValid Then
-                ' Show quantity input dialog
-                Dim quantity As Integer = ShowQuantityDialog(productInfo.ProductName)
-
-                If quantity > 0 Then
-                    ' Add to cart
-                    parentForm.AddProductToCart(
+                ' Add to cart with quantity of 1
+                parentForm.AddProductToCart(
      productInfo.ProductID,
   productInfo.ProductName,
-         quantity,
+         1, ' Always add quantity of 1 per scan
    productInfo.UnitPrice,
           productInfo.CategoryID,
      productInfo.IsVATApplicable
   )
 
-                    MessageBox.Show($"Added {quantity} x {productInfo.ProductName} to cart!",
-  "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                ' Show brief success feedback
+                labelStatus.Text = $"Added: {productInfo.ProductName}"
+                labelStatus.ForeColor = Color.Green
 
-                    ' Update status and show resume button
-                    labelStatus.Text = "Product added! Remove QR code and press SPACE or click Resume to continue..."
-                    labelStatus.ForeColor = Color.Green
-                    btnResumeScan.Visible = True
-                    btnResumeScan.Focus()
+                ' Brief pause before resuming (gives visual feedback)
+                System.Threading.Thread.Sleep(300)
 
-                    ' Keep scanning paused until user resumes
-                    isProcessing = False
-                    ' DON'T set isScanning = True here - wait for user action
-                Else
-                    ' User cancelled - resume scanning immediately
-                    labelStatus.Text = "Cancelled. Ready to scan QR code..."
-                    labelStatus.ForeColor = Color.FromArgb(79, 51, 40)
-                    isScanning = True
-                    isProcessing = False
-                End If
-            Else
-                MessageBox.Show("QR Code not found in database.", "Invalid QR Code",
-              MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                labelStatus.Text = "Invalid code. Ready to scan QR code..."
+                ' Automatically resume scanning for next product
+                labelStatus.Text = "Ready to scan next QR code..."
                 labelStatus.ForeColor = Color.FromArgb(79, 51, 40)
+                isScanning = True
+                isProcessing = False
+            Else
+                ' Invalid QR code
+                labelStatus.Text = "Invalid QR Code! Scan again..."
+                labelStatus.ForeColor = Color.Red
+
+                ' Brief pause to show error
+                System.Threading.Thread.Sleep(500)
 
                 ' Resume scanning after invalid code
+                labelStatus.Text = "Ready to scan QR code..."
+                labelStatus.ForeColor = Color.FromArgb(79, 51, 40)
                 isScanning = True
                 isProcessing = False
             End If
 
         Catch ex As Exception
             MessageBox.Show("Error processing QR code: " & ex.Message, "Error",
-          MessageBoxButtons.OK, MessageBoxIcon.Error)
+    MessageBoxButtons.OK, MessageBoxIcon.Error)
             labelStatus.Text = "Error occurred. Ready to scan QR code..."
             labelStatus.ForeColor = Color.FromArgb(79, 51, 40)
 
@@ -244,32 +225,6 @@ Public Class QRScannerForm
             isScanning = True
             isProcessing = False
         End Try
-    End Sub
-
-    Private Sub StartScanCooldown()
-        ' Disable scanning temporarily
-        isScanning = False
-        btnResumeScan.Visible = True ' Show the resume button
-
-        ' Change status label to indicate cooldown
-        labelStatus.Text = $"Scan successful! Please wait {scanCooldownSeconds} seconds..."
-
-        ' Start a timer for the cooldown period
-        Dim cooldownEndTime As DateTime = DateTime.Now.AddSeconds(scanCooldownSeconds)
-        Dim cooldownTimer As New System.Windows.Forms.Timer()
-        AddHandler cooldownTimer.Tick,
-         Sub()
-             ' Check if cooldown period has ended
-             If DateTime.Now >= cooldownEndTime Then
-                 ' Stop the timer
-                 cooldownTimer.Stop()
-                 btnResumeScan.Visible = False ' Hide the resume button
-                 isScanning = True ' Resume scanning
-                 labelStatus.Text = "Ready to scan QR code..."
-             End If
-         End Sub
-        cooldownTimer.Interval = 1000 ' 1 second interval
-        cooldownTimer.Start()
     End Sub
 
     Private Function ValidateQRCodeInDatabase(scannedData As String) As ProductInfo
@@ -336,102 +291,10 @@ Public Class QRScannerForm
         Return result
     End Function
 
-    Private Function ShowQuantityDialog(productName As String) As Integer
-        Dim inputForm As New Form()
-        inputForm.Text = "Enter Quantity"
-        inputForm.Size = New Size(400, 200)
-        inputForm.StartPosition = FormStartPosition.CenterParent
-        inputForm.FormBorderStyle = FormBorderStyle.FixedDialog
-        inputForm.MaximizeBox = False
-        inputForm.MinimizeBox = False
-        inputForm.BackColor = Color.FromArgb(224, 166, 109)
-
-        Dim lblProduct As New Label()
-        lblProduct.Text = "Product: " & productName
-        lblProduct.Location = New Point(20, 20)
-        lblProduct.Size = New Size(360, 25)
-        lblProduct.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        lblProduct.ForeColor = Color.FromArgb(79, 51, 40)
-        inputForm.Controls.Add(lblProduct)
-
-        Dim lblQuantity As New Label()
-        lblQuantity.Text = "Enter Quantity:"
-        lblQuantity.Location = New Point(20, 60)
-        lblQuantity.Size = New Size(120, 25)
-        lblQuantity.Font = New Font("Segoe UI", 10)
-        lblQuantity.ForeColor = Color.FromArgb(79, 51, 40)
-        inputForm.Controls.Add(lblQuantity)
-
-        Dim txtQuantity As New NumericUpDown()
-        txtQuantity.Location = New Point(150, 60)
-        txtQuantity.Size = New Size(100, 25)
-        txtQuantity.Minimum = 1
-        txtQuantity.Maximum = 10000
-        txtQuantity.Value = 1
-        txtQuantity.Font = New Font("Segoe UI", 10)
-
-        ' Select all text when the control gets focus
-        AddHandler txtQuantity.Enter, Sub(s, e)
-                                          txtQuantity.Select(0, txtQuantity.Text.Length)
-                                      End Sub
-
-        ' Handle when user clicks on the control
-        AddHandler txtQuantity.MouseDown, Sub(s, e)
-                                              txtQuantity.Select(0, txtQuantity.Text.Length)
-                                          End Sub
-
-        inputForm.Controls.Add(txtQuantity)
-
-        Dim btnOK As New Button()
-        btnOK.Text = "OK"
-        btnOK.DialogResult = DialogResult.OK
-        btnOK.Location = New Point(100, 110)
-        btnOK.Size = New Size(80, 35)
-        btnOK.BackColor = Color.FromArgb(230, 216, 177)
-        btnOK.ForeColor = Color.FromArgb(79, 51, 40)
-        btnOK.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        inputForm.Controls.Add(btnOK)
-
-        Dim btnCancel As New Button()
-        btnCancel.Text = "Cancel"
-        btnCancel.DialogResult = DialogResult.Cancel
-        btnCancel.Location = New Point(220, 110)
-        btnCancel.Size = New Size(80, 35)
-        btnCancel.BackColor = Color.FromArgb(230, 216, 177)
-        btnCancel.ForeColor = Color.FromArgb(79, 51, 40)
-        btnCancel.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        inputForm.Controls.Add(btnCancel)
-
-        inputForm.AcceptButton = btnOK
-        inputForm.CancelButton = btnCancel
-
-        ' Set focus to the NumericUpDown and select all text when form is shown
-        AddHandler inputForm.Shown, Sub(s, e)
-                                        txtQuantity.Focus()
-                                        txtQuantity.Select(0, txtQuantity.Text.Length)
-                                    End Sub
-
-        If inputForm.ShowDialog() = DialogResult.OK Then
-            Return CInt(txtQuantity.Value)
-        Else
-            Return 0
-        End If
-    End Function
-
     Private Sub BtnClose_Click(sender As Object, e As EventArgs)
         ' Stop scanning first
         isScanning = False
         Me.Close()
-    End Sub
-
-    Private Sub BtnResumeScan_Click(sender As Object, e As EventArgs)
-        ' Resume scanning
-        btnResumeScan.Visible = False
-        labelStatus.Text = "Ready to scan QR code..."
-        labelStatus.ForeColor = Color.FromArgb(79, 51, 40)
-        lastScannedCode = "" ' Clear last scanned code
-        lastScanTime = DateTime.MinValue
-        isScanning = True
     End Sub
 
     Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
@@ -439,11 +302,6 @@ Public Class QRScannerForm
             ' Stop scanning first
             isScanning = False
             Me.Close()
-        ElseIf e.KeyCode = Keys.Space Then
-            ' Resume scanning with Space key
-            If btnResumeScan.Visible Then
-                BtnResumeScan_Click(Nothing, Nothing)
-            End If
         End If
         MyBase.OnKeyDown(e)
     End Sub
