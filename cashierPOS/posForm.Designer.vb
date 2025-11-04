@@ -33,6 +33,7 @@ Partial Class posForm
         Panel3 = New Panel()
         timeLabel = New Label()
         Panel5 = New Panel()
+        vatableLabel = New Label()
         VATLabel = New Label()
         totalDiscountLabel = New Label()
         totalSalesLabel = New Label()
@@ -42,12 +43,12 @@ Partial Class posForm
         Label1 = New Label()
         featuresPanel = New Panel()
         TableLayoutPanel2 = New TableLayoutPanel()
+        Button6 = New Button()
+        Button1 = New Button()
         Button5 = New Button()
         Button4 = New Button()
         Button3 = New Button()
         Button2 = New Button()
-        Button1 = New Button()
-        vatableLabel = New Label()
         Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
@@ -195,6 +196,15 @@ Partial Class posForm
         Panel5.Size = New Size(820, 196)
         Panel5.TabIndex = 5
         ' 
+        ' vatableLabel
+        ' 
+        vatableLabel.Anchor = AnchorStyles.None
+        vatableLabel.Font = New Font("Segoe UI", 14F)
+        vatableLabel.Location = New Point(571, 110)
+        vatableLabel.Name = "vatableLabel"
+        vatableLabel.Size = New Size(237, 23)
+        vatableLabel.TabIndex = 7
+        ' 
         ' VATLabel
         ' 
         VATLabel.Anchor = AnchorStyles.None
@@ -280,22 +290,52 @@ Partial Class posForm
         ' 
         TableLayoutPanel2.ColumnCount = 1
         TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
-        TableLayoutPanel2.Controls.Add(Button5, 0, 4)
-        TableLayoutPanel2.Controls.Add(Button4, 0, 3)
-        TableLayoutPanel2.Controls.Add(Button3, 0, 2)
-        TableLayoutPanel2.Controls.Add(Button2, 0, 1)
+        TableLayoutPanel2.Controls.Add(Button6, 0, 1)
         TableLayoutPanel2.Controls.Add(Button1, 0, 0)
+        TableLayoutPanel2.Controls.Add(Button5, 0, 5)
+        TableLayoutPanel2.Controls.Add(Button4, 0, 4)
+        TableLayoutPanel2.Controls.Add(Button3, 0, 3)
+        TableLayoutPanel2.Controls.Add(Button2, 0, 2)
         TableLayoutPanel2.Dock = DockStyle.Fill
         TableLayoutPanel2.Location = New Point(50, 50)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
-        TableLayoutPanel2.RowCount = 5
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 20F))
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 20F))
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 20F))
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 20F))
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 20F))
+        TableLayoutPanel2.RowCount = 6
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 16.666666F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 16.666666F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 16.666666F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 16.666666F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 16.666666F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 16.666666F))
         TableLayoutPanel2.Size = New Size(392, 566)
         TableLayoutPanel2.TabIndex = 0
+        ' 
+        ' Button6
+        ' 
+        Button6.Anchor = AnchorStyles.None
+        Button6.Cursor = Cursors.Hand
+        Button6.FlatAppearance.BorderSize = 0
+        Button6.FlatStyle = FlatStyle.Popup
+        Button6.Font = New Font("Segoe UI", 14F)
+        Button6.Location = New Point(106, 124)
+        Button6.Name = "Button6"
+        Button6.Size = New Size(180, 34)
+        Button6.TabIndex = 5
+        Button6.Text = "[F2] Scan Product"
+        Button6.UseVisualStyleBackColor = True
+        ' 
+        ' Button1
+        ' 
+        Button1.Anchor = AnchorStyles.None
+        Button1.Cursor = Cursors.Hand
+        Button1.FlatAppearance.BorderSize = 0
+        Button1.FlatStyle = FlatStyle.Popup
+        Button1.Font = New Font("Segoe UI", 14F)
+        Button1.Location = New Point(106, 30)
+        Button1.Name = "Button1"
+        Button1.Size = New Size(180, 34)
+        Button1.TabIndex = 0
+        Button1.Text = "[F1] Seach Product"
+        Button1.UseVisualStyleBackColor = True
         ' 
         ' Button5
         ' 
@@ -304,7 +344,7 @@ Partial Class posForm
         Button5.FlatAppearance.BorderSize = 0
         Button5.FlatStyle = FlatStyle.Popup
         Button5.Font = New Font("Segoe UI", 14F)
-        Button5.Location = New Point(106, 492)
+        Button5.Location = New Point(106, 501)
         Button5.Name = "Button5"
         Button5.Size = New Size(180, 34)
         Button5.TabIndex = 4
@@ -318,11 +358,11 @@ Partial Class posForm
         Button4.FlatAppearance.BorderSize = 0
         Button4.FlatStyle = FlatStyle.Popup
         Button4.Font = New Font("Segoe UI", 14F)
-        Button4.Location = New Point(106, 378)
+        Button4.Location = New Point(106, 406)
         Button4.Name = "Button4"
         Button4.Size = New Size(180, 34)
         Button4.TabIndex = 3
-        Button4.Text = "[F4] Transactions"
+        Button4.Text = "[F5] Transactions"
         Button4.UseVisualStyleBackColor = True
         ' 
         ' Button3
@@ -332,11 +372,11 @@ Partial Class posForm
         Button3.FlatAppearance.BorderSize = 0
         Button3.FlatStyle = FlatStyle.Popup
         Button3.Font = New Font("Segoe UI", 14F)
-        Button3.Location = New Point(106, 265)
+        Button3.Location = New Point(106, 312)
         Button3.Name = "Button3"
         Button3.Size = New Size(180, 34)
         Button3.TabIndex = 2
-        Button3.Text = "[F3] Clear Cart"
+        Button3.Text = "[F4] Clear Cart"
         Button3.UseVisualStyleBackColor = True
         ' 
         ' Button2
@@ -346,35 +386,12 @@ Partial Class posForm
         Button2.FlatAppearance.BorderSize = 0
         Button2.FlatStyle = FlatStyle.Popup
         Button2.Font = New Font("Segoe UI", 14F)
-        Button2.Location = New Point(106, 152)
+        Button2.Location = New Point(106, 218)
         Button2.Name = "Button2"
         Button2.Size = New Size(180, 34)
         Button2.TabIndex = 1
-        Button2.Text = "[F2] Checkout"
+        Button2.Text = "[F3] Checkout"
         Button2.UseVisualStyleBackColor = True
-        ' 
-        ' Button1
-        ' 
-        Button1.Anchor = AnchorStyles.None
-        Button1.Cursor = Cursors.Hand
-        Button1.FlatAppearance.BorderSize = 0
-        Button1.FlatStyle = FlatStyle.Popup
-        Button1.Font = New Font("Segoe UI", 14F)
-        Button1.Location = New Point(106, 39)
-        Button1.Name = "Button1"
-        Button1.Size = New Size(180, 34)
-        Button1.TabIndex = 0
-        Button1.Text = "[F1] Seach Product"
-        Button1.UseVisualStyleBackColor = True
-        ' 
-        ' vatableLabel
-        ' 
-        vatableLabel.Anchor = AnchorStyles.None
-        vatableLabel.Font = New Font("Segoe UI", 14F)
-        vatableLabel.Location = New Point(571, 110)
-        vatableLabel.Name = "vatableLabel"
-        vatableLabel.Size = New Size(237, 23)
-        vatableLabel.TabIndex = 7
         ' 
         ' posForm
         ' 
@@ -428,4 +445,5 @@ Partial Class posForm
     Friend WithEvents totalDiscountLabel As Label
     Friend WithEvents totalSalesLabel As Label
     Friend WithEvents vatableLabel As Label
+    Friend WithEvents Button6 As Button
 End Class

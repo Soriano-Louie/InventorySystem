@@ -15,13 +15,14 @@ The QR Code Scanner feature allows cashiers to scan product QR codes using the l
 1. **Live Camera Feed** - Displays real-time camera feed in the scanner window (760x480)
 2. **Automatic QR Detection** - Continuously scans for QR codes in the camera view
 3. **Instant Cart Addition** - Each scan automatically adds 1 unit to cart (no prompts)
-4. **Database Validation** - Validates scanned QR codes against both `wholesaleProducts` and `retailProducts` tables
-5. **Duplicate Detection** - 1-second cooldown prevents accidental double-scans of the same QR code
-6. **Automatic Quantity Increase** - Scanning the same product multiple times increases quantity in cart
-7. **Visual Feedback** - Color-coded status messages (Blue=Detecting, Green=Added, Red=Invalid)
-8. **Processing Lock** - Prevents multiple simultaneous QR code processing
-9. **Continuous Operation** - Camera runs continuously, no manual resume needed
-10. **Auto-Resume** - Automatically ready for next scan after each product
+4. **Audio Feedback** - Success beep sound (800 Hz, 100ms) plays on every successful scan
+5. **Database Validation** - Validates scanned QR codes against both `wholesaleProducts` and `retailProducts` tables
+6. **Duplicate Detection** - 1-second cooldown prevents accidental double-scans of the same QR code
+7. **Automatic Quantity Increase** - Scanning the same product multiple times increases quantity in cart
+8. **Visual Feedback** - Color-coded status messages (Blue=Detecting, Green=Added, Red=Invalid)
+9. **Processing Lock** - Prevents multiple simultaneous QR code processing
+10. **Continuous Operation** - Camera runs continuously, no manual resume needed
+11. **Auto-Resume** - Automatically ready for next scan after each product
 
 ## How to Use
 ### Opening the QR Scanner
@@ -33,11 +34,11 @@ The QR Code Scanner feature allows cashiers to scan product QR codes using the l
 2. **Ready to scan** - Status shows "Ready to scan QR code..."
 3. Hold QR code in front of camera
 4. **Detecting** - Status turns BLUE "QR Code detected! Validating..."
-5. **Success** - Status turns GREEN "Added: [Product Name]" (300ms pause)
+5. **Success** - Status turns GREEN "Added: [Product Name]" + **BEEP** sound (300ms pause)
 6. **Auto-ready** - Status returns to normal "Ready to scan next QR code..."
 7. **Repeat** - Immediately scan next product (no button press needed)
 
-**Note:** During the 300ms success feedback and 500ms error feedback periods, the UI will pause briefly to show the status message.
+**Note:** During the 300ms success feedback and 500ms error feedback periods, the UI will pause briefly to show the status message. A success beep (800 Hz, 100ms) confirms each scan.
 
 ### Quantity Management
 - **First scan** - Adds product to cart with quantity = 1
@@ -46,11 +47,11 @@ The QR Code Scanner feature allows cashiers to scan product QR codes using the l
 - **And so on...** Each additional scan increases quantity by 1
 - **Cooldown:** 1-second between scans of the same QR code to prevent accidental duplicates
 
-### Visual Feedback
+### Visual & Audio Feedback
 - ?? **Normal** (Dark Brown): Ready to scan
 - ?? **Blue**: Detecting/Validating QR code
-- ?? **Green**: Product added successfully (shows for 300ms)
-- ?? **Red**: Invalid QR code (shows for 500ms)
+- ?? **Green** + ?? **Beep**: Product added successfully (300ms)
+- ?? **Red** (Silent): Invalid QR code (500ms)
 
 ### Invalid QR Code Handling
 - Shows "Invalid QR Code! Scan again..." in RED
@@ -137,22 +138,24 @@ labelStatus.ForeColor = Blue    ' Show detecting status
 
 ' If valid product:
 parentForm.AddProductToCart(...)    ' Add with quantity=1
+Console.Beep(800, 100)         ' Play success beep (800 Hz, 100ms)
 labelStatus.ForeColor = Green       ' Show success
 Thread.Sleep(300)         ' Brief pause (UI freezes)
 labelStatus.ForeColor = DarkBrown   ' Reset to normal
 isScanning = True  ' Resume scanning
 
 ' If invalid code:
-labelStatus.ForeColor = Red         ' Show error
+labelStatus.ForeColor = Red   ' Show error (no beep)
 Thread.Sleep(500)  ' Brief pause (UI freezes)
 labelStatus.ForeColor = DarkBrown   ' Reset to normal
-isScanning = True            ' Resume scanning
+isScanning = True   ' Resume scanning
 ```
 
 ### Key Improvements (v4.0 - Continuous Scanning Mode)
 - ? **Removed quantity dialog** - No interruptions, fully automatic
-- ? **Removed manual resume button** - Automatically ready after each scan
+- ? **Removed manual resume button** - Auto-resumes after each scan
 - ? **Removed success MessageBox** - Silent operation with status label feedback only
+- ? **Added success beep sound** - Audio feedback (800 Hz, 100ms) on every successful scan
 - ? **Fixed quantity = 1 per scan** - Like traditional barcode scanners
 - ? **Reduced cooldown to 1 second** - Faster continuous scanning
 - ? **Color-coded feedback** - Blue/Green/Red status for instant visual confirmation
@@ -176,8 +179,9 @@ isScanning = True            ' Resume scanning
 - **Camera FPS:** Typically 30 frames per second
 - **QR decode:** On each frame when `isScanning=True` and `isProcessing=False`
 - **Duplicate prevention:** 1-second cooldown (fast for continuous scanning)
-- **Success feedback:** 300ms UI pause with green status
-- **Error feedback:** 500ms UI pause with red status
+- **Success feedback:** 300ms UI pause with green status + 100ms beep
+- **Error feedback:** 500ms UI pause with red status (no beep)
+- **Beep sound:** 800 Hz frequency, 100ms duration
 - **Form close timeout:** 2000ms (2 seconds)
 - **Auto-rotate enabled:** Better detection at various angles
 - **TryHarder enabled:** More thorough QR code detection
@@ -253,14 +257,15 @@ isScanning = True            ' Resume scanning
 Customer purchases: 2x Coffee, 1x Bread, 2x Milk
 
 Workflow:
-1. Scan Coffee QR ? BLUE ? GREEN "Added: Coffee" ? Qty: 1
-2. Wait 1 sec ? Scan Coffee QR again ? BLUE ? GREEN "Added: Coffee" ? Qty: 2
-3. Scan Bread QR ? BLUE ? GREEN "Added: Bread" ? Qty: 1
-4. Scan Milk QR ? BLUE ? GREEN "Added: Milk" ? Qty: 1
-5. Wait 1 sec ? Scan Milk QR again ? BLUE ? GREEN "Added: Milk" ? Qty: 2
+1. Scan Coffee QR ? BLUE ? GREEN "Added: Coffee" + BEEP ? Qty: 1
+2. Wait 1 sec ? Scan Coffee QR again ? BLUE ? GREEN "Added: Coffee" + BEEP ? Qty: 2
+3. Scan Bread QR ? BLUE ? GREEN "Added: Bread" + BEEP ? Qty: 1
+4. Scan Milk QR ? BLUE ? GREEN "Added: Milk" + BEEP ? Qty: 1
+5. Wait 1 sec ? Scan Milk QR again ? BLUE ? GREEN "Added: Milk" + BEEP ? Qty: 2
 6. Close scanner ? Process payment
 
 Total Time: ~10-15 seconds for 5 scans
+Beeps: 5 (one per successful scan)
 ```
 
 ### Optimal Scanning Speed
@@ -290,7 +295,8 @@ Total Time: ~10-15 seconds for 5 scans
 - ?? Async/await pattern for non-blocking status feedback
 - ?? Support for multiple camera selection
 - ?? Adjustable scan cooldown period in settings
-- ?? Sound feedback on successful scan (beep)
+- ?? Adjustable beep sound settings (frequency, duration, volume)
+- ?? Option to mute/unmute beep sound
 - ?? Scan counter display (items scanned this session)
 - ?? Scan history log with timestamps
 - ??? QR code generation for products without codes
@@ -307,6 +313,7 @@ Total Time: ~10-15 seconds for 5 scans
 - **Removed quantity dialog** - Fully automatic scanning without prompts
 - **Removed manual resume button** - Auto-resumes after each scan
 - **Removed success MessageBox** - Silent operation with status label only
+- **Added success beep sound** - Audio feedback (800 Hz, 100ms) on every successful scan
 - **Fixed quantity at 1 per scan** - Traditional scanner behavior
 - Reduced cooldown to 1 second for faster scanning
 - Added color-coded status feedback (Blue/Green/Red)
@@ -339,7 +346,7 @@ Total Time: ~10-15 seconds for 5 scans
 ## User Tips
 ?? **Pro Tip:** Scan rapidly like a retail checkout - the system handles everything automatically!
 
-?? **Speed Workflow:** Position products ready ? Scan ? Watch for GREEN ? Next product
+?? **Speed Workflow:** Position products ready ? Scan ? Watch for GREEN + Listen for BEEP ? Next product
 
 ?? **Multiple Units:** For bulk items, scan the same QR code multiple times (1 second apart)
 
@@ -348,6 +355,8 @@ Total Time: ~10-15 seconds for 5 scans
 ?? **Optimal Performance:** Good lighting + steady hands + 15-30cm distance = fastest scanning
 
 ?? **Visual Feedback:** Trust the colors - Blue=Working, Green=Success, Red=Error
+
+?? **Audio Feedback:** BEEP = Success! No beep = Invalid or error
 
 ?? **Cooldown Awareness:** Different products scan instantly; same product needs 1 second wait
 

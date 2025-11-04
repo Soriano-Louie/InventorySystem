@@ -188,6 +188,9 @@ Public Class QRScannerForm
      productInfo.IsVATApplicable
   )
 
+                ' Play success beep sound
+                Console.Beep(800, 100) ' 800 Hz frequency, 100 ms duration
+
                 ' Show brief success feedback
                 labelStatus.Text = $"Added: {productInfo.ProductName}"
                 labelStatus.ForeColor = Color.Green
@@ -201,7 +204,7 @@ Public Class QRScannerForm
                 isScanning = True
                 isProcessing = False
             Else
-                ' Invalid QR code
+                ' Invalid QR code - no beep for errors
                 labelStatus.Text = "Invalid QR Code! Scan again..."
                 labelStatus.ForeColor = Color.Red
 

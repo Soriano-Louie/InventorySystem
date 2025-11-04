@@ -38,12 +38,14 @@ Public Class posForm
         Button3.BackColor = Color.FromArgb(230, 216, 177)
         Button4.BackColor = Color.FromArgb(230, 216, 177)
         Button5.BackColor = Color.FromArgb(230, 216, 177)
+        Button6.BackColor = Color.FromArgb(230, 216, 177)
 
         Button1.ForeColor = Color.FromArgb(79, 51, 40)
         Button2.ForeColor = Color.FromArgb(79, 51, 40)
         Button3.ForeColor = Color.FromArgb(79, 51, 40)
         Button4.ForeColor = Color.FromArgb(79, 51, 40)
         Button5.ForeColor = Color.FromArgb(79, 51, 40)
+        Button6.ForeColor = Color.FromArgb(79, 51, 40)
 
         DataGridView1.BackgroundColor = Color.FromArgb(224, 166, 109)
 
@@ -74,6 +76,9 @@ Public Class posForm
 
         ' Add Button1 click event handler
         AddHandler Button1.Click, AddressOf Button1_Click
+
+        ' Add Button3 click event handler
+        AddHandler Button3.Click, AddressOf Button3_Click
     End Sub
 
     Private Sub InitializeTotalLabels()
@@ -232,6 +237,13 @@ Public Class posForm
     End Sub
 
     ''' <summary>
+    ''' Clears the cart after user confirmation
+    ''' </summary>
+    Private Sub Button3_Click(sender As Object, e As EventArgs)
+        ClearCartWithConfirmation()
+    End Sub
+
+    ''' <summary>
     ''' Override to handle F1 key press
     ''' </summary>
     Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
@@ -240,6 +252,9 @@ Public Class posForm
             Return True
         ElseIf keyData = Keys.F2 Then
             OpenQRScannerWindow()
+            Return True
+        ElseIf keyData = Keys.F4 Then
+            ClearCartWithConfirmation()
             Return True
         End If
         Return MyBase.ProcessCmdKey(msg, keyData)
@@ -267,7 +282,7 @@ Public Class posForm
             scannerForm.ShowDialog(Me)
         Catch ex As Exception
             MessageBox.Show("Error opening QR scanner: " & ex.Message, "Error",
- MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -449,15 +464,15 @@ Public Class posForm
 
                 ' Check both wholesaleProducts and retailProducts
                 Dim query As String = "
-           SELECT ProductID, ProductName, RetailPrice, CategoryID, 
-  ISNULL(IsVATApplicable, 0) AS IsVATApplicable
-          FROM wholesaleProducts 
-        WHERE SKU = @SKU
-        UNION
-        SELECT ProductID, ProductName, RetailPrice, CategoryID,
-   ISNULL(IsVATApplicable, 0) AS IsVATApplicable
-    FROM retailProducts 
-   WHERE SKU = @SKU"
+                SELECT ProductID, ProductName, RetailPrice, CategoryID, 
+                ISNULL(IsVATApplicable, 0) AS IsVATApplicable
+                    FROM wholesaleProducts 
+                    WHERE SKU = @SKU
+                    UNION
+                    SELECT ProductID, ProductName, RetailPrice, CategoryID,
+                ISNULL(IsVATApplicable, 0) AS IsVATApplicable
+                FROM retailProducts 
+                WHERE SKU = @SKU"
 
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@SKU", productCode)
@@ -506,5 +521,35 @@ Public Class posForm
         cartItems.Clear()
         RefreshDataGridView()
         InitializeTotalLabels()
+    End Sub
+
+    ''' <summary>
+    ''' Shows confirmation dialog and clears cart if user confirms
+    ''' </summary>
+    Private Sub ClearCartWithConfirmation()
+        ' Check if cart is empty
+        If cartItems.Count = 0 Then
+            MessageBox.Show("Cart is already empty.", "Clear Cart",
+             MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        ' Show confirmation dialog
+        Dim result As DialogResult = MessageBox.Show(
+   "Are you sure you want to clear all items from the cart?",
+            "Confirm Clear Cart",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question)
+
+        ' If user confirms, clear the cart
+        If result = DialogResult.Yes Then
+            ClearCart()
+            MessageBox.Show("Cart has been cleared successfully.", "Clear Cart",
+            MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
+    End Sub
+
+    Private Sub Button6_Click(sender As Object, e As EventArgs) Handles Button6.Click
+        OpenQRScannerWindow()
     End Sub
 End Class
