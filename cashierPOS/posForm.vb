@@ -5,7 +5,7 @@ Public Class posForm
     Private WithEvents updateTimer As New Timer()
 
     ' Store cart items with product details
-    Private Class CartItem
+    Public Class CartItem
         Public Property ProductID As Integer
         Public Property ProductName As String
         Public Property Quantity As Integer
@@ -79,6 +79,9 @@ Public Class posForm
 
         ' Add Button3 click event handler
         AddHandler Button3.Click, AddressOf Button3_Click
+
+        ' Add Button2 click event handler for checkout
+        AddHandler Button2.Click, AddressOf Button2_Click
     End Sub
 
     Private Sub InitializeTotalLabels()
@@ -232,8 +235,8 @@ Public Class posForm
     ''' <summary>
     ''' Opens the QR Scanner window
     ''' </summary>
-    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        OpenQRScannerWindow()
+    Private Sub Button2_Click(sender As Object, e As EventArgs)
+        OpenCheckoutWindow()
     End Sub
 
     ''' <summary>
@@ -252,6 +255,9 @@ Public Class posForm
             Return True
         ElseIf keyData = Keys.F2 Then
             OpenQRScannerWindow()
+            Return True
+        ElseIf keyData = Keys.F3 Then
+            OpenCheckoutWindow()
             Return True
         ElseIf keyData = Keys.F4 Then
             ClearCartWithConfirmation()
@@ -283,6 +289,40 @@ Public Class posForm
         Catch ex As Exception
             MessageBox.Show("Error opening QR scanner: " & ex.Message, "Error",
             MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Opens the checkout form
+    ''' </summary>
+    Private Sub OpenCheckoutWindow()
+        Try
+            ' Check if cart is empty
+            If cartItems.Count = 0 Then
+                MessageBox.Show("Cart is empty! Please add items before checkout.", "Empty Cart",
+  MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Calculate total from totalSalesLabel
+            Dim totalText As String = totalSalesLabel.Text.Replace("₱", "").Replace(",", "").Trim()
+            Dim totalAmount As Decimal
+            If Not Decimal.TryParse(totalText, totalAmount) Then
+                MessageBox.Show("Error calculating total amount.", "Error",
+             MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' Open checkout form
+            Dim checkoutForm As New CheckoutForm(Me, totalAmount)
+            If checkoutForm.ShowDialog(Me) = DialogResult.OK Then
+                ' Checkout was successful, cart is already cleared by checkout form
+                MessageBox.Show("Transaction completed successfully!", "Success",
+ MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error opening checkout: " & ex.Message, "Error",
+  MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -522,6 +562,13 @@ Public Class posForm
         RefreshDataGridView()
         InitializeTotalLabels()
     End Sub
+
+    ''' <summary>
+    ''' Gets the current cart items (for checkout)
+    ''' </summary>
+    Public Function GetCartItems() As List(Of posForm.CartItem)
+        Return cartItems
+    End Function
 
     ''' <summary>
     ''' Shows confirmation dialog and clears cart if user confirms
