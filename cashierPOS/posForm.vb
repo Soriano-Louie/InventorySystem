@@ -82,6 +82,9 @@ Public Class posForm
 
         ' Add Button2 click event handler for checkout
         AddHandler Button2.Click, AddressOf Button2_Click
+
+        ' Add Button4 click event handler for daily transactions
+        AddHandler Button4.Click, AddressOf Button4_Click
     End Sub
 
     Private Sub InitializeTotalLabels()
@@ -247,6 +250,13 @@ Public Class posForm
     End Sub
 
     ''' <summary>
+    ''' Opens the daily transactions window
+    ''' </summary>
+    Private Sub Button4_Click(sender As Object, e As EventArgs)
+        OpenDailyTransactionsWindow()
+    End Sub
+
+    ''' <summary>
     ''' Override to handle F1 key press
     ''' </summary>
     Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
@@ -261,6 +271,9 @@ Public Class posForm
             Return True
         ElseIf keyData = Keys.F4 Then
             ClearCartWithConfirmation()
+            Return True
+        ElseIf keyData = Keys.F5 Then
+            OpenDailyTransactionsWindow()
             Return True
         End If
         Return MyBase.ProcessCmdKey(msg, keyData)
@@ -326,6 +339,19 @@ Public Class posForm
         End Try
     End Sub
 
+    ''' <summary>
+    ''' Opens the daily transactions form
+    ''' </summary>
+    Private Sub OpenDailyTransactionsWindow()
+        Try
+            Dim transactionsForm As New DailyTransactionsForm(Me)
+            transactionsForm.ShowDialog(Me)
+        Catch ex As Exception
+            MessageBox.Show("Error opening daily transactions: " & ex.Message, "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     ' ==================== POS CALCULATION METHODS ====================
 
     Private Function GetConnectionString() As String
@@ -369,9 +395,9 @@ Public Class posForm
         Try
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
-                Dim query As String = "SELECT DiscountPrice FROM ProductDiscounts 
-       WHERE ProductID = @ProductID 
-  AND @Quantity >= MinSacks 
+                Dim query As String = "SELECT DiscountPrice FROM ProductDiscounts
+       WHERE ProductID = @ProductID
+  AND @Quantity >= MinSacks
       AND (@Quantity <= MaxSacks OR MaxSacks IS NULL)
         ORDER BY MinSacks DESC"
 
@@ -504,14 +530,14 @@ Public Class posForm
 
                 ' Check both wholesaleProducts and retailProducts
                 Dim query As String = "
-                SELECT ProductID, ProductName, RetailPrice, CategoryID, 
+                SELECT ProductID, ProductName, RetailPrice, CategoryID,
                 ISNULL(IsVATApplicable, 0) AS IsVATApplicable
-                    FROM wholesaleProducts 
+                    FROM wholesaleProducts
                     WHERE SKU = @SKU
                     UNION
                     SELECT ProductID, ProductName, RetailPrice, CategoryID,
                 ISNULL(IsVATApplicable, 0) AS IsVATApplicable
-                FROM retailProducts 
+                FROM retailProducts
                 WHERE SKU = @SKU"
 
                 Using cmd As New SqlCommand(query, conn)
@@ -599,4 +625,5 @@ Public Class posForm
     Private Sub Button6_Click(sender As Object, e As EventArgs) Handles Button6.Click
         OpenQRScannerWindow()
     End Sub
+
 End Class
