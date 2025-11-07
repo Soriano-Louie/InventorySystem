@@ -4,6 +4,10 @@ Public Class CheckoutForm
     Private parentForm As posForm
     Private totalAmount As Decimal
     Private selectedPaymentMethod As String = ""
+    Private isDelivery As Boolean = False
+    Private deliveryAddress As String = ""
+    Private deliveryLatitude As Double = 0
+    Private deliveryLongitude As Double = 0
 
     Public Sub New(parent As posForm, total As Decimal)
         InitializeComponent()
@@ -18,7 +22,7 @@ Public Class CheckoutForm
 
     Private Sub CheckoutForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Display total amount
-        lblTotalAmount.Text = $"Total Amount: ₱{totalAmount:N2}"
+        lblTotalAmount.Text = $"Total Amount: ?{totalAmount:N2}"
         lblTotalAmount.Font = New Font("Segoe UI", 14, FontStyle.Bold)
         lblTotalAmount.ForeColor = Color.FromArgb(79, 51, 40)
 
@@ -78,21 +82,141 @@ Public Class CheckoutForm
     Private Sub btnConfirm_Click(sender As Object, e As EventArgs) Handles btnConfirm.Click
         If String.IsNullOrEmpty(selectedPaymentMethod) Then
             MessageBox.Show("Please select a payment method.", "Payment Method Required",
-                             MessageBoxButtons.OK, MessageBoxIcon.Warning)
+      MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
+
+        Debug.WriteLine("==========================================================")
+        Debug.WriteLine("========== CHECKOUT PROCESS STARTED ==========")
+        Debug.WriteLine("==========================================================")
+
+        ' Check if cart contains wholesale products
+        Dim cartItems As List(Of posForm.CartItem) = parentForm.GetCartItems()
+        Dim hasWholesaleProducts As Boolean = False
+
+        Debug.WriteLine($"Total items in cart: {cartItems.Count}")
+
+        For Each item In cartItems
+            Dim isWholesale As Boolean = IsWholesaleProduct(item.ProductID)
+            Debug.WriteLine($"  - ProductID: {item.ProductID}, Name: {item.ProductName}, IsWholesale: {isWholesale}")
+            If isWholesale Then
+                hasWholesaleProducts = True
+            End If
+        Next
+
+        Debug.WriteLine($"Cart has wholesale products: {hasWholesaleProducts}")
+
+        ' If has wholesale products, ask for pickup or delivery
+        If hasWholesaleProducts Then
+            Dim deliveryChoice As DialogResult = MessageBox.Show(
+   "Your cart contains wholesale products." & vbCrLf &
+           "Do you want this order delivered?" & vbCrLf & vbCrLf &
+           "Click 'Yes' for Delivery or 'No' for Pickup",
+             "Delivery or Pickup?",
+          MessageBoxButtons.YesNoCancel,
+    MessageBoxIcon.Question)
+
+            Debug.WriteLine($"User delivery choice: {deliveryChoice}")
+
+            If deliveryChoice = DialogResult.Cancel Then
+                Debug.WriteLine("User CANCELLED the delivery/pickup selection")
+                Return
+            ElseIf deliveryChoice = DialogResult.Yes Then
+                ' Customer wants delivery - open address selection form with map
+                isDelivery = True
+                Debug.WriteLine($"? User selected DELIVERY - isDelivery set to TRUE")
+
+                ' Try to use map version first, fall back to simple if WebView2 not available
+                Try
+                    Dim addressForm As New DeliveryAddressFormWithMap(Me)
+                    Debug.WriteLine("Opening DeliveryAddressFormWithMap...")
+
+                    If addressForm.ShowDialog() = DialogResult.OK Then
+                        deliveryAddress = addressForm.DeliveryAddress
+                        deliveryLatitude = addressForm.DeliveryLatitude
+                        deliveryLongitude = addressForm.DeliveryLongitude
+
+                        Debug.WriteLine($"? DELIVERY DATA CAPTURED FROM MAP FORM:")
+                        Debug.WriteLine($"  ? isDelivery: {isDelivery}")
+                        Debug.WriteLine($"  ? Address: {deliveryAddress}")
+                        Debug.WriteLine($"  ? Latitude: {deliveryLatitude}")
+                        Debug.WriteLine($"  ? Longitude: {deliveryLongitude}")
+                    Else
+                        ' User cancelled address selection
+                        Debug.WriteLine("? User CANCELLED WithMap address form - ABORTING checkout")
+                        Return
+                    End If
+                Catch ex As Exception
+                    ' If map version fails, use simple form
+                    Debug.WriteLine($"? Map form error: {ex.Message} - falling back to simple form")
+                    Dim addressForm As New DeliveryAddressFormSimple(Me)
+                    Debug.WriteLine("Opening DeliveryAddressFormSimple...")
+
+                    If addressForm.ShowDialog() = DialogResult.OK Then
+                        deliveryAddress = addressForm.DeliveryAddress
+                        deliveryLatitude = addressForm.DeliveryLatitude
+                        deliveryLongitude = addressForm.DeliveryLongitude
+
+                        Debug.WriteLine($"? DELIVERY DATA CAPTURED FROM SIMPLE FORM:")
+                        Debug.WriteLine($"  ? isDelivery: {isDelivery}")
+                        Debug.WriteLine($"  ? Address: {deliveryAddress}")
+                        Debug.WriteLine($"  ? Latitude: {deliveryLatitude}")
+                        Debug.WriteLine($"  ? Longitude: {deliveryLongitude}")
+                    Else
+                        ' User cancelled address selection
+                        Debug.WriteLine("? User CANCELLED Simple address form - ABORTING checkout")
+                        Return
+                    End If
+                End Try
+            Else
+                ' Customer wants pickup - RESET delivery fields to ensure clean state
+                isDelivery = False
+                deliveryAddress = ""
+                deliveryLatitude = 0
+                deliveryLongitude = 0
+                Debug.WriteLine($"? User selected PICKUP - isDelivery set to FALSE")
+                Debug.WriteLine($"  ? Delivery fields reset to empty/zero")
+            End If
+        Else
+            Debug.WriteLine("? Cart has NO wholesale products - skipping delivery/pickup selection")
+        End If
+
+        Debug.WriteLine($"")
+        Debug.WriteLine($"========== FINAL STATE BEFORE ProcessCheckout ==========")
+        Debug.WriteLine($"  isDelivery: {isDelivery} (Type: {isDelivery.GetType().Name})")
+        Debug.WriteLine($"  deliveryAddress: '{deliveryAddress}' (Length: {deliveryAddress.Length})")
+        Debug.WriteLine($"  deliveryLatitude: {deliveryLatitude}")
+        Debug.WriteLine($"  deliveryLongitude: {deliveryLongitude}")
+        Debug.WriteLine($"========================================================")
+        Debug.WriteLine($"")
 
         ' Process checkout
         If ProcessCheckout() Then
             MessageBox.Show("Checkout successful!", "Success",
-       MessageBoxButtons.OK, MessageBoxIcon.Information)
+MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Else
             MessageBox.Show("Checkout failed. Please try again.", "Error",
-          MessageBoxButtons.OK, MessageBoxIcon.Error)
+    MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
+
+    Private Function IsWholesaleProduct(productID As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
 
     Private Function ProcessCheckout() As Boolean
         Try
@@ -122,11 +246,13 @@ Public Class CheckoutForm
 
                     ' Get effective price (with discount if applicable)
                     Dim effectivePrice As Decimal = If(item.DiscountPrice.HasValue,
-                     item.DiscountPrice.Value,
-                   item.UnitPrice)
+                    item.DiscountPrice.Value,
+                    item.UnitPrice)
+
+                    ' FIXED: Calculate total correctly (price * quantity)
                     Dim itemTotal As Decimal = effectivePrice * item.Quantity
 
-                    ' Insert into appropriate sales report table
+                    ' Insert into appropriate sales report table with delivery info
                     If productIsRetail Then
                         InsertRetailSalesReport(conn, item, effectivePrice, itemTotal, currentUserID)
                     Else
@@ -141,10 +267,9 @@ Public Class CheckoutForm
             ' Clear the cart in parent form
             parentForm.ClearCart()
             Return True
-
         Catch ex As Exception
             MessageBox.Show("Error processing checkout: " & ex.Message, "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error)
+           MessageBoxButtons.OK, MessageBoxIcon.Error)
             Return False
         End Try
     End Function
@@ -162,10 +287,10 @@ Public Class CheckoutForm
          effectivePrice As Decimal, itemTotal As Decimal,
       handledBy As Integer)
         Dim query As String = "
-            INSERT INTO RetailSalesReport 
+     INSERT INTO RetailSalesReport
                 (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy)
-            VALUES 
-                (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy)"
+   VALUES
+     (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy)"
 
         Using cmd As New SqlCommand(query, conn)
             cmd.Parameters.AddWithValue("@ProductID", item.ProductID)
@@ -182,29 +307,46 @@ Public Class CheckoutForm
     Private Sub InsertWholesaleSalesReport(conn As SqlConnection, item As posForm.CartItem,
  effectivePrice As Decimal, itemTotal As Decimal,
    handledBy As Integer)
-        Dim query As String = "
-            INSERT INTO SalesReport 
-                (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy)
-            VALUES 
-                (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy)"
+        Dim query As String = "INSERT INTO SalesReport (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, DeliveryStatus) VALUES (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, @DeliveryStatus)"
 
-        Using cmd As New SqlCommand(query, conn)
-            cmd.Parameters.AddWithValue("@ProductID", item.ProductID)
-            cmd.Parameters.AddWithValue("@CategoryID", item.CategoryID)
-            cmd.Parameters.AddWithValue("@QuantitySold", item.Quantity)
-            cmd.Parameters.AddWithValue("@UnitPrice", effectivePrice)
-            cmd.Parameters.AddWithValue("@TotalAmount", itemTotal)
-            cmd.Parameters.AddWithValue("@PaymentMethod", selectedPaymentMethod)
-            cmd.Parameters.AddWithValue("@HandledBy", handledBy)
-            cmd.ExecuteNonQuery()
-        End Using
+        Try
+            Using cmd As New SqlCommand(query, conn)
+                ' Add ALL parameters with EXPLICIT data types
+                cmd.Parameters.Add("@ProductID", SqlDbType.Int).Value = item.ProductID
+                cmd.Parameters.Add("@CategoryID", SqlDbType.Int).Value = item.CategoryID
+                cmd.Parameters.Add("@QuantitySold", SqlDbType.Int).Value = item.Quantity
+                cmd.Parameters.Add("@UnitPrice", SqlDbType.Decimal).Value = effectivePrice
+                cmd.Parameters.Add("@TotalAmount", SqlDbType.Decimal).Value = itemTotal
+                cmd.Parameters.Add("@PaymentMethod", SqlDbType.NVarChar, 50).Value = selectedPaymentMethod
+                cmd.Parameters.Add("@HandledBy", SqlDbType.Int).Value = handledBy
+                cmd.Parameters.Add("@IsDelivery", SqlDbType.Bit).Value = If(isDelivery, 1, 0)
+
+                If isDelivery Then
+                    cmd.Parameters.Add("@DeliveryAddress", SqlDbType.NVarChar, -1).Value = deliveryAddress
+                    cmd.Parameters.Add("@DeliveryLatitude", SqlDbType.Float).Value = deliveryLatitude
+                    cmd.Parameters.Add("@DeliveryLongitude", SqlDbType.Float).Value = deliveryLongitude
+                    cmd.Parameters.Add("@DeliveryStatus", SqlDbType.NVarChar, 50).Value = "Pending"
+                Else
+                    cmd.Parameters.Add("@DeliveryAddress", SqlDbType.NVarChar, -1).Value = DBNull.Value
+                    cmd.Parameters.Add("@DeliveryLatitude", SqlDbType.Float).Value = DBNull.Value
+                    cmd.Parameters.Add("@DeliveryLongitude", SqlDbType.Float).Value = DBNull.Value
+                    cmd.Parameters.Add("@DeliveryStatus", SqlDbType.NVarChar, 50).Value = DBNull.Value
+                End If
+
+                cmd.ExecuteNonQuery()
+                Debug.WriteLine($"✓ Wholesale sale inserted: IsDelivery={isDelivery}, Address={If(isDelivery, deliveryAddress, "N/A")}")
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"❌ Error: {ex.Message}")
+            Throw
+        End Try
     End Sub
 
     Private Sub UpdateStockQuantity(conn As SqlConnection, productID As Integer,
         quantitySold As Integer, isRetailProduct As Boolean)
         Dim tableName As String = If(isRetailProduct, "retailProducts", "wholesaleProducts")
-        Dim query As String = $"UPDATE {tableName} 
-      SET StockQuantity = StockQuantity - @QuantitySold 
+        Dim query As String = $"UPDATE {tableName}
+      SET StockQuantity = StockQuantity - @QuantitySold
      WHERE ProductID = @ProductID"
 
         Using cmd As New SqlCommand(query, conn)
@@ -222,4 +364,5 @@ Public Class CheckoutForm
         Me.DialogResult = DialogResult.Cancel
         Me.Close()
     End Sub
+
 End Class

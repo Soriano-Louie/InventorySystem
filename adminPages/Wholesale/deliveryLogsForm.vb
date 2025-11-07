@@ -1,6 +1,7 @@
 ﻿Imports System.Drawing.Drawing2D
 Imports InventorySystem.sidePanelControl
 Imports InventorySystem.topPanelControl
+Imports Microsoft.Data.SqlClient
 
 Public Class deliveryLogsForm
     Dim topPanel As New topPanelControl()
@@ -11,8 +12,20 @@ Public Class deliveryLogsForm
     Dim dv As New DataView()
     Dim bs As New BindingSource()
 
-    Public Sub New()
+    ' Class to store delivery information
+    Private Class DeliveryInfo
+        Public Property SaleID As Integer
+        Public Property ProductName As String
+        Public Property DeliveryAddress As String
+        Public Property Latitude As Double
+        Public Property Longitude As Double
+        Public Property DeliveryStatus As String
+        Public Property SaleDate As Date
+        Public Property TotalAmount As Decimal
+        Public Property QuantitySold As Integer
+    End Class
 
+    Public Sub New()
         ' This call is required by the designer.
         InitializeComponent()
 
@@ -28,9 +41,6 @@ Public Class deliveryLogsForm
         tableDataGridView.BackgroundColor = Color.FromArgb(230, 216, 177)
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
         Label1.ForeColor = Color.FromArgb(79, 51, 40)
-
-        fromTextBox.BackColor = Color.FromArgb(230, 216, 177)
-        toTextBox.BackColor = Color.FromArgb(230, 216, 177)
 
         tableDataGridView.ReadOnly = True
         tableDataGridView.AllowUserToAddRows = False
@@ -145,56 +155,249 @@ Public Class deliveryLogsForm
     Private Sub deliveryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button4")
 
-        ' Example data
-        dt = New DataTable()
-        dt.Columns.Add("Name")
+        ' Set default date range (today only)
+        DateTimePickerFrom.Value = Date.Today
+        DateTimePickerTo.Value = Date.Today
+        DateTimePickerFrom.Format = DateTimePickerFormat.Short
+        DateTimePickerTo.Format = DateTimePickerFormat.Short
 
-        dt.Rows.Add("Apple")
-        dt.Rows.Add("Banana")
-        dt.Rows.Add("Pineapple")
-
-        ' Create DataView
-        dv = New DataView(dt)
-
-        ' Bind DataView to BindingSource
-        bs.DataSource = dv
-
-        ' Bind BindingSource to DataGridView
-        tableDataGridView.DataSource = bs
+        SetupDeliveryGrid()
+        LoadTodaysDeliveries()
     End Sub
 
-    Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
-        Dim rect As New Rectangle(0, 0, ctrl.Width, ctrl.Height)
-        Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
-            ctrl.Region = New Region(path)
-        End Using
+    Private Sub SetupDeliveryGrid()
+        ' Configure DataGridView for delivery tracking
+        tableDataGridView.Columns.Clear()
+
+        ' Set header style
+        tableDataGridView.EnableHeadersVisualStyles = False
+        tableDataGridView.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(79, 51, 40)
+        tableDataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(230, 216, 177)
+        tableDataGridView.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+        tableDataGridView.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+        tableDataGridView.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
+        tableDataGridView.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
+
+        ' Set default cell colors
+        tableDataGridView.DefaultCellStyle.BackColor = Color.White
+        tableDataGridView.DefaultCellStyle.ForeColor = Color.Black
+        tableDataGridView.DefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
+        tableDataGridView.DefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
+
+        ' Add columns for delivery tracking
+        tableDataGridView.Columns.Add("ColSaleID", "Sale #")
+        tableDataGridView.Columns.Add("ColTime", "Time")
+        tableDataGridView.Columns.Add("ColProduct", "Product")
+        tableDataGridView.Columns.Add("ColQuantity", "Qty")
+        tableDataGridView.Columns.Add("ColAmount", "Amount")
+        tableDataGridView.Columns.Add("ColAddress", "Delivery Address")
+        tableDataGridView.Columns.Add("ColStatus", "Status")
+
+        ' Add status update button column
+        Dim btnUpdateStatus As New DataGridViewButtonColumn()
+        btnUpdateStatus.Name = "ColUpdateStatus"
+        btnUpdateStatus.HeaderText = "Update"
+        btnUpdateStatus.Text = "Change Status"
+        btnUpdateStatus.UseColumnTextForButtonValue = True
+        tableDataGridView.Columns.Add(btnUpdateStatus)
+
+        ' Set column widths
+        tableDataGridView.Columns("ColSaleID").Width = 70
+        tableDataGridView.Columns("ColTime").Width = 100
+        tableDataGridView.Columns("ColProduct").Width = 200
+        tableDataGridView.Columns("ColQuantity").Width = 60
+        tableDataGridView.Columns("ColAmount").Width = 100
+        tableDataGridView.Columns("ColAddress").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+        tableDataGridView.Columns("ColStatus").Width = 100
+        tableDataGridView.Columns("ColUpdateStatus").Width = 120
+
+        ' Handle button clicks
+        AddHandler tableDataGridView.CellContentClick, AddressOf DeliveryGrid_CellContentClick
+        AddHandler tableDataGridView.CellFormatting, AddressOf DeliveryGrid_CellFormatting
     End Sub
 
-    Private Function GetRoundedRectanglePath2(rect As Rectangle, radius As Integer) As GraphicsPath
-        Dim path As New GraphicsPath()
-        Dim diameter As Integer = radius * 2
+    Private Sub LoadTodaysDeliveries()
+        tableDataGridView.Rows.Clear()
 
-        path.StartFigure()
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "
+ SELECT sr.SaleID, p.ProductName, sr.DeliveryAddress,
+       sr.DeliveryLatitude, sr.DeliveryLongitude, sr.DeliveryStatus,
+     sr.SaleDate, sr.TotalAmount, sr.QuantitySold
+    FROM SalesReport sr
+                    INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+     WHERE sr.IsDelivery = 1
+   AND CAST(sr.SaleDate AS DATE) = CAST(GETDATE() AS DATE)
+  AND sr.DeliveryStatus IS NOT NULL
+       ORDER BY sr.SaleDate DESC"
 
-        ' Top edge
-        path.AddLine(rect.X + radius, rect.Y, rect.Right - radius, rect.Y)
-        ' Top-right corner
-        path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90)
-        ' Right edge
-        path.AddLine(rect.Right, rect.Y + radius, rect.Right, rect.Bottom - radius)
-        ' Bottom-right corner
-        path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
-        ' Bottom edge
-        path.AddLine(rect.Right - radius, rect.Bottom, rect.X + radius, rect.Bottom)
-        ' Bottom-left corner
-        path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90)
-        ' Left edge
-        path.AddLine(rect.X, rect.Bottom - radius, rect.X, rect.Y + radius)
-        ' Top-left corner
-        path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90)
+                Using cmd As New SqlCommand(query, conn)
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim rowIndex As Integer = tableDataGridView.Rows.Add()
+                            Dim row As DataGridViewRow = tableDataGridView.Rows(rowIndex)
 
-        path.CloseFigure()
-        Return path
+                            row.Cells("ColSaleID").Value = reader.GetInt32(0)
+                            row.Cells("ColTime").Value = reader.GetDateTime(6).ToString("hh:mm tt")
+                            row.Cells("ColProduct").Value = reader.GetString(1)
+                            row.Cells("ColQuantity").Value = reader.GetInt32(8)
+                            row.Cells("ColAmount").Value = reader.GetDecimal(7).ToString("C2")
+                            row.Cells("ColAddress").Value = reader.GetString(2)
+                            row.Cells("ColStatus").Value = reader.GetString(5)
+
+                            ' Store delivery info in tag for updates
+                            row.Tag = New DeliveryInfo() With {
+                         .SaleID = reader.GetInt32(0),
+                   .ProductName = reader.GetString(1),
+                   .DeliveryAddress = reader.GetString(2),
+                  .Latitude = reader.GetDouble(3),
+                        .Longitude = reader.GetDouble(4),
+                .DeliveryStatus = reader.GetString(5),
+                         .SaleDate = reader.GetDateTime(6),
+                          .TotalAmount = reader.GetDecimal(7),
+                             .QuantitySold = reader.GetInt32(8)
+                        }
+                        End While
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error loading deliveries: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
+        ' Update title
+        Label1.Text = $"Today's Deliveries ({tableDataGridView.Rows.Count})"
+    End Sub
+
+    Private Sub DeliveryGrid_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
+        If e.ColumnIndex = tableDataGridView.Columns("ColStatus").Index AndAlso e.RowIndex >= 0 Then
+            Dim status As String = Convert.ToString(e.Value)
+
+            ' Color-code status cells
+            Select Case status
+                Case "Pending"
+                    e.CellStyle.BackColor = Color.FromArgb(255, 200, 200) ' Light red
+                    e.CellStyle.ForeColor = Color.DarkRed
+                Case "In Transit"
+                    e.CellStyle.BackColor = Color.FromArgb(255, 220, 180) ' Light orange
+                    e.CellStyle.ForeColor = Color.DarkOrange
+                Case "Delivered"
+                    e.CellStyle.BackColor = Color.FromArgb(200, 255, 200) ' Light green
+                    e.CellStyle.ForeColor = Color.DarkGreen
+                Case "Cancelled"
+                    e.CellStyle.BackColor = Color.LightGray
+                    e.CellStyle.ForeColor = Color.Gray
+            End Select
+        End If
+    End Sub
+
+    Private Sub DeliveryGrid_CellContentClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then Return
+
+        If e.ColumnIndex = tableDataGridView.Columns("ColUpdateStatus").Index Then
+            UpdateDeliveryStatus(e.RowIndex)
+        End If
+    End Sub
+
+    Private Sub UpdateDeliveryStatus(rowIndex As Integer)
+        Dim row As DataGridViewRow = tableDataGridView.Rows(rowIndex)
+        Dim deliveryInfo As DeliveryInfo = DirectCast(row.Tag, DeliveryInfo)
+
+        If deliveryInfo Is Nothing Then Return
+
+        ' Show status selection dialog
+        Dim statusForm As New Form()
+        statusForm.Text = $"Update Delivery Status - Sale #{deliveryInfo.SaleID}"
+        statusForm.Size = New Size(400, 250)
+        statusForm.StartPosition = FormStartPosition.CenterParent
+        statusForm.FormBorderStyle = FormBorderStyle.FixedDialog
+        statusForm.MaximizeBox = False
+        statusForm.MinimizeBox = False
+        statusForm.BackColor = Color.FromArgb(230, 216, 177)
+
+        Dim currentLabel As New Label()
+        currentLabel.Text = $"Current Status: {deliveryInfo.DeliveryStatus}"
+        currentLabel.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+        currentLabel.ForeColor = Color.FromArgb(79, 51, 40)
+        currentLabel.Location = New Point(20, 20)
+        currentLabel.AutoSize = True
+        statusForm.Controls.Add(currentLabel)
+
+        Dim selectLabel As New Label()
+        selectLabel.Text = "Select New Status:"
+        selectLabel.Font = New Font("Segoe UI", 10)
+        selectLabel.ForeColor = Color.FromArgb(79, 51, 40)
+        selectLabel.Location = New Point(20, 50)
+        selectLabel.AutoSize = True
+        statusForm.Controls.Add(selectLabel)
+
+        Dim statusCombo As New ComboBox()
+        statusCombo.Items.AddRange(New String() {"Pending", "In Transit", "Delivered", "Cancelled"})
+        statusCombo.SelectedItem = deliveryInfo.DeliveryStatus
+        statusCombo.Location = New Point(20, 75)
+        statusCombo.Size = New Size(340, 30)
+        statusCombo.Font = New Font("Segoe UI", 11)
+        statusCombo.DropDownStyle = ComboBoxStyle.DropDownList
+        statusForm.Controls.Add(statusCombo)
+
+        Dim updateBtn As New Button()
+        updateBtn.Text = "Update Status"
+        updateBtn.Location = New Point(180, 150)
+        updateBtn.Size = New Size(120, 35)
+        updateBtn.BackColor = Color.FromArgb(147, 53, 53)
+        updateBtn.ForeColor = Color.FromArgb(230, 216, 177)
+        updateBtn.FlatStyle = FlatStyle.Flat
+        AddHandler updateBtn.Click, Sub()
+                                        Dim newStatus As String = statusCombo.SelectedItem.ToString()
+                                        If UpdateStatusInDatabase(deliveryInfo.SaleID, newStatus) Then
+                                            MessageBox.Show("Status updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                            statusForm.DialogResult = DialogResult.OK
+                                            statusForm.Close()
+                                        End If
+                                    End Sub
+        statusForm.Controls.Add(updateBtn)
+
+        Dim cancelBtn As New Button()
+        cancelBtn.Text = "Cancel"
+        cancelBtn.Location = New Point(310, 150)
+        cancelBtn.Size = New Size(70, 35)
+        cancelBtn.BackColor = Color.FromArgb(102, 66, 52)
+        cancelBtn.ForeColor = Color.FromArgb(230, 216, 177)
+        cancelBtn.FlatStyle = FlatStyle.Flat
+        AddHandler cancelBtn.Click, Sub()
+                                        statusForm.DialogResult = DialogResult.Cancel
+                                        statusForm.Close()
+                                    End Sub
+        statusForm.Controls.Add(cancelBtn)
+
+        If statusForm.ShowDialog() = DialogResult.OK Then
+            LoadTodaysDeliveries() ' Refresh grid
+        End If
+    End Sub
+
+    Private Function UpdateStatusInDatabase(saleID As Integer, newStatus As String) As Boolean
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "UPDATE SalesReport SET DeliveryStatus = @Status WHERE SaleID = @SaleID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@Status", newStatus)
+                    cmd.Parameters.AddWithValue("@SaleID", saleID)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+            Return True
+        Catch ex As Exception
+            MessageBox.Show("Error updating status: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
+
+    Private Function GetConnectionString() As String
+        Return SharedUtilities.GetConnectionString()
     End Function
 
     Private Sub SetVATRate()
@@ -243,7 +446,6 @@ Public Class deliveryLogsForm
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Error)
             End If
-
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",
@@ -259,5 +461,78 @@ Public Class deliveryLogsForm
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
         Return SharedUtilities.SaveVATRate(vatRate)
     End Function
+
+    Private Sub filterButton_Click(sender As Object, e As EventArgs) Handles filterButton.Click
+        ' Clear existing rows
+        tableDataGridView.Rows.Clear()
+
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+
+                ' Query to get deliveries within date range
+                Dim query As String = "
+         SELECT sr.SaleID, p.ProductName, sr.DeliveryAddress,
+     sr.DeliveryLatitude, sr.DeliveryLongitude, sr.DeliveryStatus,
+     sr.SaleDate, sr.TotalAmount, sr.QuantitySold
+      FROM SalesReport sr
+          INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+     WHERE sr.IsDelivery = 1
+          AND CAST(sr.SaleDate AS DATE) BETWEEN @FromDate AND @ToDate
+          AND sr.DeliveryStatus IS NOT NULL
+          ORDER BY sr.SaleDate DESC"
+
+                Using cmd As New SqlCommand(query, conn)
+                    ' Get dates from DateTimePickers (use .Value.Date to get just the date part)
+                    Dim fromDate As Date = DateTimePickerFrom.Value.Date
+                    Dim toDate As Date = DateTimePickerTo.Value.Date
+
+                    ' Validate date range
+                    If fromDate > toDate Then
+                        MessageBox.Show("'From' date cannot be later than 'To' date.", "Invalid Date Range",
+  MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        Return
+                    End If
+
+                    cmd.Parameters.AddWithValue("@FromDate", fromDate)
+                    cmd.Parameters.AddWithValue("@ToDate", toDate)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim rowIndex As Integer = tableDataGridView.Rows.Add()
+                            Dim row As DataGridViewRow = tableDataGridView.Rows(rowIndex)
+
+                            row.Cells("ColSaleID").Value = reader.GetInt32(0)
+                            row.Cells("ColTime").Value = reader.GetDateTime(6).ToString("hh:mm tt")
+                            row.Cells("ColProduct").Value = reader.GetString(1)
+                            row.Cells("ColQuantity").Value = reader.GetInt32(8)
+                            row.Cells("ColAmount").Value = reader.GetDecimal(7).ToString("C2")
+                            row.Cells("ColAddress").Value = reader.GetString(2)
+                            row.Cells("ColStatus").Value = reader.GetString(5)
+
+                            ' Store delivery info in tag for updates
+                            row.Tag = New DeliveryInfo() With {
+                            .SaleID = reader.GetInt32(0),
+                            .ProductName = reader.GetString(1),
+                            .DeliveryAddress = reader.GetString(2),
+                            .Latitude = reader.GetDouble(3),
+                            .Longitude = reader.GetDouble(4),
+                            .DeliveryStatus = reader.GetString(5),
+                            .SaleDate = reader.GetDateTime(6),
+                            .TotalAmount = reader.GetDecimal(7),
+                            .QuantitySold = reader.GetInt32(8)
+           }
+                        End While
+                    End Using
+                End Using
+            End Using
+
+            ' Update title with date range and count
+            Label1.Text = $"Deliveries ({tableDataGridView.Rows.Count}) - {DateTimePickerFrom.Value:MMM dd, yyyy} to {DateTimePickerTo.Value:MMM dd, yyyy}"
+        Catch ex As Exception
+            MessageBox.Show("Error filtering deliveries: " & ex.Message, "Error",
+    MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 
 End Class

@@ -23,29 +23,29 @@ Partial Class salesReport
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         mainPanel = New Panel()
-        Panel5 = New Panel()
-        DateTimePickerTo = New DateTimePicker()
-        Label2 = New Label()
-        Panel4 = New Panel()
-        DateTimePickerFrom = New DateTimePicker()
-        Label1 = New Label()
         Panel1 = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
+        Button2 = New Button()
         Panel2 = New Panel()
         TextBoxSearch = New TextBox()
         Button1 = New Button()
         resetButton = New Button()
         btnSearch = New Button()
         Panel3 = New Panel()
+        Panel5 = New Panel()
+        DateTimePickerTo = New DateTimePicker()
+        Label2 = New Label()
+        Panel4 = New Panel()
+        DateTimePickerFrom = New DateTimePicker()
+        Label1 = New Label()
         tableDataGridView = New DataGridView()
-        Button2 = New Button()
         mainPanel.SuspendLayout()
-        Panel5.SuspendLayout()
-        Panel4.SuspendLayout()
         Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
         Panel2.SuspendLayout()
         Panel3.SuspendLayout()
+        Panel5.SuspendLayout()
+        Panel4.SuspendLayout()
         CType(tableDataGridView, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
@@ -59,66 +59,6 @@ Partial Class salesReport
         mainPanel.Padding = New Padding(50, 120, 50, 20)
         mainPanel.Size = New Size(1810, 792)
         mainPanel.TabIndex = 0
-        ' 
-        ' Panel5
-        ' 
-        Panel5.Controls.Add(DateTimePickerTo)
-        Panel5.Controls.Add(Label2)
-        Panel5.Dock = DockStyle.Fill
-        Panel5.Location = New Point(173, 0)
-        Panel5.Name = "Panel5"
-        Panel5.Size = New Size(157, 51)
-        Panel5.TabIndex = 6
-        ' 
-        ' DateTimePickerTo
-        ' 
-        DateTimePickerTo.Format = DateTimePickerFormat.Custom
-        DateTimePickerTo.Location = New Point(46, 16)
-        DateTimePickerTo.Name = "DateTimePickerTo"
-        DateTimePickerTo.Size = New Size(98, 23)
-        DateTimePickerTo.TabIndex = 8
-        ' 
-        ' Label2
-        ' 
-        Label2.Anchor = AnchorStyles.None
-        Label2.AutoSize = True
-        Label2.Font = New Font("Segoe UI", 10F)
-        Label2.Location = New Point(11, 18)
-        Label2.Name = "Label2"
-        Label2.Size = New Size(26, 19)
-        Label2.TabIndex = 6
-        Label2.Text = "To:"
-        Label2.TextAlign = ContentAlignment.MiddleLeft
-        ' 
-        ' Panel4
-        ' 
-        Panel4.Controls.Add(DateTimePickerFrom)
-        Panel4.Controls.Add(Label1)
-        Panel4.Dock = DockStyle.Left
-        Panel4.Location = New Point(0, 0)
-        Panel4.Name = "Panel4"
-        Panel4.Size = New Size(173, 51)
-        Panel4.TabIndex = 2
-        ' 
-        ' DateTimePickerFrom
-        ' 
-        DateTimePickerFrom.Format = DateTimePickerFormat.Custom
-        DateTimePickerFrom.Location = New Point(57, 16)
-        DateTimePickerFrom.Name = "DateTimePickerFrom"
-        DateTimePickerFrom.Size = New Size(98, 23)
-        DateTimePickerFrom.TabIndex = 7
-        ' 
-        ' Label1
-        ' 
-        Label1.Anchor = AnchorStyles.None
-        Label1.AutoSize = True
-        Label1.Font = New Font("Segoe UI", 10F)
-        Label1.Location = New Point(7, 16)
-        Label1.Name = "Label1"
-        Label1.Size = New Size(44, 19)
-        Label1.TabIndex = 2
-        Label1.Text = "From:"
-        Label1.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' Panel1
         ' 
@@ -151,6 +91,21 @@ Partial Class salesReport
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 42.4242439F))
         TableLayoutPanel1.Size = New Size(817, 99)
         TableLayoutPanel1.TabIndex = 6
+        ' 
+        ' Button2
+        ' 
+        Button2.Anchor = AnchorStyles.None
+        Button2.AutoSize = True
+        Button2.Cursor = Cursors.Hand
+        Button2.FlatAppearance.BorderSize = 0
+        Button2.FlatStyle = FlatStyle.Popup
+        Button2.Font = New Font("Segoe UI", 14F)
+        Button2.Location = New Point(175, 11)
+        Button2.Name = "Button2"
+        Button2.Size = New Size(138, 35)
+        Button2.TabIndex = 5
+        Button2.Text = "Export To PDF"
+        Button2.UseVisualStyleBackColor = True
         ' 
         ' Panel2
         ' 
@@ -223,6 +178,66 @@ Partial Class salesReport
         Panel3.Size = New Size(330, 51)
         Panel3.TabIndex = 3
         ' 
+        ' Panel5
+        ' 
+        Panel5.Controls.Add(DateTimePickerTo)
+        Panel5.Controls.Add(Label2)
+        Panel5.Dock = DockStyle.Fill
+        Panel5.Location = New Point(173, 0)
+        Panel5.Name = "Panel5"
+        Panel5.Size = New Size(157, 51)
+        Panel5.TabIndex = 6
+        ' 
+        ' DateTimePickerTo
+        ' 
+        DateTimePickerTo.Format = DateTimePickerFormat.Custom
+        DateTimePickerTo.Location = New Point(43, 13)
+        DateTimePickerTo.Name = "DateTimePickerTo"
+        DateTimePickerTo.Size = New Size(98, 23)
+        DateTimePickerTo.TabIndex = 8
+        ' 
+        ' Label2
+        ' 
+        Label2.Anchor = AnchorStyles.None
+        Label2.AutoSize = True
+        Label2.Font = New Font("Segoe UI", 10F)
+        Label2.Location = New Point(11, 16)
+        Label2.Name = "Label2"
+        Label2.Size = New Size(26, 19)
+        Label2.TabIndex = 6
+        Label2.Text = "To:"
+        Label2.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' Panel4
+        ' 
+        Panel4.Controls.Add(DateTimePickerFrom)
+        Panel4.Controls.Add(Label1)
+        Panel4.Dock = DockStyle.Left
+        Panel4.Location = New Point(0, 0)
+        Panel4.Name = "Panel4"
+        Panel4.Size = New Size(173, 51)
+        Panel4.TabIndex = 2
+        ' 
+        ' DateTimePickerFrom
+        ' 
+        DateTimePickerFrom.Format = DateTimePickerFormat.Custom
+        DateTimePickerFrom.Location = New Point(57, 16)
+        DateTimePickerFrom.Name = "DateTimePickerFrom"
+        DateTimePickerFrom.Size = New Size(98, 23)
+        DateTimePickerFrom.TabIndex = 7
+        ' 
+        ' Label1
+        ' 
+        Label1.Anchor = AnchorStyles.None
+        Label1.AutoSize = True
+        Label1.Font = New Font("Segoe UI", 10F)
+        Label1.Location = New Point(7, 16)
+        Label1.Name = "Label1"
+        Label1.Size = New Size(44, 19)
+        Label1.TabIndex = 2
+        Label1.Text = "From:"
+        Label1.TextAlign = ContentAlignment.MiddleLeft
+        ' 
         ' tableDataGridView
         ' 
         tableDataGridView.AllowUserToAddRows = False
@@ -238,21 +253,6 @@ Partial Class salesReport
         tableDataGridView.Size = New Size(1710, 652)
         tableDataGridView.TabIndex = 0
         ' 
-        ' Button2
-        ' 
-        Button2.Anchor = AnchorStyles.None
-        Button2.AutoSize = True
-        Button2.Cursor = Cursors.Hand
-        Button2.FlatAppearance.BorderSize = 0
-        Button2.FlatStyle = FlatStyle.Popup
-        Button2.Font = New Font("Segoe UI", 14F)
-        Button2.Location = New Point(175, 11)
-        Button2.Name = "Button2"
-        Button2.Size = New Size(138, 35)
-        Button2.TabIndex = 5
-        Button2.Text = "Export To PDF"
-        Button2.UseVisualStyleBackColor = True
-        ' 
         ' salesReport
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
@@ -264,16 +264,16 @@ Partial Class salesReport
         Text = "Sales Report"
         WindowState = FormWindowState.Maximized
         mainPanel.ResumeLayout(False)
-        Panel5.ResumeLayout(False)
-        Panel5.PerformLayout()
-        Panel4.ResumeLayout(False)
-        Panel4.PerformLayout()
         Panel1.ResumeLayout(False)
         TableLayoutPanel1.ResumeLayout(False)
         TableLayoutPanel1.PerformLayout()
         Panel2.ResumeLayout(False)
         Panel2.PerformLayout()
         Panel3.ResumeLayout(False)
+        Panel5.ResumeLayout(False)
+        Panel5.PerformLayout()
+        Panel4.ResumeLayout(False)
+        Panel4.PerformLayout()
         CType(tableDataGridView, ComponentModel.ISupportInitialize).EndInit()
         ResumeLayout(False)
     End Sub

@@ -256,6 +256,16 @@ Public Class posForm
         OpenDailyTransactionsWindow()
     End Sub
 
+    'logout function
+    Private Sub Button5_Click(sender As Object, e As EventArgs) Handles Button5.Click
+        ' Confirm logout
+        Dim result As DialogResult = MessageBox.Show("Are you sure you want to log out?", "Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+
+        If result = DialogResult.Yes Then
+            Application.Restart()
+        End If
+    End Sub
+
     ''' <summary>
     ''' Override to handle F1 key press
     ''' </summary>

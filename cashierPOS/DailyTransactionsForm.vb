@@ -102,17 +102,17 @@ Public Class DailyTransactionsForm
                 sr.SaleID,
                 sr.SaleDate,
                 rp.ProductName,
-                rp.Unit AS Unit,
+                rp.unit AS Unit,
                 c.CategoryName,
                 sr.QuantitySold,
                 sr.UnitPrice,
                 sr.TotalAmount,
                 sr.PaymentMethod,
-                u.Username AS HandledBy
+                u.username AS HandledBy
             FROM RetailSalesReport sr
             INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
             INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-            INNER JOIN Users u ON sr.HandledBy = u.UserID
+            INNER JOIN Users u ON sr.HandledBy = u.userID
             WHERE CAST(sr.SaleDate AS DATE) = @Today
 
             UNION ALL
@@ -123,17 +123,17 @@ Public Class DailyTransactionsForm
                 sr.SaleID,
                 sr.SaleDate,
                 wp.ProductName,
-                wp.Unit AS Unit,
+                wp.unit AS Unit,
                 c.CategoryName,
                 sr.QuantitySold,
                 sr.UnitPrice,
                 sr.TotalAmount,
                 sr.PaymentMethod,
-                u.Username AS HandledBy
+                u.username AS HandledBy
             FROM SalesReport sr
             INNER JOIN wholesaleProducts wp ON sr.ProductID = wp.ProductID
             INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-            INNER JOIN Users u ON sr.HandledBy = u.UserID
+            INNER JOIN Users u ON sr.HandledBy = u.userID
             WHERE CAST(sr.SaleDate AS DATE) = @Today
 
             ORDER BY SaleDate DESC"
@@ -151,26 +151,28 @@ Public Class DailyTransactionsForm
                             .Columns("SaleType").HeaderText = "Type"
                             .Columns("SaleType").Width = 80
                             .Columns("SaleID").HeaderText = "Sale ID"
-                            .Columns("SaleID").Width = 70
+                            .Columns("SaleID").Width = 60
                             .Columns("SaleDate").HeaderText = "Time"
                             .Columns("SaleDate").DefaultCellStyle.Format = "hh:mm:ss tt"
-                            .Columns("SaleDate").Width = 100
+                            .Columns("SaleDate").Width = 90
                             .Columns("ProductName").HeaderText = "Product"
-                            .Columns("ProductName").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                            .Columns("ProductName").Width = 200
+                            .Columns("ProductName").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+                            .Columns("ProductName").DefaultCellStyle.WrapMode = DataGridViewTriState.False
                             .Columns("Unit").HeaderText = "Unit"
-                            .Columns("Unit").Width = 70
+                            .Columns("Unit").Width = 60
                             .Columns("CategoryName").HeaderText = "Category"
-                            .Columns("CategoryName").Width = 120
+                            .Columns("CategoryName").Width = 100
                             .Columns("QuantitySold").HeaderText = "Qty"
-                            .Columns("QuantitySold").Width = 60
+                            .Columns("QuantitySold").Width = 50
                             .Columns("UnitPrice").HeaderText = "Unit Price"
                             .Columns("UnitPrice").DefaultCellStyle.Format = "₱#,##0.00"
-                            .Columns("UnitPrice").Width = 100
+                            .Columns("UnitPrice").Width = 90
                             .Columns("TotalAmount").HeaderText = "Total"
                             .Columns("TotalAmount").DefaultCellStyle.Format = "₱#,##0.00"
-                            .Columns("TotalAmount").Width = 100
+                            .Columns("TotalAmount").Width = 90
                             .Columns("PaymentMethod").HeaderText = "Payment"
-                            .Columns("PaymentMethod").Width = 120
+                            .Columns("PaymentMethod").Width = 100
                             .Columns("HandledBy").HeaderText = "Cashier"
                             .Columns("HandledBy").Width = 100
                         End With
@@ -195,7 +197,7 @@ Public Class DailyTransactionsForm
             End Using
         Catch ex As Exception
             MessageBox.Show($"Error loading transactions: {ex.Message}", "Error",
-           MessageBoxButtons.OK, MessageBoxIcon.Error)
+       MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -263,13 +265,13 @@ Public Class DailyTransactionsForm
 
     Private Sub UpdateFilteredSummary()
         Try
-            Dim filteredView As DataView = bs.DataSource
-            Dim totalTransactions As Integer = filteredView.Count
+            ' Use the DataView (dv) instead of bs.DataSource
+            Dim totalTransactions As Integer = dv.Count
             Dim totalRevenue As Decimal = 0D
             Dim retailCount As Integer = 0
             Dim wholesaleCount As Integer = 0
 
-            For Each rowView As DataRowView In filteredView
+            For Each rowView As DataRowView In dv
                 Dim row As DataRow = rowView.Row
 
                 ' Sum up total revenue

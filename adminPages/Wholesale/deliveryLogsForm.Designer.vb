@@ -27,14 +27,14 @@ Partial Class deliveryLogsForm
         TableLayoutPanel1 = New TableLayoutPanel()
         TableLayoutPanel2 = New TableLayoutPanel()
         Panel5 = New Panel()
-        toTextBox = New TextBox()
+        DateTimePickerTo = New DateTimePicker()
         Label2 = New Label()
         Panel4 = New Panel()
-        fromTextBox = New TextBox()
+        DateTimePickerFrom = New DateTimePicker()
         Label3 = New Label()
+        filterButton = New Button()
         Label1 = New Label()
         tableDataGridView = New DataGridView()
-        filterButton = New Button()
         mainPanel.SuspendLayout()
         Panel1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
@@ -98,7 +98,7 @@ Partial Class deliveryLogsForm
         ' 
         ' Panel5
         ' 
-        Panel5.Controls.Add(toTextBox)
+        Panel5.Controls.Add(DateTimePickerTo)
         Panel5.Controls.Add(Label2)
         Panel5.Dock = DockStyle.Fill
         Panel5.Location = New Point(165, 3)
@@ -106,22 +106,20 @@ Partial Class deliveryLogsForm
         Panel5.Size = New Size(156, 50)
         Panel5.TabIndex = 7
         ' 
-        ' toTextBox
+        ' DateTimePickerTo
         ' 
-        toTextBox.Anchor = AnchorStyles.None
-        toTextBox.BorderStyle = BorderStyle.FixedSingle
-        toTextBox.Font = New Font("Segoe UI", 12F)
-        toTextBox.Location = New Point(55, 12)
-        toTextBox.Name = "toTextBox"
-        toTextBox.Size = New Size(87, 29)
-        toTextBox.TabIndex = 7
+        DateTimePickerTo.Format = DateTimePickerFormat.Custom
+        DateTimePickerTo.Location = New Point(44, 12)
+        DateTimePickerTo.Name = "DateTimePickerTo"
+        DateTimePickerTo.Size = New Size(98, 23)
+        DateTimePickerTo.TabIndex = 9
         ' 
         ' Label2
         ' 
         Label2.Anchor = AnchorStyles.None
         Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 10F)
-        Label2.Location = New Point(20, 16)
+        Label2.Location = New Point(7, 16)
         Label2.Name = "Label2"
         Label2.Size = New Size(26, 19)
         Label2.TabIndex = 6
@@ -130,7 +128,7 @@ Partial Class deliveryLogsForm
         ' 
         ' Panel4
         ' 
-        Panel4.Controls.Add(fromTextBox)
+        Panel4.Controls.Add(DateTimePickerFrom)
         Panel4.Controls.Add(Label3)
         Panel4.Dock = DockStyle.Left
         Panel4.Location = New Point(3, 3)
@@ -138,27 +136,35 @@ Partial Class deliveryLogsForm
         Panel4.Size = New Size(156, 50)
         Panel4.TabIndex = 3
         ' 
-        ' fromTextBox
+        ' DateTimePickerFrom
         ' 
-        fromTextBox.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Right
-        fromTextBox.BorderStyle = BorderStyle.FixedSingle
-        fromTextBox.Font = New Font("Segoe UI", 12F)
-        fromTextBox.Location = New Point(65, 12)
-        fromTextBox.Name = "fromTextBox"
-        fromTextBox.Size = New Size(87, 29)
-        fromTextBox.TabIndex = 3
+        DateTimePickerFrom.Format = DateTimePickerFormat.Custom
+        DateTimePickerFrom.Location = New Point(55, 13)
+        DateTimePickerFrom.Name = "DateTimePickerFrom"
+        DateTimePickerFrom.Size = New Size(98, 23)
+        DateTimePickerFrom.TabIndex = 8
         ' 
         ' Label3
         ' 
         Label3.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
         Label3.AutoSize = True
         Label3.Font = New Font("Segoe UI", 10F)
-        Label3.Location = New Point(15, 16)
+        Label3.Location = New Point(6, 16)
         Label3.Name = "Label3"
         Label3.Size = New Size(44, 19)
         Label3.TabIndex = 2
         Label3.Text = "From:"
         Label3.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' filterButton
+        ' 
+        filterButton.Anchor = AnchorStyles.None
+        filterButton.Location = New Point(368, 16)
+        filterButton.Name = "filterButton"
+        filterButton.Size = New Size(75, 23)
+        filterButton.TabIndex = 8
+        filterButton.Text = "Filter"
+        filterButton.UseVisualStyleBackColor = True
         ' 
         ' Label1
         ' 
@@ -185,16 +191,6 @@ Partial Class deliveryLogsForm
         tableDataGridView.Name = "tableDataGridView"
         tableDataGridView.Size = New Size(1710, 652)
         tableDataGridView.TabIndex = 0
-        ' 
-        ' filterButton
-        ' 
-        filterButton.Anchor = AnchorStyles.None
-        filterButton.Location = New Point(368, 16)
-        filterButton.Name = "filterButton"
-        filterButton.Size = New Size(75, 23)
-        filterButton.TabIndex = 8
-        filterButton.Text = "Filter"
-        filterButton.UseVisualStyleBackColor = True
         ' 
         ' deliveryLogsForm
         ' 
@@ -226,10 +222,10 @@ Partial Class deliveryLogsForm
     Friend WithEvents Label1 As Label
     Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
     Friend WithEvents Panel5 As Panel
-    Friend WithEvents toTextBox As TextBox
     Friend WithEvents Label2 As Label
     Friend WithEvents Panel4 As Panel
-    Friend WithEvents fromTextBox As TextBox
     Friend WithEvents Label3 As Label
     Friend WithEvents filterButton As Button
+    Friend WithEvents DateTimePickerFrom As DateTimePicker
+    Friend WithEvents DateTimePickerTo As DateTimePicker
 End Class

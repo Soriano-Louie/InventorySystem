@@ -14,7 +14,7 @@
                 btn.Padding = New Padding(10, 0, 10, 0)
                 btn.BackColor = colorClicked
                 AddHandler btn.Click, AddressOf Button_Click
-                btn.Tag = false
+                btn.Tag = False
                 btn.ForeColor = Color.FromArgb(255, 0, 0)
             End If
             btn.Padding = New Padding(10, 0, 10, 0)
@@ -70,10 +70,6 @@
         chooseDashboard2.Show()
         chooseDashboard2.BringToFront()
     End Sub
-
-
-
-
 
     Private Sub Button9_Click(sender As Object, e As EventArgs) Handles Button9.Click
         ' Confirm logout
