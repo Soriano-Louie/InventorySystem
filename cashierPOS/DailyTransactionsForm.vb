@@ -55,6 +55,10 @@ Public Class DailyTransactionsForm
         transactionsDataGridView.RowHeadersVisible = False
         transactionsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect
 
+        ' Make columns and rows non-resizable
+        transactionsDataGridView.AllowUserToResizeColumns = False
+        transactionsDataGridView.AllowUserToResizeRows = False
+
         ' Setup buttons
         btnRefresh.BackColor = Color.FromArgb(147, 53, 53)
         btnRefresh.ForeColor = Color.FromArgb(230, 216, 177)

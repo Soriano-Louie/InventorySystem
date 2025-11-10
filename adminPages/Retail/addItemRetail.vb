@@ -5,6 +5,7 @@ Imports QRCoder
 
 Public Class addItemRetail
     Private parentForm As inventoryRetail
+
     Public Sub New(parent As inventoryRetail)
         InitializeComponent()
         Me.MaximizeBox = False
@@ -23,7 +24,6 @@ Public Class addItemRetail
         categoryDropDown.AutoCompleteMode = AutoCompleteMode.SuggestAppend
         categoryDropDown.AutoCompleteSource = AutoCompleteSource.ListItems
 
-
         addButton.BackColor = Color.FromArgb(224, 166, 109)
         cancelButton.BackColor = Color.FromArgb(224, 166, 109)
         addButton.ForeColor = Color.FromArgb(79, 51, 40)
@@ -31,6 +31,9 @@ Public Class addItemRetail
 
         DateTimePicker1.ShowCheckBox = True
         DateTimePicker1.Checked = False
+
+        ' Initialize VAT checkbox
+        VATCheckBox.Checked = False
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -59,6 +62,28 @@ Public Class addItemRetail
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
 
+    Private Function GetVATRate() As Decimal
+        Dim vatRate As Decimal = 0.12 ' Default VAT rate
+        Dim connString As String = GetConnectionString()
+
+        Try
+            Using conn As New SqlConnection(connString)
+                conn.Open()
+                Dim query As String = "SELECT TOP 1 VAT FROM Settings"
+                Using cmd As New SqlCommand(query, conn)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        vatRate = Convert.ToDecimal(result)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error retrieving VAT rate: " & ex.Message & vbCrLf & "Using default VAT rate of 12%.")
+        End Try
+
+        Return vatRate
+    End Function
+
     Private Sub LoadCategories()
         Dim query As String = "SELECT CategoryID, CategoryName FROM Categories ORDER BY CategoryName"
         Dim connString As String = GetConnectionString()
@@ -80,7 +105,6 @@ Public Class addItemRetail
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading categories: " & ex.Message)
         End Try
@@ -88,7 +112,7 @@ Public Class addItemRetail
 
     Private Sub InsertProductWithQRCode(sku As String, productName As String, unit As String, retail As Decimal, cost As Decimal,
                                     qty As Integer, reorder As Integer, expirationDate As Object,
-                                    categoryID As Integer)
+                                    categoryID As Integer, isVATApplicable As Boolean)
 
         Dim connString As String = GetConnectionString()
         Dim newProductID As Integer = -1
@@ -96,12 +120,12 @@ Public Class addItemRetail
         Using conn As New SqlConnection(connString)
             conn.Open()
 
-            ' Updated query with CategoryID and ExpirationDate
-            Dim query As String = "INSERT INTO retailProducts 
-                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
+            ' Updated query with CategoryID, ExpirationDate, and IsVATApplicable
+            Dim query As String = "INSERT INTO retailProducts
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage, IsVATApplicable)
                                OUTPUT INSERTED.ProductID
-                               VALUES 
-                               (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
+                               VALUES
+                               (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage, @IsVATApplicable)"
 
             Using cmd As New SqlCommand(query, conn)
 
@@ -135,13 +159,24 @@ Public Class addItemRetail
                 End If
                 cmd.Parameters.AddWithValue("@CategoryID", categoryID)
                 cmd.Parameters.Add("@QRCodeImage", SqlDbType.VarBinary).Value = qrData
+                cmd.Parameters.AddWithValue("@IsVATApplicable", isVATApplicable)
 
                 ' This executes insert and gets the new ProductID
                 newProductID = Convert.ToInt32(cmd.ExecuteScalar())
             End Using
         End Using
 
-        ' Refresh parent form's product list    
+        Dim vatMessage As String = ""
+        If isVATApplicable Then
+            Dim vatRate As Decimal = GetVATRate()
+            vatMessage = $" (VAT {vatRate:P} applicable)"
+        Else
+            vatMessage = " (VAT not applicable)"
+        End If
+
+        MessageBox.Show("Product inserted with QR Code successfully!" & vatMessage)
+
+        ' Refresh parent form's product list
         If parentForm IsNot Nothing Then
             parentForm.LoadProducts()
         End If
@@ -165,9 +200,10 @@ Public Class addItemRetail
             Else
                 picker.Value = today
             End If
+        ElseIf TypeOf ctrl Is CheckBox Then
+            DirectCast(ctrl, CheckBox).Checked = False
         End If
     End Sub
-
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.BeginInvoke(Sub() skuTextBox.Focus())
@@ -201,18 +237,18 @@ Public Class addItemRetail
 
         Try
             InsertProductWithQRCode(
-            skuTextBox.Text,                           ' SKU
-            productTextBox.Text,                       ' Product Name
-            unitTextBox.Text,                          ' Unit
+            skuTextBox.Text,      ' SKU
+            productTextBox.Text,            ' Product Name
+            unitTextBox.Text,   ' Unit
             Decimal.Parse(retailTextBox.Text),         ' Retail Price
             Decimal.Parse(costTextBox.Text),           ' Cost
-            Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
+            Integer.Parse(quantityTextBox.Text),     ' Stock Quantity
             Integer.Parse(reorderTextBox.Text),        ' Reorder Level
-            expDate,                                   ' Expiration Date or NULL
-            Convert.ToInt32(categoryDropDown.SelectedValue) ' CategoryID
+            expDate,          ' Expiration Date or NULL
+            Convert.ToInt32(categoryDropDown.SelectedValue), ' CategoryID
+            False   ' IsVATApplicable - temporarily False until VATCheckBox is added to designer
         )
             MessageBox.Show("Product inserted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
         Catch ex As FormatException
             MessageBox.Show("Please enter valid numeric values for price, cost, quantity, and reorder level.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         Catch ex As Exception
@@ -248,8 +284,12 @@ Public Class addItemRetail
             ResetControl(ctrl)
         Next
         ResetControl(DateTimePicker1)
-        Me.BeginInvoke(Sub() skuTextBox.Focus())
 
+        ' Reset VAT checkbox
+        ' NOTE: Uncomment after adding VATCheckBox control in designer
+        ' VATCheckBox.Checked = False
+
+        Me.BeginInvoke(Sub() skuTextBox.Focus())
 
         ' Refresh the DataGridView
         parentForm.LoadProducts()

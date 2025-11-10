@@ -17,6 +17,7 @@ Public Class salesReport
     Dim dt As New DataTable()
     Dim dv As New DataView()
     Dim bs As New BindingSource()
+
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
 
@@ -146,10 +147,10 @@ Public Class salesReport
                 form.loadCategories()
             Case "Button4"
                 ShowSingleForm(Of deliveryLogsForm)()
-            Case "Button10"
+            Case "Button5"
                 Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
                 form.loadStockEditLogs()
-            Case "Button5"
+            Case "Button10"
                 ShowSingleForm(Of salesReport)()
             Case "Button6"
                 Dim form = ShowSingleForm(Of loginRecordsForm)()
@@ -169,7 +170,7 @@ Public Class salesReport
     Public Sub loadSalesReport()
         Dim connStr As String = GetConnectionString()
         Dim query As String = "
-        SELECT 
+        SELECT
             sr.SaleID,
             sr.SaleDate,
             p.ProductName,
@@ -199,7 +200,6 @@ Public Class salesReport
 
                     da.Fill(dt)
 
-
                     ' Optional formatting
                     With tableDataGridView
                         .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
@@ -222,8 +222,8 @@ Public Class salesReport
     End Sub
 
     Private Sub salesReport_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        HighlightButton("Button5")
-        SetPlaceholder(TextBoxSearch, "Search...")
+        HighlightButton("Button10")
+        SetPlaceholder(TextBoxSearch, "Search Product Name")
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
 
@@ -237,10 +237,10 @@ Public Class salesReport
         bs.DataSource = dv
         tableDataGridView.DataSource = bs
 
-
         ' Load data
         loadSalesReport()
     End Sub
+
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
         Dim rect As New System.Drawing.Rectangle(0, 0, ctrl.Width, ctrl.Height)
         Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
@@ -274,7 +274,6 @@ Public Class salesReport
         path.CloseFigure()
         Return path
     End Function
-
 
     Private Sub SetPlaceholder(tb As TextBox, text As String)
         placeholders(tb) = text
@@ -321,7 +320,7 @@ Public Class salesReport
     Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
         Using con As New SqlConnection(GetConnectionString())
             Dim query As String = "
-            SELECT 
+            SELECT
                 sr.SaleID,
                 sr.SaleDate,
                 p.ProductName,
@@ -397,7 +396,6 @@ Public Class salesReport
                 excelApp.Quit()
                 MessageBox.Show("Exported to Excel successfully!")
             End If
-
         Catch ex As Exception
             MessageBox.Show("Error exporting to Excel: " & ex.Message)
         End Try
@@ -441,7 +439,6 @@ Public Class salesReport
                     End If
                 Next
 
-
                 ' Write file
                 Using stream As New FileStream(saveDialog.FileName, FileMode.Create)
                     Dim pdfDoc As New Document(PageSize.A4, 10, 10, 10, 10)
@@ -454,7 +451,6 @@ Public Class salesReport
 
                 MessageBox.Show("Exported to PDF successfully!")
             End If
-
         Catch ex As Exception
             MessageBox.Show("Error exporting to PDF: " & ex.Message)
         End Try
@@ -508,13 +504,8 @@ Public Class salesReport
                               "Success",
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Information)
-            Else
-                MessageBox.Show("Failed to save VAT rate. Please try again.",
-                              "Error",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Error)
             End If
-
+            ' Note: Error message is now displayed in SaveVATRate function
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",
@@ -528,6 +519,34 @@ Public Class salesReport
     End Function
 
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
-        Return SharedUtilities.SaveVATRate(vatRate)
+        Try
+            Dim errorMessage As String = String.Empty
+            Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
+
+            If Not success Then
+                ' Display detailed error or generic message
+                If Not String.IsNullOrEmpty(errorMessage) Then
+                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
+  "Error Details",
+             MessageBoxButtons.OK,
+    MessageBoxIcon.Error)
+                Else
+                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
+                                    "Error",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error)
+                End If
+            End If
+
+            Return success
+        Catch ex As Exception
+            ' Catch any unexpected errors in this wrapper function
+            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
+            "Critical Error",
+               MessageBoxButtons.OK,
+                   MessageBoxIcon.Error)
+            Return False
+        End Try
     End Function
+
 End Class

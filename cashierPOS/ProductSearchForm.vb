@@ -116,6 +116,11 @@ Public Class ProductSearchForm
         dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect
         dgv.MultiSelect = False
         dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+
+        ' Make columns and rows non-resizable
+        dgv.AllowUserToResizeColumns = False
+        dgv.AllowUserToResizeRows = False
+
         dgv.DataSource = bs
         AddHandler dgv.CellDoubleClick, AddressOf ProductsDataGridView_CellDoubleClick
         mainPanel.Controls.Add(dgv)

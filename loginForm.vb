@@ -5,7 +5,6 @@ Imports System.Text.RegularExpressions
 Imports Microsoft.Data.SqlClient
 Imports Microsoft.VisualBasic.ApplicationServices
 
-
 Public Class LoginForm
     'Private Sub loginForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
     '    brownPanel.BackColor = Color.FromArgb(79, 51, 40) ' Custom purple color
@@ -45,6 +44,10 @@ Public Class LoginForm
 
         psswrdTxtBx.PasswordChar = "*"
 
+        ' Add Enter key handlers for username and password textboxes
+        AddHandler usrnmTxtBx.KeyDown, AddressOf TextBox_KeyDown
+        AddHandler psswrdTxtBx.KeyDown, AddressOf TextBox_KeyDown
+
         'Panel1.BackColor = Color.FromArgb(224, 166, 109)
         'Panel2.BackColor = Color.FromArgb(224, 166, 109)
         'Panel3.BackColor = Color.FromArgb(224, 166, 109)
@@ -72,7 +75,6 @@ Public Class LoginForm
         'Panel65.BackColor = Color.FromArgb(224, 166, 109)
         'Panel68.BackColor = Color.FromArgb(224, 166, 109)
         formPanel.BackColor = Color.FromArgb(224, 166, 109)
-
 
     End Sub
 
@@ -151,12 +153,10 @@ Public Class LoginForm
         Return path
     End Function
 
-
     ' Function to hash password with SHA256
     Private Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
-
 
     Private Function HashSHA256Base64(password As String) As String
         Using sha256 As SHA256 = SHA256.Create()
@@ -251,7 +251,7 @@ Public Class LoginForm
 
                                     ' Insert login history
                                     Using insertCmd As New SqlCommand("
-                                    INSERT INTO UserLoginHistory (UserID, DeviceInfo) 
+                                    INSERT INTO UserLoginHistory (UserID, DeviceInfo)
                                     VALUES (@UserID, @DeviceInfo)", conn)
                                         insertCmd.Parameters.AddWithValue("@UserID", userID)
                                         insertCmd.Parameters.AddWithValue("@DeviceInfo", Environment.MachineName)
@@ -302,4 +302,15 @@ Public Class LoginForm
         psswrdTxtBx.Text = ""
         usrnmTxtBx.Focus()
     End Sub
+
+    ''' <summary>
+    ''' Handles Enter key press in textboxes to trigger login
+    ''' </summary>
+    Private Sub TextBox_KeyDown(sender As Object, e As KeyEventArgs)
+        If e.KeyCode = Keys.Enter Then
+            e.SuppressKeyPress = True
+            loginButton.PerformClick() ' Trigger the login button click
+        End If
+    End Sub
+
 End Class

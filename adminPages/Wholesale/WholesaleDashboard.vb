@@ -1,7 +1,6 @@
 ﻿Imports System.Drawing.Drawing2D
 Imports Microsoft.Data.SqlClient
 
-
 Public Class wholesaleDashboard
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl
@@ -10,12 +9,14 @@ Public Class wholesaleDashboard
 
     ' Chart data storage for daily sales
     Private chartData As New List(Of KeyValuePair(Of Date, Decimal))()
+
     Private currentMonth As Date = Date.Today ' Track which month we're viewing
     Private chartPanel As Panel ' Reference to the chart panel for mouse events
     Private tooltipLabel As Label ' Tooltip for hover display
 
     ' Top Products Chart data storage
     Private topProductsData As New List(Of ProductDailyMetrics)()
+
     Private topProductsCurrentMonth As Date = Date.Today
     Private topProductsChartPanel As Panel
     Private topProductsTooltipLabel As Label
@@ -468,7 +469,6 @@ Public Class wholesaleDashboard
 
             ' Create and setup the chart panel
             SetupChartPanel()
-
         Catch ex As Exception
             ' Handle error - show empty chart
             chartData.Clear()
@@ -868,7 +868,6 @@ Public Class wholesaleDashboard
 
             ' Setup the chart panel
             SetupTopProductsChartPanel()
-
         Catch ex As Exception
             topProducts.Clear()
             SetupTopProductsChartPanel()
@@ -1028,30 +1027,44 @@ Public Class wholesaleDashboard
         If topProducts.Count = 0 Then Return
 
         Dim panel As Panel = DirectCast(sender, Panel)
+
+        ' Use the EXACT same margins as DrawTopProductsChart
         Dim leftMargin As Integer = 150
-        Dim rightMargin As Integer = 50
-        Dim topMargin As Integer = 40
-        Dim bottomMargin As Integer = 40
+        Dim rightMargin As Integer = 100
+        Dim topMargin As Integer = 60 ' Must match DrawTopProductsChart
+        Dim bottomMargin As Integer = 20 ' Must match DrawTopProductsChart
 
-        Dim chartWidth As Integer = panel.Width - leftMargin - rightMargin
-        Dim chartHeight As Integer = panel.Height - topMargin - bottomMargin
-        Dim chartRect As New Rectangle(leftMargin, topMargin, chartWidth, chartHeight)
+        ' Use the EXACT same dimensions as DrawTopProductsChart
+        Dim availableWidth As Integer = panel.Width - 20
+        Dim chartWidth As Integer = availableWidth - leftMargin - rightMargin
 
-        ' Calculate bar dimensions
-        Dim barHeight As Integer = (chartHeight \ topProducts.Count) - 10
+        ' Use the EXACT same bar dimensions as DrawTopProductsChart
+        Dim barHeight As Integer = 50
         Dim barSpacing As Integer = 10
+
+        ' Find max revenue for scaling (same as DrawTopProductsChart) - calculate ONCE outside loop
+        Dim maxRevenue As Decimal = If(topProducts.Max(Function(x) x.TotalRevenue) > 0, topProducts.Max(Function(x) x.TotalRevenue), 100)
+        maxRevenue = maxRevenue * 1.1D
 
         ' Check if mouse is over any bar
         For i As Integer = 0 To topProducts.Count - 1
-            Dim yPosition As Integer = chartRect.Top + (i * (barHeight + barSpacing))
-            Dim barRect As New Rectangle(chartRect.Left, yPosition, chartWidth, barHeight)
+            Dim product = topProducts(i)
+
+            ' Calculate Y position EXACTLY as in DrawTopProductsChart
+            Dim yPosition As Integer = topMargin + (i * (barHeight + barSpacing))
+
+            ' Calculate bar width EXACTLY as in DrawTopProductsChart
+            Dim maxBarWidth As Integer = CInt(chartWidth * 0.9)
+            Dim barWidth As Integer = CInt((product.TotalRevenue / maxRevenue) * maxBarWidth)
+
+            ' Create bar rectangle with EXACT dimensions
+            Dim barRect As New Rectangle(leftMargin, yPosition, barWidth, barHeight)
 
             If barRect.Contains(e.Location) Then
-                Dim product = topProducts(i)
                 topProductsTooltipLabel.Text = $"{product.ProductName}" & vbCrLf &
-                                              $"Revenue: ₱{product.TotalRevenue:N2}" & vbCrLf &
-                                              $"Qty Sold: {product.TotalQuantity}" & vbCrLf &
-                                              $"Sales Count: {product.TotalSalesCount}"
+     $"Revenue: ₱{product.TotalRevenue:N2}" & vbCrLf &
+        $"Qty Sold: {product.TotalQuantity}" & vbCrLf &
+         $"Sales Count: {product.TotalSalesCount}"
                 topProductsTooltipLabel.Location = New Point(e.X + 10, e.Y - 50)
                 topProductsTooltipLabel.Visible = True
                 topProductsTooltipLabel.BringToFront()
@@ -1222,7 +1235,6 @@ Public Class wholesaleDashboard
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Error)
             End If
-
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",
@@ -1238,4 +1250,5 @@ Public Class wholesaleDashboard
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
         Return SharedUtilities.SaveVATRate(vatRate)
     End Function
+
 End Class

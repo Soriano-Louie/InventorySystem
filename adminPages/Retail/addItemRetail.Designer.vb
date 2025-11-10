@@ -57,6 +57,9 @@ Partial Class addItemRetail
         addButton = New Button()
         topPanel = New Panel()
         Label1 = New Label()
+        Panel5 = New Panel()
+        Label6 = New Label()
+        VATCheckBox = New CheckBox()
         mainPanel.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
         Panel7.SuspendLayout()
@@ -71,6 +74,7 @@ Partial Class addItemRetail
         Panel6.SuspendLayout()
         TableLayoutPanel2.SuspendLayout()
         topPanel.SuspendLayout()
+        Panel5.SuspendLayout()
         SuspendLayout()
         ' 
         ' mainPanel
@@ -87,7 +91,7 @@ Partial Class addItemRetail
         ' 
         TableLayoutPanel1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
         TableLayoutPanel1.ColumnCount = 1
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
         TableLayoutPanel1.Controls.Add(Panel7, 0, 7)
         TableLayoutPanel1.Controls.Add(Panel11, 0, 5)
         TableLayoutPanel1.Controls.Add(Panel10, 0, 0)
@@ -97,10 +101,12 @@ Partial Class addItemRetail
         TableLayoutPanel1.Controls.Add(Panel2, 0, 2)
         TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
         TableLayoutPanel1.Controls.Add(Panel6, 0, 6)
-        TableLayoutPanel1.Controls.Add(TableLayoutPanel2, 0, 9)
+        TableLayoutPanel1.Controls.Add(TableLayoutPanel2, 0, 10)
+        TableLayoutPanel1.Controls.Add(Panel5, 0, 9)
         TableLayoutPanel1.Location = New Point(0, 69)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
-        TableLayoutPanel1.RowCount = 10
+        TableLayoutPanel1.RowCount = 11
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 9.090909F))
@@ -119,9 +125,9 @@ Partial Class addItemRetail
         Panel7.Controls.Add(Label8)
         Panel7.Controls.Add(reorderTextBox)
         Panel7.Dock = DockStyle.Fill
-        Panel7.Location = New Point(3, 465)
+        Panel7.Location = New Point(3, 423)
         Panel7.Name = "Panel7"
-        Panel7.Size = New Size(356, 60)
+        Panel7.Size = New Size(356, 54)
         Panel7.TabIndex = 9
         ' 
         ' Label8
@@ -136,7 +142,7 @@ Partial Class addItemRetail
         ' 
         ' reorderTextBox
         ' 
-        reorderTextBox.Font = New Font("Segoe UI", 11.0F)
+        reorderTextBox.Font = New Font("Segoe UI", 11F)
         reorderTextBox.Location = New Point(3, 31)
         reorderTextBox.Name = "reorderTextBox"
         reorderTextBox.Size = New Size(350, 27)
@@ -147,9 +153,9 @@ Partial Class addItemRetail
         Panel11.Controls.Add(Label11)
         Panel11.Controls.Add(costTextBox)
         Panel11.Dock = DockStyle.Fill
-        Panel11.Location = New Point(3, 333)
+        Panel11.Location = New Point(3, 303)
         Panel11.Name = "Panel11"
-        Panel11.Size = New Size(356, 60)
+        Panel11.Size = New Size(356, 54)
         Panel11.TabIndex = 6
         ' 
         ' Label11
@@ -164,7 +170,7 @@ Partial Class addItemRetail
         ' 
         ' costTextBox
         ' 
-        costTextBox.Font = New Font("Segoe UI", 11.0F)
+        costTextBox.Font = New Font("Segoe UI", 11F)
         costTextBox.Location = New Point(3, 31)
         costTextBox.Name = "costTextBox"
         costTextBox.Size = New Size(350, 27)
@@ -177,7 +183,7 @@ Partial Class addItemRetail
         Panel10.Dock = DockStyle.Fill
         Panel10.Location = New Point(3, 3)
         Panel10.Name = "Panel10"
-        Panel10.Size = New Size(356, 60)
+        Panel10.Size = New Size(356, 54)
         Panel10.TabIndex = 15
         ' 
         ' Label10
@@ -192,7 +198,7 @@ Partial Class addItemRetail
         ' 
         ' skuTextBox
         ' 
-        skuTextBox.Font = New Font("Segoe UI", 11.0F)
+        skuTextBox.Font = New Font("Segoe UI", 11F)
         skuTextBox.Location = New Point(3, 31)
         skuTextBox.Name = "skuTextBox"
         skuTextBox.Size = New Size(350, 27)
@@ -202,9 +208,9 @@ Partial Class addItemRetail
         ' 
         Panel9.Controls.Add(Panel8)
         Panel9.Dock = DockStyle.Fill
-        Panel9.Location = New Point(3, 531)
+        Panel9.Location = New Point(3, 483)
         Panel9.Name = "Panel9"
-        Panel9.Size = New Size(356, 60)
+        Panel9.Size = New Size(356, 54)
         Panel9.TabIndex = 12
         ' 
         ' Panel8
@@ -214,7 +220,7 @@ Partial Class addItemRetail
         Panel8.Dock = DockStyle.Fill
         Panel8.Location = New Point(0, 0)
         Panel8.Name = "Panel8"
-        Panel8.Size = New Size(356, 60)
+        Panel8.Size = New Size(356, 54)
         Panel8.TabIndex = 10
         ' 
         ' DateTimePicker1
@@ -240,9 +246,9 @@ Partial Class addItemRetail
         Panel4.Controls.Add(Label5)
         Panel4.Controls.Add(unitTextBox)
         Panel4.Dock = DockStyle.Fill
-        Panel4.Location = New Point(3, 267)
+        Panel4.Location = New Point(3, 243)
         Panel4.Name = "Panel4"
-        Panel4.Size = New Size(356, 60)
+        Panel4.Size = New Size(356, 54)
         Panel4.TabIndex = 5
         ' 
         ' Label5
@@ -257,7 +263,7 @@ Partial Class addItemRetail
         ' 
         ' unitTextBox
         ' 
-        unitTextBox.Font = New Font("Segoe UI", 11.0F)
+        unitTextBox.Font = New Font("Segoe UI", 11F)
         unitTextBox.Location = New Point(3, 31)
         unitTextBox.Name = "unitTextBox"
         unitTextBox.Size = New Size(350, 27)
@@ -268,9 +274,9 @@ Partial Class addItemRetail
         Panel3.Controls.Add(Label4)
         Panel3.Controls.Add(quantityTextBox)
         Panel3.Dock = DockStyle.Fill
-        Panel3.Location = New Point(3, 201)
+        Panel3.Location = New Point(3, 183)
         Panel3.Name = "Panel3"
-        Panel3.Size = New Size(356, 60)
+        Panel3.Size = New Size(356, 54)
         Panel3.TabIndex = 4
         ' 
         ' Label4
@@ -285,7 +291,7 @@ Partial Class addItemRetail
         ' 
         ' quantityTextBox
         ' 
-        quantityTextBox.Font = New Font("Segoe UI", 11.0F)
+        quantityTextBox.Font = New Font("Segoe UI", 11F)
         quantityTextBox.Location = New Point(3, 31)
         quantityTextBox.Name = "quantityTextBox"
         quantityTextBox.Size = New Size(350, 27)
@@ -296,14 +302,14 @@ Partial Class addItemRetail
         Panel2.Controls.Add(categoryDropDown)
         Panel2.Controls.Add(Label3)
         Panel2.Dock = DockStyle.Fill
-        Panel2.Location = New Point(3, 135)
+        Panel2.Location = New Point(3, 123)
         Panel2.Name = "Panel2"
-        Panel2.Size = New Size(356, 60)
+        Panel2.Size = New Size(356, 54)
         Panel2.TabIndex = 3
         ' 
         ' categoryDropDown
         ' 
-        categoryDropDown.Font = New Font("Segoe UI", 11.0F)
+        categoryDropDown.Font = New Font("Segoe UI", 11F)
         categoryDropDown.FormattingEnabled = True
         categoryDropDown.Location = New Point(3, 31)
         categoryDropDown.Name = "categoryDropDown"
@@ -325,14 +331,14 @@ Partial Class addItemRetail
         Panel1.Controls.Add(productTextBox)
         Panel1.Controls.Add(Label2)
         Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(3, 69)
+        Panel1.Location = New Point(3, 63)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(356, 60)
+        Panel1.Size = New Size(356, 54)
         Panel1.TabIndex = 2
         ' 
         ' productTextBox
         ' 
-        productTextBox.Font = New Font("Segoe UI", 11.0F)
+        productTextBox.Font = New Font("Segoe UI", 11F)
         productTextBox.Location = New Point(3, 27)
         productTextBox.Name = "productTextBox"
         productTextBox.Size = New Size(350, 27)
@@ -353,9 +359,9 @@ Partial Class addItemRetail
         Panel6.Controls.Add(Label7)
         Panel6.Controls.Add(retailTextBox)
         Panel6.Dock = DockStyle.Fill
-        Panel6.Location = New Point(3, 399)
+        Panel6.Location = New Point(3, 363)
         Panel6.Name = "Panel6"
-        Panel6.Size = New Size(356, 60)
+        Panel6.Size = New Size(356, 54)
         Panel6.TabIndex = 8
         ' 
         ' Label7
@@ -370,7 +376,7 @@ Partial Class addItemRetail
         ' 
         ' retailTextBox
         ' 
-        retailTextBox.Font = New Font("Segoe UI", 11.0F)
+        retailTextBox.Font = New Font("Segoe UI", 11F)
         retailTextBox.Location = New Point(3, 31)
         retailTextBox.Name = "retailTextBox"
         retailTextBox.Size = New Size(350, 27)
@@ -379,16 +385,15 @@ Partial Class addItemRetail
         ' TableLayoutPanel2
         ' 
         TableLayoutPanel2.ColumnCount = 2
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
         TableLayoutPanel2.Controls.Add(cancelButton, 1, 0)
         TableLayoutPanel2.Controls.Add(addButton, 0, 0)
-        TableLayoutPanel2.Dock = DockStyle.Fill
-        TableLayoutPanel2.Location = New Point(3, 597)
+        TableLayoutPanel2.Location = New Point(3, 603)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
         TableLayoutPanel2.RowCount = 1
-        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        TableLayoutPanel2.Size = New Size(356, 66)
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
+        TableLayoutPanel2.Size = New Size(356, 60)
         TableLayoutPanel2.TabIndex = 11
         ' 
         ' cancelButton
@@ -398,8 +403,8 @@ Partial Class addItemRetail
         cancelButton.Cursor = Cursors.Hand
         cancelButton.FlatAppearance.BorderSize = 0
         cancelButton.FlatStyle = FlatStyle.Popup
-        cancelButton.Font = New Font("Segoe UI Semibold", 12.0F, FontStyle.Bold)
-        cancelButton.Location = New Point(220, 17)
+        cancelButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
+        cancelButton.Location = New Point(220, 14)
         cancelButton.Name = "cancelButton"
         cancelButton.Size = New Size(93, 31)
         cancelButton.TabIndex = 12
@@ -413,8 +418,8 @@ Partial Class addItemRetail
         addButton.Cursor = Cursors.Hand
         addButton.FlatAppearance.BorderSize = 0
         addButton.FlatStyle = FlatStyle.Popup
-        addButton.Font = New Font("Segoe UI Semibold", 12.0F, FontStyle.Bold)
-        addButton.Location = New Point(51, 17)
+        addButton.Font = New Font("Segoe UI Semibold", 12F, FontStyle.Bold)
+        addButton.Location = New Point(51, 14)
         addButton.Name = "addButton"
         addButton.Size = New Size(75, 31)
         addButton.TabIndex = 11
@@ -441,14 +446,46 @@ Partial Class addItemRetail
         Label1.Text = "Add Item to Inventory"
         Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
-        ' addItemForm
+        ' Panel5
         ' 
-        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
+        Panel5.Controls.Add(Label6)
+        Panel5.Controls.Add(VATCheckBox)
+        Panel5.Dock = DockStyle.Fill
+        Panel5.Location = New Point(3, 543)
+        Panel5.Name = "Panel5"
+        Panel5.Size = New Size(356, 54)
+        Panel5.TabIndex = 16
+        ' 
+        ' Label6
+        ' 
+        Label6.AutoSize = True
+        Label6.Location = New Point(3, 11)
+        Label6.Name = "Label6"
+        Label6.Size = New Size(220, 15)
+        Label6.TabIndex = 19
+        Label6.Text = "Check if VAT is applicable to the product"
+        Label6.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' VATCheckBox
+        ' 
+        VATCheckBox.Anchor = AnchorStyles.Left
+        VATCheckBox.AutoSize = True
+        VATCheckBox.Font = New Font("Segoe UI", 9F)
+        VATCheckBox.Location = New Point(8, 29)
+        VATCheckBox.Name = "VATCheckBox"
+        VATCheckBox.Size = New Size(80, 19)
+        VATCheckBox.TabIndex = 18
+        VATCheckBox.Text = "Apply VAT"
+        VATCheckBox.UseVisualStyleBackColor = True
+        ' 
+        ' addItemRetail
+        ' 
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(363, 735)
         Controls.Add(mainPanel)
         FormBorderStyle = FormBorderStyle.FixedToolWindow
-        Name = "addItemForm"
+        Name = "addItemRetail"
         StartPosition = FormStartPosition.CenterParent
         mainPanel.ResumeLayout(False)
         TableLayoutPanel1.ResumeLayout(False)
@@ -474,6 +511,8 @@ Partial Class addItemRetail
         TableLayoutPanel2.ResumeLayout(False)
         TableLayoutPanel2.PerformLayout()
         topPanel.ResumeLayout(False)
+        Panel5.ResumeLayout(False)
+        Panel5.PerformLayout()
         ResumeLayout(False)
     End Sub
 
@@ -512,4 +551,7 @@ Partial Class addItemRetail
     Friend WithEvents Label10 As Label
     Friend WithEvents skuTextBox As TextBox
     Friend WithEvents productTextBox As TextBox
+    Friend WithEvents Panel5 As Panel
+    Friend WithEvents Label6 As Label
+    Friend WithEvents VATCheckBox As CheckBox
 End Class

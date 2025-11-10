@@ -254,49 +254,171 @@ Public Class editUserForm
     End Function
 
     Private Sub deleteButton_Click(sender As Object, e As EventArgs) Handles deleteButton.Click
-        ' prompt confirmation on deleting
-        Dim result = MessageBox.Show("Are you sure you want to delete this user? This action cannot be undone.", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
-        If result <> DialogResult.Yes Then
+        ' Ensure a user is selected
+        If userDropDown.SelectedIndex = -1 Then
+            MessageBox.Show("Please select a user to delete.", "No User Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
+
+        ' Get user details
+        Dim userID As Integer = Convert.ToInt32(userDropDown.SelectedValue)
+        Dim username As String = userDropDown.Text
+
+        ' Prevent deleting own account
+        If userID = GlobalUserSession.CurrentUserID Then
+            MessageBox.Show("You cannot delete your own account while logged in!" & vbCrLf & vbCrLf &
+                            "Please log in with a different admin account to delete this user.",
+                            "Cannot Delete Own Account",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error)
+            Return
+        End If
+
+        ' Get additional user details for the warning
+        Dim userDetails As String = GetUserDetailsForDeletion(userID)
+
+        ' Show detailed warning with user information
+        Dim warningMessage As String = $"⚠️ WARNING: You are about to permanently delete this user account!" & vbCrLf & vbCrLf &
+                                       $"User: {username}" & vbCrLf &
+                                        userDetails & vbCrLf &
+                                        "This action CANNOT be undone!" & vbCrLf & vbCrLf &
+                                        "⚠️ Deleting this user will:" & vbCrLf &
+                                        "  • Remove all login access" & vbCrLf &
+                                        "  • Remove user from system records" & vbCrLf &
+                                        "  • Affect historical data (sales records, stock edits, etc.)" & vbCrLf &
+                                        "  • Cannot be recovered after deletion" & vbCrLf & vbCrLf &
+                                        "Are you absolutely sure you want to DELETE this user?"
+
+        ' First confirmation with detailed warning
+        Dim result = MessageBox.Show(warningMessage,
+                                     "⚠️ CONFIRM PERMANENT USER DELETION",
+                                     MessageBoxButtons.YesNo,
+                                     MessageBoxIcon.Warning,
+                                     MessageBoxDefaultButton.Button2) ' Default to "No"
+
+        If result <> DialogResult.Yes Then
+            MessageBox.Show("User deletion cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
         ' Prompt for admin password
-        Dim adminPassword As String = InputBoxPassword("Enter admin password to confirm changes:", "Verify Password")
+        Dim adminPassword As String = InputBoxPassword("Enter your admin password to confirm this critical action:", "Verify Admin Password")
 
         ' Cancel if empty
         If String.IsNullOrWhiteSpace(adminPassword) Then
-            MessageBox.Show("Update cancelled. No password entered.")
+            MessageBox.Show("Deletion cancelled. No password entered.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
         ' Verify password
         If Not verifyPassword(adminPassword) Then
-            MessageBox.Show("Invalid admin password. Update cancelled.")
+            MessageBox.Show("Invalid admin password. Deletion cancelled." & vbCrLf & vbCrLf &
+                            "User account was NOT deleted.",
+                            "Authentication Failed",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error)
             Return
         End If
+
+        ' Final confirmation after password verification
+        Dim finalConfirm = MessageBox.Show($"FINAL CONFIRMATION:{vbCrLf}{vbCrLf}" &
+                                           $"You are about to permanently delete user '{username}'." & vbCrLf & vbCrLf &
+                                           "This is your last chance to cancel." & vbCrLf & vbCrLf &
+                                           "Click YES to proceed with deletion." & vbCrLf &
+                                           "Click NO to cancel.",
+                                           "⚠️ FINAL DELETION CONFIRMATION",
+                                           MessageBoxButtons.YesNo,
+                                           MessageBoxIcon.Exclamation,
+                                           MessageBoxDefaultButton.Button2)
+
+        If finalConfirm <> DialogResult.Yes Then
+            MessageBox.Show("Deletion cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        ' Proceed with deletion
         Try
             Dim query As String = "DELETE FROM Users WHERE UserID = @UserID"
             Using connection As New SqlConnection(GetConnectionString())
                 Using command As New SqlCommand(query, connection)
-                    command.Parameters.AddWithValue("@UserID", userDropDown.SelectedValue)
+                    command.Parameters.AddWithValue("@UserID", userID)
                     connection.Open()
-                    command.ExecuteNonQuery()
-                    MessageBox.Show("User deleted successfully.")
-                    If parentForm IsNot Nothing Then
-                        parentForm.LoadUsers() ' Refresh user list in parent form
+                    Dim rowsAffected As Integer = command.ExecuteNonQuery()
+
+                    If rowsAffected > 0 Then
+                        MessageBox.Show($"User '{username}' has been successfully deleted." & vbCrLf &
+                                        "All user data has been removed from the system.",
+                                        "✓ Deletion Successful",
+                                        MessageBoxButtons.OK,
+                                        MessageBoxIcon.Information)
+
+                        ' Reset form controls after successful deletion
+                        ResetControl(userDropDown)
+                        ResetControl(newUserText)
+                        ResetControl(newPasswordText)
+                        ResetControl(newRoleDropdown)
+                        userDropDown.Focus()
+
+                        ' Refresh user lists
+                        loadUserDetails()
+                        If parentForm IsNot Nothing Then
+                            parentForm.LoadUsers()
+                        End If
+                    Else
+                        MessageBox.Show("No user found with that ID.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     End If
                 End Using
             End Using
-            ResetControl(userDropDown)
-            ResetControl(newUserText)
-            ResetControl(newPasswordText)
-            ResetControl(newRoleDropdown)
-            userDropDown.Focus()
-            loadUserDetails() ' Refresh user list
-            If parentForm IsNot Nothing Then
-                parentForm.LoadUsers()
-            End If
         Catch ex As Exception
-            MessageBox.Show("Error deleting user: " & ex.Message)
+            MessageBox.Show($"Error deleting user:{vbCrLf}{vbCrLf}" &
+                            $"Error: {ex.Message}" & vbCrLf & vbCrLf &
+                            "The user may be referenced in other tables (login history, stock edits, sales, etc.)." & vbCrLf &
+                            "Please contact system administrator if this problem persists.",
+                            "Database Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' Gets user details for the deletion warning message
+    ''' </summary>
+    Private Function GetUserDetailsForDeletion(userID As Integer) As String
+        Dim details As String = ""
+
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "
+                    SELECT 
+                        u.Username,
+                        r.RoleName,
+                        u.lastLogin,
+                        u.createdAt
+                    FROM Users u
+                    LEFT JOIN Roles r ON u.RoleID = r.RoleID
+                    WHERE u.UserID = @UserID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@UserID", userID)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            Dim roleName As String = If(IsDBNull(reader("RoleName")), "N/A", reader("RoleName").ToString())
+                            Dim lastLogin As String = If(IsDBNull(reader("lastLogin")), "Never", Convert.ToDateTime(reader("lastLogin")).ToString("yyyy-MM-dd HH:mm:ss"))
+                            Dim createdAt As String = If(IsDBNull(reader("createdAt")), "Unknown", Convert.ToDateTime(reader("createdAt")).ToString("yyyy-MM-dd"))
+
+                            details = $"Role: {roleName}" & vbCrLf &
+                                      $"Last Login: {lastLogin}" & vbCrLf &
+                                      $"Account Created: {createdAt}"
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            details = "(Unable to load user details)"
+        End Try
+
+        Return details
+    End Function
 End Class

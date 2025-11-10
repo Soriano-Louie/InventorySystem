@@ -1,7 +1,6 @@
 ﻿Imports System.Drawing.Drawing2D
 Imports Microsoft.Data.SqlClient
 
-
 Public Class retailDashboard
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl2
@@ -10,12 +9,14 @@ Public Class retailDashboard
 
     ' Chart data storage for daily sales
     Private chartData As New List(Of KeyValuePair(Of Date, Decimal))()
+
     Private currentMonth As Date = Date.Today ' Track which month we're viewing
     Private chartPanel As Panel ' Reference to the chart panel for mouse events
     Private tooltipLabel As Label ' Tooltip for hover display
 
     ' Top Products Chart data storage
     Private topProductsData As New List(Of ProductDailyMetrics)()
+
     Private topProductsCurrentMonth As Date = Date.Today
     Private topProductsChartPanel As Panel
     Private topProductsTooltipLabel As Label
@@ -127,7 +128,6 @@ Public Class retailDashboard
         Return DirectCast(formToShow, T)
     End Function
 
-
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
 
     End Sub
@@ -164,12 +164,11 @@ Public Class retailDashboard
                 Dim form = ShowSingleForm(Of categoriesForm)()
                 form.loadCategories()
             Case "Button4"
+                ' Button4 = Stock Edit Logs (Retail)
                 Dim form = ShowSingleForm(Of retailStockEditLogs)()
                 form.loadStockEditLogs()
             Case "Button5"
-                Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
-                form.loadStockEditLogs()
-            Case "Button10"
+                ' Button5 = Sales Report (Retail)
                 ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
@@ -266,8 +265,8 @@ Public Class retailDashboard
     Private Sub LoadTotalProductsForLabel9()
         Try
             Dim connStr As String = GetConnectionString()
-            ' Use wholesaleProducts table as it's the main products table
-            Dim sql As String = "SELECT COUNT(*) FROM wholesaleProducts"
+            ' Use retailProducs table as it's the main products table
+            Dim sql As String = "SELECT COUNT(*) FROM retailProducts"
 
             Using conn As New SqlConnection(connStr)
                 Using cmd As New SqlCommand(sql, conn)
@@ -362,7 +361,6 @@ Public Class retailDashboard
 
             ' Create and setup the chart panel
             SetupChartPanel()
-
         Catch ex As Exception
             ' Handle error - show empty chart
             chartData.Clear()
@@ -709,7 +707,7 @@ Public Class retailDashboard
         path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90)
         ' Left edge
         path.AddLine(rect.X, rect.Bottom - radius, rect.X, rect.Y + radius)
-        ' Top-left corner   
+        ' Top-left corner
         path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90)
 
         path.CloseFigure()
@@ -855,7 +853,7 @@ Public Class retailDashboard
             p.ProductName,
             SUM(sr.TotalAmount) AS TotalRevenue,
             SUM(sr.QuantitySold) AS TotalQuantity,
-            COUNT(*) AS SalesCount
+            COUNT() AS SalesCount
         FROM RetailSalesReport sr
         INNER JOIN retailProducts p ON sr.ProductID = p.ProductID
         WHERE sr.SaleDate >= @StartDate AND sr.SaleDate <= @EndDate
@@ -907,7 +905,6 @@ Public Class retailDashboard
 
             ' Setup the chart panel
             SetupTopProductsChartPanel()
-
         Catch ex As Exception
             topProducts.Clear()
             SetupTopProductsChartPanel()
@@ -1193,8 +1190,8 @@ Public Class retailDashboard
 
             ' Show input box with current VAT rate
             Dim input As String = InputBox($"Enter VAT Rate (%):{vbCrLf}Current VAT: {currentVAT:N2}%",
-                                          "Set VAT Rate",
-                                          currentVAT.ToString())
+    "Set VAT Rate",
+    currentVAT.ToString())
 
             ' Check if user cancelled
             If String.IsNullOrWhiteSpace(input) Then
@@ -1205,39 +1202,34 @@ Public Class retailDashboard
             Dim newVATRate As Decimal
             If Not Decimal.TryParse(input, newVATRate) Then
                 MessageBox.Show("Please enter a valid numeric value for VAT rate.",
-                              "Invalid Input",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Warning)
+           "Invalid Input",
+    MessageBoxButtons.OK,
+       MessageBoxIcon.Warning)
                 Return
             End If
 
             ' Validate range (0 to 100)
             If newVATRate < 0 OrElse newVATRate > 100 Then
                 MessageBox.Show("VAT rate must be between 0 and 100.",
-                              "Invalid Range",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Warning)
+       "Invalid Range",
+        MessageBoxButtons.OK,
+    MessageBoxIcon.Warning)
                 Return
             End If
 
             ' Save to database
             If SaveVATRate(newVATRate) Then
                 MessageBox.Show($"VAT rate successfully set to {newVATRate:N2}%",
-                              "Success",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Information)
-            Else
-                MessageBox.Show("Failed to save VAT rate. Please try again.",
-                              "Error",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Error)
+     "Success",
+    MessageBoxButtons.OK,
+          MessageBoxIcon.Information)
             End If
-
+            ' Note: Error message is now displayed in SaveVATRate function
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
-                          "Error",
-                          MessageBoxButtons.OK,
-                          MessageBoxIcon.Error)
+    "Error",
+              MessageBoxButtons.OK,
+           MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -1246,6 +1238,34 @@ Public Class retailDashboard
     End Function
 
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
-        Return SharedUtilities.SaveVATRate(vatRate)
+        Try
+            Dim errorMessage As String = String.Empty
+            Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
+
+            If Not success Then
+                ' Display detailed error or generic message
+                If Not String.IsNullOrEmpty(errorMessage) Then
+                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
+             "Error Details",
+  MessageBoxButtons.OK,
+      MessageBoxIcon.Error)
+                Else
+                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
+              "Error",
+     MessageBoxButtons.OK,
+  MessageBoxIcon.Error)
+                End If
+            End If
+
+            Return success
+        Catch ex As Exception
+            ' Catch any unexpected errors in this wrapper function
+            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
+   "Critical Error",
+         MessageBoxButtons.OK,
+   MessageBoxIcon.Error)
+            Return False
+        End Try
     End Function
+
 End Class

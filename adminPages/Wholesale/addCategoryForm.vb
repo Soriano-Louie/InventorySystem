@@ -81,40 +81,87 @@ Public Class addCategoryForm
             Exit Sub
         End If
 
+        ' Check if category already exists
+        If CategoryExists(categoryText.Text.Trim()) Then
+            MessageBox.Show($"Category '{categoryText.Text.Trim()}' already exists!" & vbCrLf & vbCrLf +
+    "Please enter a different category name.",
+              "Duplicate Category",
+                 MessageBoxButtons.OK,
+          MessageBoxIcon.Warning)
+       categoryText.Focus()
+    categoryText.SelectAll()
+            Exit Sub
+        End If
+
         Try
             Dim query As String = "
-                INSERT INTO Categories (CategoryName, Description)
-                VALUES (@CategoryName, @Description);
-            "
+     INSERT INTO Categories (CategoryName, Description)
+        VALUES (@CategoryName, @Description);
+         "
 
-            Using conn As New SqlConnection(GetConnectionString())
-                conn.Open()
-                Using cmd As New SqlCommand(query, conn)
-                    ' Always required
-                    cmd.Parameters.AddWithValue("@CategoryName", categoryText.Text.Trim())
+Using conn As New SqlConnection(GetConnectionString())
+   conn.Open()
+      Using cmd As New SqlCommand(query, conn)
+      ' Always required
+      cmd.Parameters.AddWithValue("@CategoryName", categoryText.Text.Trim())
 
-                    ' Optional: insert NULL if textbox empty
-                    If String.IsNullOrWhiteSpace(descriptionText.Text) Then
-                        cmd.Parameters.AddWithValue("@Description", DBNull.Value)
-                    Else
-                        cmd.Parameters.AddWithValue("@Description", descriptionText.Text.Trim())
-                    End If
+           ' Optional: insert NULL if textbox empty
+         If String.IsNullOrWhiteSpace(descriptionText.Text) Then
+  cmd.Parameters.AddWithValue("@Description", DBNull.Value)
+ Else
+          cmd.Parameters.AddWithValue("@Description", descriptionText.Text.Trim())
+          End If
 
-                    cmd.ExecuteNonQuery()
-                    MessageBox.Show("Category added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+           cmd.ExecuteNonQuery()
+    MessageBox.Show("Category added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
-                    If parentForm IsNot Nothing Then
-                        parentForm.loadCategories() ' Refresh parent form's data
-                    End If
-                End Using
-            End Using
-            ' Clear inputs for next entry
-            ResetControl(categoryText)
+                If parentForm IsNot Nothing Then
+       parentForm.loadCategories() ' Refresh parent form's data
+             End If
+       End Using
+        End Using
+        ' Clear inputs for next entry
+  ResetControl(categoryText)
             ResetControl(descriptionText)
             categoryText.Focus()
 
+ Catch ex As SqlException
+         ' Handle SQL-specific errors
+            If ex.Number = 2627 OrElse ex.Number = 2601 Then
+     ' Unique constraint violation
+     MessageBox.Show($"Category '{categoryText.Text.Trim()}' already exists!" & vbCrLf & vbCrLf +
+  "Please enter a different category name.",
+              "Duplicate Category",
+       MessageBoxButtons.OK,
+   MessageBoxIcon.Warning)
+    categoryText.Focus()
+      categoryText.SelectAll()
+         Else
+     MessageBox.Show("Database error adding category: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+  End If
         Catch ex As Exception
-            MessageBox.Show("Error adding category: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+     MessageBox.Show("Error adding category: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' Checks if a category with the given name already exists in the database (case-insensitive)
+    ''' </summary>
+    Private Function CategoryExists(categoryName As String) As Boolean
+    Try
+    Dim query As String = "SELECT COUNT(*) FROM Categories WHERE LOWER(CategoryName) = LOWER(@CategoryName)"
+
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+     Using cmd As New SqlCommand(query, conn)
+     cmd.Parameters.AddWithValue("@CategoryName", categoryName.Trim())
+           Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+             Return count > 0
+       End Using
+ End Using
+        Catch ex As Exception
+            MessageBox.Show("Error checking for duplicate category: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+     Return False
+   End Try
+    End Function
 End Class

@@ -1,6 +1,7 @@
 Imports Microsoft.Data.SqlClient
 
 Public Module SharedUtilities
+
     ''' <summary>
     ''' Gets the database connection string
     ''' </summary>
@@ -39,21 +40,34 @@ Public Module SharedUtilities
     ''' Saves or updates the VAT rate in the database
     ''' </summary>
     ''' <param name="vatRate">The VAT rate to save</param>
+    ''' <param name="errorMessage">Output parameter containing error message if save fails</param>
     ''' <returns>True if successful, False otherwise</returns>
-    Public Function SaveVATRate(vatRate As Decimal) As Boolean
+    Public Function SaveVATRate(vatRate As Decimal, ByRef errorMessage As String) As Boolean
         Try
             Dim connStr As String = GetConnectionString()
 
             Using conn As New SqlConnection(connStr)
-                conn.Open()
+                Try
+                    conn.Open()
+                Catch connEx As Exception
+                    errorMessage = $"Failed to connect to database: {connEx.Message}"
+                    Console.WriteLine("Connection Error: " & errorMessage)
+                    Return False
+                End Try
 
                 ' Check if a settings record exists
                 Dim checkSql As String = "SELECT COUNT(*) FROM settings"
                 Dim recordExists As Boolean = False
 
-                Using checkCmd As New SqlCommand(checkSql, conn)
-                    recordExists = Convert.ToInt32(checkCmd.ExecuteScalar()) > 0
-                End Using
+                Try
+                    Using checkCmd As New SqlCommand(checkSql, conn)
+                        recordExists = Convert.ToInt32(checkCmd.ExecuteScalar()) > 0
+                    End Using
+                Catch checkEx As Exception
+                    errorMessage = $"Failed to check settings table: {checkEx.Message}"
+                    Console.WriteLine("Check Error: " & errorMessage)
+                    Return False
+                End Try
 
                 ' Update existing record or insert new one
                 Dim sql As String
@@ -65,21 +79,41 @@ Public Module SharedUtilities
                     sql = "INSERT INTO settings (vatRate) VALUES (@VATRate)"
                 End If
 
-                Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@VATRate", vatRate)
-                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+                Try
+                    Using cmd As New SqlCommand(sql, conn)
+                        cmd.Parameters.AddWithValue("@VATRate", vatRate)
+                        Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
 
-                    If rowsAffected = 0 Then
-                        Console.WriteLine("Warning: No rows were affected")
-                        Return False
-                    End If
-                End Using
+                        If rowsAffected = 0 Then
+                            errorMessage = "No rows were affected. The database may have an issue or the settings table may be empty."
+                            Console.WriteLine("Warning: " & errorMessage)
+                            Return False
+                        End If
+                    End Using
+                Catch sqlEx As Exception
+                    errorMessage = $"SQL execution failed: {sqlEx.Message}"
+                    Console.WriteLine("SQL Error: " & errorMessage)
+                    Return False
+                End Try
             End Using
 
+            errorMessage = String.Empty
             Return True
         Catch ex As Exception
-            Console.WriteLine("Error saving VAT rate: " & ex.Message)
+            errorMessage = $"Unexpected error: {ex.Message}"
+            Console.WriteLine("Error saving VAT rate: " & errorMessage)
             Return False
         End Try
     End Function
+
+    ''' <summary>
+    ''' Saves or updates the VAT rate in the database (backward compatible version)
+    ''' </summary>
+    ''' <param name="vatRate">The VAT rate to save</param>
+    ''' <returns>True if successful, False otherwise</returns>
+    Public Function SaveVATRate(vatRate As Decimal) As Boolean
+        Dim errorMessage As String = String.Empty
+        Return SaveVATRate(vatRate, errorMessage)
+    End Function
+
 End Module

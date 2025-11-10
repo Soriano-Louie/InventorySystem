@@ -137,12 +137,11 @@ Public Class retailSalesReport
                 Dim form = ShowSingleForm(Of categoriesForm)()
                 form.loadCategories()
             Case "Button4"
+                ' Button4 = Stock Edit Logs (Retail)
                 Dim form = ShowSingleForm(Of retailStockEditLogs)()
                 form.loadStockEditLogs()
             Case "Button5"
-                Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
-                form.loadStockEditLogs()
-            Case "Button10"
+                ' Button5 = Sales Report (Retail) - stay on current form
                 ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
@@ -500,13 +499,8 @@ Public Class retailSalesReport
                               "Success",
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Information)
-            Else
-                MessageBox.Show("Failed to save VAT rate. Please try again.",
-                              "Error",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Error)
             End If
-
+        ' Note: Error message is now displayed in SaveVATRate function
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",
@@ -520,6 +514,33 @@ Public Class retailSalesReport
     End Function
 
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
-        Return SharedUtilities.SaveVATRate(vatRate)
+        Try
+            Dim errorMessage As String = String.Empty
+            Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
+
+            If Not success Then
+                ' Display detailed error or generic message
+                If Not String.IsNullOrEmpty(errorMessage) Then
+                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
+                                    "Error Details",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error)
+                Else
+                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
+                                    "Error",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error)
+                End If
+            End If
+
+            Return success
+        Catch ex As Exception
+            ' Catch any unexpected errors in this wrapper function
+            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
+                            "Critical Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error)
+            Return False
+        End Try
     End Function
 End Class

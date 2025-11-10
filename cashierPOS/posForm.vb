@@ -137,6 +137,10 @@ Public Class posForm
         DataGridView1.RowHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
         DataGridView1.RowHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
 
+        ' Make columns and rows non-resizable
+        DataGridView1.AllowUserToResizeColumns = False
+        DataGridView1.AllowUserToResizeRows = False
+
         ' Add columns
         ' Column 1: #
         DataGridView1.Columns.Add("ColNumber", "#")
@@ -456,41 +460,48 @@ Public Class posForm
         ' Get VAT rate from database
         Dim vatRate As Decimal = SharedUtilities.GetCurrentVATRate() / 100 ' Convert percentage to decimal
 
-        Dim subtotalWithoutVAT As Decimal = 0D
+        Dim subtotalBeforeVAT As Decimal = 0D ' Subtotal of all items before adding VAT
         Dim totalDiscountAmount As Decimal = 0D
         Dim totalVATAmount As Decimal = 0D
-        Dim totalVatableAmount As Decimal = 0D
+        Dim totalVatableAmount As Decimal = 0D ' Sum of items that are VAT-applicable (before VAT)
 
         For Each item In cartItems
+            ' Get effective price (discount price if available, otherwise regular price)
             Dim effectivePrice As Decimal = If(item.DiscountPrice.HasValue, item.DiscountPrice.Value, item.UnitPrice)
-            Dim itemTotal As Decimal = effectivePrice * item.Quantity
 
-            ' Calculate discount per item
+            ' Calculate item subtotal (price × quantity) BEFORE VAT
+            Dim itemSubtotal As Decimal = effectivePrice * item.Quantity
+
+            ' Calculate discount amount for this item
             If item.DiscountPrice.HasValue Then
                 Dim discountPerItem As Decimal = (item.UnitPrice - item.DiscountPrice.Value) * item.Quantity
                 totalDiscountAmount += discountPerItem
             End If
 
-            ' Check if VAT applicable for this product
+            ' Check if VAT applicable for this product (using IsVATApplicable bit field)
             If item.IsVATApplicable Then
-                ' This item has VAT
-                Dim itemSubtotal As Decimal = itemTotal / (1 + vatRate) ' Remove VAT from price to get base
-                Dim itemVAT As Decimal = itemTotal - itemSubtotal
+                ' This item is VAT-applicable
+                ' The price in database does NOT include VAT, so we add VAT on top
+                ' Note: Discount is applied FIRST, then VAT is calculated on the discounted price
+                Dim itemVAT As Decimal = itemSubtotal * vatRate
 
-                totalVatableAmount += itemSubtotal
-                totalVATAmount += itemVAT
-                subtotalWithoutVAT += itemTotal ' Include full price in sales
+                totalVatableAmount += itemSubtotal ' Add base amount (before VAT)
+                totalVATAmount += itemVAT ' Add VAT amount
+                subtotalBeforeVAT += itemSubtotal ' Add to subtotal
             Else
-                ' No VAT for this item
-                subtotalWithoutVAT += itemTotal
+                ' No VAT for this item - just add the subtotal
+                subtotalBeforeVAT += itemSubtotal
             End If
         Next
 
-        ' Update labels
-        totalSalesLabel.Text = $"₱{subtotalWithoutVAT:N2}"
-        totalDiscountLabel.Text = $"₱{totalDiscountAmount:N2}"
-        VATLabel.Text = $"₱{totalVATAmount:N2}"
-        vatableLabel.Text = $"₱{totalVatableAmount:N2}"
+        ' Calculate final total sales (includes VAT for applicable items)
+        Dim grandTotal As Decimal = subtotalBeforeVAT + totalVATAmount
+
+        ' Update labels with calculated values
+        totalSalesLabel.Text = $"₱{grandTotal:N2}" ' Total including VAT
+        totalDiscountLabel.Text = $"₱{totalDiscountAmount:N2}" ' Total discount given
+        VATLabel.Text = $"₱{totalVATAmount:N2}" ' Total VAT amount
+        vatableLabel.Text = $"₱{totalVatableAmount:N2}" ' Vatable amount (before VAT is added)
     End Sub
 
     ''' <summary>

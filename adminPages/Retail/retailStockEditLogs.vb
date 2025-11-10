@@ -8,21 +8,23 @@ Imports System.IO
 
 Public Class retailStockEditLogs
     Dim topPanel As New topPanelControl()
-    Friend WithEvents sidePanel As sidePanelControl
+    Friend WithEvents sidePanel As sidePanelControl2  ' Fixed: Use retail side panel, not wholesale
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
     Dim dt As New DataTable()
     Dim dv As New DataView()
     Dim bs As New BindingSource()
+
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
+
     Public Sub New()
 
         ' This call is required by the designer.
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
-        sidePanel = New sidePanelControl()
+        sidePanel = New sidePanelControl2()  ' Fixed: Use retail side panel
         sidePanel.Dock = DockStyle.Left
         topPanel.Dock = DockStyle.Top
         Me.Controls.Add(topPanel)
@@ -143,9 +145,6 @@ Public Class retailStockEditLogs
                 Dim form = ShowSingleForm(Of retailStockEditLogs)()
                 form.loadStockEditLogs()
             Case "Button5"
-                Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
-                form.loadStockEditLogs()
-            Case "Button10"
                 ShowSingleForm(Of retailSalesReport)()
             Case "Button6"
                 ShowSingleForm(Of loginRecordsForm)()
@@ -158,7 +157,7 @@ Public Class retailStockEditLogs
     End Sub
 
     Private Sub stockEditLogs_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        HighlightButton("Button5")
+        HighlightButton("Button4")
         SetPlaceholder(TextBoxSearch, "Search...")
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
@@ -226,7 +225,6 @@ Public Class retailStockEditLogs
         Return path
     End Function
 
-
     Private Sub SetPlaceholder(tb As TextBox, text As String)
         placeholders(tb) = text
         tb.Text = text
@@ -272,7 +270,7 @@ Public Class retailStockEditLogs
     Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
         Using con As New SqlConnection(GetConnectionString())
             Dim query As String = "
-            SELECT 
+            SELECT
                 rsel.logId AS 'Log ID',
                 rsel.editDate AS 'Edit Date',
                 p.ProductName AS 'Product Name',
@@ -307,7 +305,7 @@ Public Class retailStockEditLogs
     Public Sub loadStockEditLogs()
         Dim connString As String = GetConnectionString()
         Dim query As String = "
-            SELECT 
+            SELECT
                 rsel.logId AS 'Log ID',
                 rsel.editDate AS 'Edit Date',
                 p.ProductName AS 'Product Name',
@@ -339,7 +337,6 @@ Public Class retailStockEditLogs
 
             ' Update column headers and formatting
             UpdateColumnHeaders()
-
         Catch ex As Exception
             MessageBox.Show("Error loading stock edit logs: " & ex.Message)
         End Try
@@ -421,7 +418,6 @@ Public Class retailStockEditLogs
                 excelApp.Quit()
                 MessageBox.Show("Exported to Excel successfully!")
             End If
-
         Catch ex As Exception
             MessageBox.Show("Error exporting to Excel: " & ex.Message)
         End Try
@@ -465,7 +461,6 @@ Public Class retailStockEditLogs
                     End If
                 Next
 
-
                 ' Write file
                 Using stream As New FileStream(saveDialog.FileName, FileMode.Create)
                     Dim pdfDoc As New Document(PageSize.A4, 10, 10, 10, 10)
@@ -478,7 +473,6 @@ Public Class retailStockEditLogs
 
                 MessageBox.Show("Exported to PDF successfully!")
             End If
-
         Catch ex As Exception
             MessageBox.Show("Error exporting to PDF: " & ex.Message)
         End Try
@@ -559,13 +553,8 @@ Public Class retailStockEditLogs
                               "Success",
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Information)
-            Else
-                MessageBox.Show("Failed to save VAT rate. Please try again.",
-                              "Error",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Error)
             End If
-
+            ' Note: Error message is now displayed in SaveVATRate function
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",
@@ -579,7 +568,34 @@ Public Class retailStockEditLogs
     End Function
 
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
-        Return SharedUtilities.SaveVATRate(vatRate)
+        Try
+            Dim errorMessage As String = String.Empty
+            Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
+
+            If Not success Then
+                ' Display detailed error or generic message
+                If Not String.IsNullOrEmpty(errorMessage) Then
+                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
+           "Error Details",
+   MessageBoxButtons.OK,
+   MessageBoxIcon.Error)
+                Else
+                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
+     "Error",
+ MessageBoxButtons.OK,
+MessageBoxIcon.Error)
+                End If
+            End If
+
+            Return success
+        Catch ex As Exception
+            ' Catch any unexpected errors in this wrapper function
+            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
+ "Critical Error",
+       MessageBoxButtons.OK,
+         MessageBoxIcon.Error)
+            Return False
+        End Try
     End Function
 
 End Class

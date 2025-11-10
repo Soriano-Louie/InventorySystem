@@ -4,6 +4,7 @@ Imports System.IO
 
 Public Class editItemForm
     Private parentForm As InventoryForm
+
     Public Sub New(parent As InventoryForm)
 
         ' This call is required by the designer.
@@ -15,7 +16,6 @@ Public Class editItemForm
         Label1.ForeColor = Color.FromArgb(79, 51, 40)
 
         Label1.BackColor = Color.FromArgb(224, 166, 109)
-
 
         updateButton.BackColor = Color.FromArgb(224, 166, 109)
         cancelButton.BackColor = Color.FromArgb(224, 166, 109)
@@ -77,7 +77,6 @@ Public Class editItemForm
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading categories: " & ex.Message)
         End Try
@@ -104,7 +103,6 @@ Public Class editItemForm
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading products: " & ex.Message)
         End Try
@@ -123,7 +121,7 @@ Public Class editItemForm
 
         Dim query As String = "
         UPDATE wholesaleProducts
-        SET 
+        SET
             ProductName    = COALESCE(@ProductName, ProductName),
             CategoryID     = COALESCE(@CategoryID, CategoryID),
             StockQuantity  = COALESCE(@Quantity, StockQuantity),
@@ -225,9 +223,9 @@ Public Class editItemForm
         ' Now insert the new batch with the new QR code
         Using conn As New SqlConnection(connString)
             conn.Open()
-            Dim insertQuery As String = "INSERT INTO wholesaleProducts 
-                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
-                               VALUES 
+            Dim insertQuery As String = "INSERT INTO wholesaleProducts
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage)
+                               VALUES
                                (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
 
             Using cmd As New SqlCommand(insertQuery, conn)
@@ -271,9 +269,9 @@ Public Class editItemForm
 
         Using conn As New SqlConnection(connString)
             conn.Open()
-            Dim logQuery As String = "INSERT INTO wholesaleStockEditLogs 
-                                     (wholesaleProductId, oldQuantity, newQuantity, unitType, editedBy, editReason, editDate) 
-                                     VALUES 
+            Dim logQuery As String = "INSERT INTO wholesaleStockEditLogs
+                                     (wholesaleProductId, oldQuantity, newQuantity, unitType, editedBy, editReason, editDate)
+                                     VALUES
                                      (@ProductID, @OldQty, @NewQty, @UnitType, @EditedBy, @EditReason, GETDATE())"
 
             Using cmd As New SqlCommand(logQuery, conn)
@@ -413,7 +411,7 @@ Public Class editItemForm
 
         ' 4. Handle quantity edit with batch tracking and logging
         If isQuantityEdit Then
-            ' Get user ID 
+            ' Get user ID
             Dim currentUserID As Integer = GetCurrentUserID()
 
             ' Ensure user is logged in
@@ -556,39 +554,140 @@ Public Class editItemForm
             Exit Sub
         End If
 
-        ' Get ProductID from dropdown
+        ' Get ProductID and product name from dropdown
         Dim productID As Integer = Convert.ToInt32(productDropDown.SelectedValue)
+        Dim productName As String = productDropDown.Text
 
-        ' Confirm before deleting
-        Dim confirm = MessageBox.Show("Are you sure you want to delete this product?",
-                                      "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        ' Get additional product details for the warning
+        Dim productDetails As String = GetProductDetailsForDeletion(productID)
+
+        ' Show detailed warning with product information
+        Dim warningMessage As String = $"⚠️ WARNING: You are about to permanently delete this product!" & vbCrLf & vbCrLf &
+          $"Product: {productName}" & vbCrLf &
+  productDetails & vbCrLf &
+          "This action CANNOT be undone!" & vbCrLf & vbCrLf &
+          "⚠️ All associated data including:" & vbCrLf &
+          "  • Stock quantities" & vbCrLf &
+                "• Pricing information" & vbCrLf &
+     "  • QR codes" & vbCrLf &
+            "  • Product discounts" & vbCrLf &
+  "will be permanently removed." & vbCrLf & vbCrLf &
+          "Are you absolutely sure you want to DELETE this product?"
+
+        ' Confirm before deleting with a more prominent warning
+        Dim confirm = MessageBox.Show(warningMessage,
+    "⚠️ CONFIRM PERMANENT DELETION",
+ MessageBoxButtons.YesNo,
+    MessageBoxIcon.Warning,
+     MessageBoxDefaultButton.Button2) ' Default to "No"
 
         If confirm = DialogResult.Yes Then
-            DeleteProduct(productID)
+            ' Show a second confirmation to prevent accidental deletion
+            Dim finalConfirm = MessageBox.Show($"FINAL CONFIRMATION:{vbCrLf}{vbCrLf}" &
+              $"You are about to permanently delete '{productName}'." & vbCrLf & vbCrLf &
+     "Click YES to proceed with deletion." & vbCrLf &
+       "Click NO to cancel.",
+        "⚠️ FINAL DELETION CONFIRMATION",
+         MessageBoxButtons.YesNo,
+           MessageBoxIcon.Exclamation,
+    MessageBoxDefaultButton.Button2)
+
+            If finalConfirm = DialogResult.Yes Then
+                DeleteProduct(productID, productName)
+            Else
+                MessageBox.Show("Deletion cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Else
+            MessageBox.Show("Deletion cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
     End Sub
 
-    Private Sub DeleteProduct(productID As Integer)
+    ''' <summary>
+    ''' Gets product details for the deletion warning message
+    ''' </summary>
+    Private Function GetProductDetailsForDeletion(productID As Integer) As String
+        Dim details As String = ""
+
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT StockQuantity, Unit, RetailPrice, Cost, CategoryID FROM wholesaleProducts WHERE ProductID = @ProductID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            Dim stockQty As Object = reader("StockQuantity")
+                            Dim unit As Object = reader("Unit")
+                            Dim retailPrice As Object = reader("RetailPrice")
+                            Dim cost As Object = reader("Cost")
+
+                            details = $"Stock: {If(IsDBNull(stockQty), "N/A", stockQty.ToString())} {If(IsDBNull(unit), "", unit.ToString())}" & vbCrLf &
+            $"Retail Price: ₱{If(IsDBNull(retailPrice), "0.00", Convert.ToDecimal(retailPrice).ToString("N2"))}" & vbCrLf &
+    $"Cost: ₱{If(IsDBNull(cost), "0.00", Convert.ToDecimal(cost).ToString("N2"))}"
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            details = "(Unable to load product details)"
+        End Try
+
+        Return details
+    End Function
+
+    Private Sub DeleteProduct(productID As Integer, productName As String)
         Dim query As String = "DELETE FROM wholesaleProducts WHERE ProductID = @ProductID"
 
-        Using conn As New SqlConnection(GetConnectionString())
-            Using cmd As New SqlCommand(query, conn)
-                cmd.Parameters.AddWithValue("@ProductID", productID)
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
 
-                conn.Open()
-                Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+                    conn.Open()
+                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
 
-                If rowsAffected > 0 Then
-                    MessageBox.Show("Product deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                    loadProducts()
-                    If parentForm IsNot Nothing Then
-                        parentForm.LoadProducts()
+                    If rowsAffected > 0 Then
+                        MessageBox.Show($"Product '{productName}' has been successfully deleted." & vbCrLf &
+                          "All associated data has been removed from the system.",
+                                 "✓ Deletion Successful",
+                             MessageBoxButtons.OK,
+                              MessageBoxIcon.Information)
+
+                        ' Reset form controls after successful deletion
+                        productDropDown.SelectedIndex = -1
+                        ResetControl(newProductText)
+                        ResetControl(newCategoryDropdown)
+                        ResetControl(newQuantityText)
+                        ResetControl(newUnitText)
+                        ResetControl(newCostText)
+                        ResetControl(newRetailText)
+                        ResetControl(newReorderText)
+                        For Each ctrl As Control In Panel8.Controls
+                            ResetControl(ctrl)
+                        Next
+                        newDateText.Checked = False
+
+                        ' Reload the products list
+                        loadProducts()
+                        If parentForm IsNot Nothing Then
+                            parentForm.LoadProducts()
+                        End If
+                    Else
+                        MessageBox.Show("No product found with that ID.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     End If
-                Else
-                    MessageBox.Show("No product found with that ID.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                End If
+                End Using
             End Using
-        End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error deleting product:{vbCrLf}{vbCrLf}" &
+         $"Error: {ex.Message}" & vbCrLf & vbCrLf &
+  "The product may be referenced in other tables (sales records, etc.)." & vbCrLf &
+       "Please contact system administrator if this problem persists.",
+      "Database Error",
+MessageBoxButtons.OK,
+       MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles editDiscountButton.Click
@@ -605,4 +704,5 @@ Public Class editItemForm
         popup.ShowDialog()
 
     End Sub
+
 End Class
