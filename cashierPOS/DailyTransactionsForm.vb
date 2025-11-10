@@ -100,9 +100,10 @@ Public Class DailyTransactionsForm
 
             ' Combined query for both retail and wholesale transactions
             Dim query As String = "
-            -- Retail Sales
+            -- Retail Sales (all in-store)
             SELECT
                 'RETAIL' AS SaleType,
+                'In-Store' AS TransactionType,
                 sr.SaleID,
                 sr.SaleDate,
                 rp.ProductName,
@@ -121,9 +122,14 @@ Public Class DailyTransactionsForm
 
             UNION ALL
 
-            -- Wholesale Sales
+            -- Wholesale Sales (can be delivery, pickup, or in-store)
             SELECT
                 'WHOLESALE' AS SaleType,
+                CASE 
+                    WHEN sr.IsDelivery = 1 THEN 'Delivery'
+                    WHEN sr.IsDelivery = 0 THEN 'Pickup'
+                    ELSE 'In-Store'
+                END AS TransactionType,
                 sr.SaleID,
                 sr.SaleDate,
                 wp.ProductName,
@@ -154,19 +160,21 @@ Public Class DailyTransactionsForm
                         With transactionsDataGridView
                             .Columns("SaleType").HeaderText = "Type"
                             .Columns("SaleType").Width = 80
+                            .Columns("TransactionType").HeaderText = "Mode"
+                            .Columns("TransactionType").Width = 80
                             .Columns("SaleID").HeaderText = "Sale ID"
                             .Columns("SaleID").Width = 60
                             .Columns("SaleDate").HeaderText = "Time"
                             .Columns("SaleDate").DefaultCellStyle.Format = "hh:mm:ss tt"
                             .Columns("SaleDate").Width = 90
                             .Columns("ProductName").HeaderText = "Product"
-                            .Columns("ProductName").Width = 200
+                            .Columns("ProductName").Width = 180
                             .Columns("ProductName").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
                             .Columns("ProductName").DefaultCellStyle.WrapMode = DataGridViewTriState.False
                             .Columns("Unit").HeaderText = "Unit"
                             .Columns("Unit").Width = 60
                             .Columns("CategoryName").HeaderText = "Category"
-                            .Columns("CategoryName").Width = 100
+                            .Columns("CategoryName").Width = 90
                             .Columns("QuantitySold").HeaderText = "Qty"
                             .Columns("QuantitySold").Width = 50
                             .Columns("UnitPrice").HeaderText = "Unit Price"
@@ -176,9 +184,9 @@ Public Class DailyTransactionsForm
                             .Columns("TotalAmount").DefaultCellStyle.Format = "₱#,##0.00"
                             .Columns("TotalAmount").Width = 90
                             .Columns("PaymentMethod").HeaderText = "Payment"
-                            .Columns("PaymentMethod").Width = 100
+                            .Columns("PaymentMethod").Width = 90
                             .Columns("HandledBy").HeaderText = "Cashier"
-                            .Columns("HandledBy").Width = 100
+                            .Columns("HandledBy").Width = 90
                         End With
 
                         ' Color-code the SaleType column
@@ -191,6 +199,22 @@ Public Class DailyTransactionsForm
                                     row.Cells("SaleType").Style.BackColor = Color.LightGreen
                                     row.Cells("SaleType").Style.ForeColor = Color.DarkGreen
                                 End If
+                            End If
+
+                            ' Color-code the TransactionType column
+                            If row.Cells("TransactionType").Value IsNot Nothing Then
+                                Dim transType As String = row.Cells("TransactionType").Value.ToString()
+                                Select Case transType
+                                    Case "Delivery"
+                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(255, 220, 180) ' Light orange
+                                        row.Cells("TransactionType").Style.ForeColor = Color.DarkOrange
+                                    Case "Pickup"
+                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(255, 255, 200) ' Light yellow
+                                        row.Cells("TransactionType").Style.ForeColor = Color.DarkGoldenrod
+                                    Case "In-Store"
+                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(200, 255, 200) ' Light green
+                                        row.Cells("TransactionType").Style.ForeColor = Color.DarkGreen
+                                End Select
                             End If
                         Next
                     End If
@@ -285,7 +309,7 @@ Public Class DailyTransactionsForm
 
                 ' Count by type
                 If Not IsDBNull(row("SaleType")) Then
-                    If row("SaleType").ToString() = "RETAIL" Then
+                    If row("SaleType").Value.ToString() = "RETAIL" Then
                         retailCount += 1
                     Else
                         wholesaleCount += 1

@@ -850,14 +850,14 @@ Public Class retailDashboard
         Dim topProductsSql As String = "
         SELECT TOP 10
             sr.ProductID,
-            p.ProductName,
+      p.ProductName,
             SUM(sr.TotalAmount) AS TotalRevenue,
             SUM(sr.QuantitySold) AS TotalQuantity,
-            COUNT() AS SalesCount
+       COUNT(*) AS SalesCount
         FROM RetailSalesReport sr
-        INNER JOIN retailProducts p ON sr.ProductID = p.ProductID
+      INNER JOIN retailProducts p ON sr.ProductID = p.ProductID
         WHERE sr.SaleDate >= @StartDate AND sr.SaleDate <= @EndDate
-        GROUP BY sr.ProductID, p.ProductName
+   GROUP BY sr.ProductID, p.ProductName
         ORDER BY TotalRevenue DESC, TotalQuantity DESC, SalesCount DESC
         "
 
@@ -883,19 +883,19 @@ Public Class retailDashboard
                         Color.FromArgb(160, 140, 120),
                         Color.FromArgb(200, 150, 100),
                         Color.FromArgb(140, 90, 70)
-                    }
+      }
 
                     Dim colorIndex As Integer = 0
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         While reader.Read()
                             Dim productInfo As New TopProductInfo() With {
-                                .ProductID = reader.GetInt32(0),
-                                .ProductName = reader.GetString(1),
-                                .TotalRevenue = reader.GetDecimal(2),
-                                .TotalQuantity = reader.GetInt32(3),
-                                .TotalSalesCount = reader.GetInt32(4),
-                                .Color = productColors(colorIndex Mod productColors.Length)
-                            }
+             .ProductID = reader.GetInt32(0),
+   .ProductName = reader.GetString(1),
+    .TotalRevenue = reader.GetDecimal(2),
+   .TotalQuantity = reader.GetInt32(3),
+.TotalSalesCount = reader.GetInt32(4),
+      .Color = productColors(colorIndex Mod productColors.Length)
+      }
                             topProducts.Add(productInfo)
                             colorIndex += 1
                         End While
@@ -1035,30 +1035,44 @@ Public Class retailDashboard
         If topProducts.Count = 0 Then Return
 
         Dim panel As Panel = DirectCast(sender, Panel)
+
+        ' Use the EXACT same margins as DrawTopProductsChart
         Dim leftMargin As Integer = 150
-        Dim rightMargin As Integer = 50
-        Dim topMargin As Integer = 40
-        Dim bottomMargin As Integer = 40
+        Dim rightMargin As Integer = 100
+        Dim topMargin As Integer = 60 ' Must match DrawTopProductsChart
+        Dim bottomMargin As Integer = 20 ' Must match DrawTopProductsChart
 
-        Dim chartWidth As Integer = panel.Width - leftMargin - rightMargin
-        Dim chartHeight As Integer = panel.Height - topMargin - bottomMargin
-        Dim chartRect As New Rectangle(leftMargin, topMargin, chartWidth, chartHeight)
+        ' Use the EXACT same dimensions as DrawTopProductsChart
+        Dim availableWidth As Integer = panel.Width - 20
+        Dim chartWidth As Integer = availableWidth - leftMargin - rightMargin
 
-        ' Calculate bar dimensions
-        Dim barHeight As Integer = (chartHeight \ topProducts.Count) - 10
+        ' Use the EXACT same bar dimensions as DrawTopProductsChart
+        Dim barHeight As Integer = 50
         Dim barSpacing As Integer = 10
+
+        ' Find max revenue for scaling (same as DrawTopProductsChart) - calculate ONCE outside loop
+        Dim maxRevenue As Decimal = If(topProducts.Max(Function(x) x.TotalRevenue) > 0, topProducts.Max(Function(x) x.TotalRevenue), 100)
+        maxRevenue = maxRevenue * 1.1D
 
         ' Check if mouse is over any bar
         For i As Integer = 0 To topProducts.Count - 1
-            Dim yPosition As Integer = chartRect.Top + (i * (barHeight + barSpacing))
-            Dim barRect As New Rectangle(chartRect.Left, yPosition, chartWidth, barHeight)
+            Dim product = topProducts(i)
+
+            ' Calculate Y position EXACTLY as in DrawTopProductsChart
+            Dim yPosition As Integer = topMargin + (i * (barHeight + barSpacing))
+
+            ' Calculate bar width EXACTLY as in DrawTopProductsChart
+            Dim maxBarWidth As Integer = CInt(chartWidth * 0.9)
+            Dim barWidth As Integer = CInt((product.TotalRevenue / maxRevenue) * maxBarWidth)
+
+            ' Create bar rectangle with EXACT dimensions
+            Dim barRect As New Rectangle(leftMargin, yPosition, barWidth, barHeight)
 
             If barRect.Contains(e.Location) Then
-                Dim product = topProducts(i)
                 topProductsTooltipLabel.Text = $"{product.ProductName}" & vbCrLf &
-                                              $"Revenue: ₱{product.TotalRevenue:N2}" & vbCrLf &
-                                              $"Qty Sold: {product.TotalQuantity}" & vbCrLf &
-                                              $"Sales Count: {product.TotalSalesCount}"
+             $"Revenue: ₱{product.TotalRevenue:N2}" & vbCrLf &
+    $"Qty Sold: {product.TotalQuantity}" & vbCrLf &
+         $"Sales Count: {product.TotalSalesCount}"
                 topProductsTooltipLabel.Location = New Point(e.X + 10, e.Y - 50)
                 topProductsTooltipLabel.Visible = True
                 topProductsTooltipLabel.BringToFront()

@@ -310,7 +310,7 @@ Public Class deliveryLogsForm
         ' Show status selection dialog
         Dim statusForm As New Form()
         statusForm.Text = $"Update Delivery Status - Sale #{deliveryInfo.SaleID}"
-        statusForm.Size = New Size(400, 250)
+        statusForm.Size = New Size(400, 300)
         statusForm.StartPosition = FormStartPosition.CenterParent
         statusForm.FormBorderStyle = FormBorderStyle.FixedDialog
         statusForm.MaximizeBox = False
@@ -325,34 +325,74 @@ Public Class deliveryLogsForm
         currentLabel.AutoSize = True
         statusForm.Controls.Add(currentLabel)
 
+        ' Add product info label
+        Dim productLabel As New Label()
+        productLabel.Text = $"Product: {deliveryInfo.ProductName}{vbCrLf}Quantity: {deliveryInfo.QuantitySold}"
+        productLabel.Font = New Font("Segoe UI", 9)
+        productLabel.ForeColor = Color.FromArgb(79, 51, 40)
+        productLabel.Location = New Point(20, 45)
+        productLabel.AutoSize = True
+        statusForm.Controls.Add(productLabel)
+
         Dim selectLabel As New Label()
         selectLabel.Text = "Select New Status:"
         selectLabel.Font = New Font("Segoe UI", 10)
         selectLabel.ForeColor = Color.FromArgb(79, 51, 40)
-        selectLabel.Location = New Point(20, 50)
+        selectLabel.Location = New Point(20, 80)
         selectLabel.AutoSize = True
         statusForm.Controls.Add(selectLabel)
 
         Dim statusCombo As New ComboBox()
         statusCombo.Items.AddRange(New String() {"Pending", "In Transit", "Delivered", "Cancelled"})
         statusCombo.SelectedItem = deliveryInfo.DeliveryStatus
-        statusCombo.Location = New Point(20, 75)
+        statusCombo.Location = New Point(20, 105)
         statusCombo.Size = New Size(340, 30)
         statusCombo.Font = New Font("Segoe UI", 11)
         statusCombo.DropDownStyle = ComboBoxStyle.DropDownList
         statusForm.Controls.Add(statusCombo)
 
+        ' Add warning label for cancellation
+        Dim warningLabel As New Label()
+        warningLabel.Text = "⚠ Cancelling will restore stock to inventory"
+        warningLabel.Font = New Font("Segoe UI", 8, FontStyle.Italic)
+        warningLabel.ForeColor = Color.DarkRed
+        warningLabel.Location = New Point(20, 140)
+        warningLabel.Size = New Size(340, 30)
+        warningLabel.Visible = False
+        statusForm.Controls.Add(warningLabel)
+
+        ' Show warning when Cancelled is selected
+        AddHandler statusCombo.SelectedIndexChanged, Sub()
+                                                         warningLabel.Visible = (statusCombo.SelectedItem?.ToString() = "Cancelled")
+                                                     End Sub
+
         Dim updateBtn As New Button()
         updateBtn.Text = "Update Status"
-        updateBtn.Location = New Point(180, 150)
+        updateBtn.Location = New Point(180, 200)
         updateBtn.Size = New Size(120, 35)
         updateBtn.BackColor = Color.FromArgb(147, 53, 53)
         updateBtn.ForeColor = Color.FromArgb(230, 216, 177)
         updateBtn.FlatStyle = FlatStyle.Flat
         AddHandler updateBtn.Click, Sub()
                                         Dim newStatus As String = statusCombo.SelectedItem.ToString()
+
+                                        ' Show additional confirmation for cancellation
+                                        If newStatus = "Cancelled" AndAlso deliveryInfo.DeliveryStatus <> "Cancelled" Then
+                                            Dim confirmResult = MessageBox.Show(
+                                             $"Are you sure you want to CANCEL this delivery?{vbCrLf}{vbCrLf}" &
+                                                $"Product: {deliveryInfo.ProductName}{vbCrLf}" &
+                                                    $"Quantity: {deliveryInfo.QuantitySold}{vbCrLf}{vbCrLf}" &
+                                           $"The stock will be restored to inventory.",
+                                                     "Confirm Cancellation",
+                                                MessageBoxButtons.YesNo,
+                                                MessageBoxIcon.Warning)
+
+                                            If confirmResult <> DialogResult.Yes Then
+                                                Return
+                                            End If
+                                        End If
+
                                         If UpdateStatusInDatabase(deliveryInfo.SaleID, newStatus) Then
-                                            MessageBox.Show("Status updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                                             statusForm.DialogResult = DialogResult.OK
                                             statusForm.Close()
                                         End If
@@ -361,7 +401,7 @@ Public Class deliveryLogsForm
 
         Dim cancelBtn As New Button()
         cancelBtn.Text = "Cancel"
-        cancelBtn.Location = New Point(310, 150)
+        cancelBtn.Location = New Point(310, 200)
         cancelBtn.Size = New Size(70, 35)
         cancelBtn.BackColor = Color.FromArgb(102, 66, 52)
         cancelBtn.ForeColor = Color.FromArgb(230, 216, 177)
@@ -381,6 +421,60 @@ Public Class deliveryLogsForm
         Try
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
+
+                ' If status is being changed to Cancelled, restore the stock first
+                If newStatus = "Cancelled" Then
+                    ' Get the product details and quantity from the sale
+                    Dim getProductQuery As String = "
+                       SELECT ProductID, QuantitySold, DeliveryStatus
+                            FROM SalesReport
+                       WHERE SaleID = @SaleID"
+
+                    Dim productID As Integer = 0
+                    Dim quantitySold As Integer = 0
+                    Dim currentStatus As String = ""
+
+                    Using cmd As New SqlCommand(getProductQuery, conn)
+                        cmd.Parameters.AddWithValue("@SaleID", saleID)
+
+                        Using reader As SqlDataReader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                productID = reader.GetInt32(0)
+                                quantitySold = reader.GetInt32(1)
+                                currentStatus = reader.GetString(2)
+                            Else
+                                MessageBox.Show("Sale record not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                Return False
+                            End If
+                        End Using
+                    End Using
+
+                    ' Only restore stock if the current status is NOT already Cancelled
+                    If currentStatus <> "Cancelled" Then
+                        ' Restore stock quantity (add back the quantity that was sold)
+                        Dim restoreStockQuery As String = "
+                              UPDATE wholesaleProducts
+                         SET StockQuantity = StockQuantity + @QuantitySold
+                              WHERE ProductID = @ProductID"
+
+                        Using cmd As New SqlCommand(restoreStockQuery, conn)
+                            cmd.Parameters.AddWithValue("@QuantitySold", quantitySold)
+                            cmd.Parameters.AddWithValue("@ProductID", productID)
+                            Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+
+                            If rowsAffected = 0 Then
+                                MessageBox.Show("Product not found in inventory. Stock was not restored.", "Warning",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            End If
+                        End Using
+
+                        Debug.WriteLine($"Stock restored: Added {quantitySold} units back to ProductID {productID}")
+                    Else
+                        Debug.WriteLine($"Sale #{saleID} is already Cancelled. Stock not restored again.")
+                    End If
+                End If
+
+                ' Update the delivery status
                 Dim query As String = "UPDATE SalesReport SET DeliveryStatus = @Status WHERE SaleID = @SaleID"
 
                 Using cmd As New SqlCommand(query, conn)
@@ -389,6 +483,15 @@ Public Class deliveryLogsForm
                     cmd.ExecuteNonQuery()
                 End Using
             End Using
+
+            ' Show success message with stock restoration info if applicable
+            If newStatus = "Cancelled" Then
+                MessageBox.Show($"Delivery cancelled successfully!{vbCrLf}{vbCrLf}Stock has been restored to inventory.",
+       "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                MessageBox.Show("Status updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+
             Return True
         Catch ex As Exception
             MessageBox.Show("Error updating status: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
