@@ -13,6 +13,7 @@ Public Class posForm
         Public Property IsVATApplicable As Boolean
         Public Property DiscountPrice As Decimal?
         Public Property CategoryID As Integer
+        Public Property ProductType As String ' "Wholesale" or "Retail" - CRITICAL for delivery logic
     End Class
 
     Private cartItems As New List(Of CartItem)()
@@ -376,31 +377,70 @@ Public Class posForm
     ''' Adds or updates a product in the cart and refreshes calculations
     ''' </summary>
     Public Sub AddProductToCart(productID As Integer, productName As String, quantity As Integer,
-    unitPrice As Decimal, categoryID As Integer, isVATApplicable As Boolean)
-        ' Check if product already exists in cart
+    unitPrice As Decimal, categoryID As Integer, isVATApplicable As Boolean, Optional productType As String = "")
+      ' Check if product already exists in cart
         Dim existingItem = cartItems.FirstOrDefault(Function(x) x.ProductID = productID)
 
         If existingItem IsNot Nothing Then
             ' Update quantity
-            existingItem.Quantity += quantity
+  existingItem.Quantity += quantity
         Else
-            ' Add new item
-            Dim newItem As New CartItem With {
-               .ProductID = productID,
-               .ProductName = productName,
-               .Quantity = quantity,
-               .UnitPrice = unitPrice,
-               .IsVATApplicable = isVATApplicable,
-               .CategoryID = categoryID,
-               .DiscountPrice = GetDiscountPrice(productID, quantity)
-               }
-            cartItems.Add(newItem)
+            ' Determine product type if not provided
+  If String.IsNullOrEmpty(productType) Then
+      productType = DetermineProductType(productID)
+            End If
+
+       ' Add new item
+  Dim newItem As New CartItem With {
+      .ProductID = productID,
+          .ProductName = productName,
+      .Quantity = quantity,
+       .UnitPrice = unitPrice,
+       .IsVATApplicable = isVATApplicable,
+     .CategoryID = categoryID,
+          .DiscountPrice = GetDiscountPrice(productID, quantity),
+      .ProductType = productType
+      }
+ cartItems.Add(newItem)
         End If
 
-        ' Refresh display
-        RefreshDataGridView()
+' Refresh display
+    RefreshDataGridView()
         CalculateAllTotals()
     End Sub
+
+    ''' <summary>
+    ''' Determines product type by checking which table contains the ProductID
+    ''' </summary>
+    Private Function DetermineProductType(productID As Integer) As String
+        Try
+     Using conn As New SqlConnection(GetConnectionString())
+         conn.Open()
+
+  ' Check wholesale products first
+       Dim wholesaleQuery As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductID = @ProductID"
+Using cmd As New SqlCommand(wholesaleQuery, conn)
+      cmd.Parameters.AddWithValue("@ProductID", productID)
+      If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then
+       Return "Wholesale"
+  End If
+          End Using
+
+                ' Check retail products
+        Dim retailQuery As String = "SELECT COUNT(*) FROM retailProducts WHERE ProductID = @ProductID"
+          Using cmd As New SqlCommand(retailQuery, conn)
+  cmd.Parameters.AddWithValue("@ProductID", productID)
+        If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then
+         Return "Retail"
+              End If
+                End Using
+   End Using
+        Catch ex As Exception
+ Console.WriteLine("Error determining product type: " & ex.Message)
+        End Try
+
+        Return "Unknown"
+    End Function
 
     ''' <summary>
     ''' Gets the discount price for a product based on quantity (from ProductDiscounts table)

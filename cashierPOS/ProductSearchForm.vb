@@ -30,135 +30,135 @@ Public Class ProductSearchForm
     End Sub
 
     Private Sub SetupUI()
-        ' Create main panel
-        Dim mainPanel As New Panel()
-        mainPanel.Dock = DockStyle.Fill
-        mainPanel.BackColor = Color.FromArgb(230, 216, 177)
-        mainPanel.Padding = New Padding(20)
-        Me.Controls.Add(mainPanel)
+    ' Create main panel
+    Dim mainPanel As New Panel()
+    mainPanel.Dock = DockStyle.Fill
+    mainPanel.BackColor = Color.FromArgb(230, 216, 177)
+    mainPanel.Padding = New Padding(20)
+    Me.Controls.Add(mainPanel)
 
-        ' Create title label
-        Dim titleLabel As New Label()
-        titleLabel.Text = "Product Search"
-        titleLabel.Font = New Font("Segoe UI", 16, FontStyle.Bold)
-        titleLabel.ForeColor = Color.FromArgb(79, 51, 40)
-        titleLabel.AutoSize = True
-        titleLabel.Location = New Point(20, 10)
-        mainPanel.Controls.Add(titleLabel)
+    ' Create title label
+    Dim titleLabel As New Label()
+    titleLabel.Text = "Product Search"
+    titleLabel.Font = New Font("Segoe UI", 16, FontStyle.Bold)
+    titleLabel.ForeColor = Color.FromArgb(79, 51, 40)
+    titleLabel.AutoSize = True
+    titleLabel.Location = New Point(20, 10)
+    mainPanel.Controls.Add(titleLabel)
 
-        ' Create search textbox
-        Dim searchTextBox As New TextBox()
-        searchTextBox.Name = "searchTextBox"
-        searchTextBox.Size = New Size(600, 30)
-        searchTextBox.Location = New Point(20, 50)
-        searchTextBox.Font = New Font("Segoe UI", 12)
-        searchTextBox.BackColor = Color.White
-        searchTextBox.ForeColor = Color.Black
-        SetPlaceholder(searchTextBox, "Search by Product Name or SKU...")
-        AddHandler searchTextBox.TextChanged, AddressOf SearchTextBox_TextChanged
-        mainPanel.Controls.Add(searchTextBox)
+    ' Create search textbox
+    Dim searchTextBox As New TextBox()
+    searchTextBox.Name = "searchTextBox"
+    searchTextBox.Size = New Size(600, 30)
+    searchTextBox.Location = New Point(20, 50)
+    searchTextBox.Font = New Font("Segoe UI", 12)
+    searchTextBox.BackColor = Color.White
+    searchTextBox.ForeColor = Color.Black
+    SetPlaceholder(searchTextBox, "Search by Product Name or SKU...")
+    AddHandler searchTextBox.TextChanged, AddressOf SearchTextBox_TextChanged
+    mainPanel.Controls.Add(searchTextBox)
 
-        ' Create search button
-        Dim searchButton As New Button()
-        searchButton.Text = "Search"
-        searchButton.Size = New Size(100, 30)
-        searchButton.Location = New Point(630, 50)
-        searchButton.BackColor = Color.FromArgb(147, 53, 53)
-        searchButton.ForeColor = Color.FromArgb(230, 216, 177)
-        searchButton.FlatStyle = FlatStyle.Flat
-        searchButton.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        mainPanel.Controls.Add(searchButton)
+    ' Create search button
+    Dim searchButton As New Button()
+    searchButton.Text = "Search"
+    searchButton.Size = New Size(100, 30)
+    searchButton.Location = New Point(630, 50)
+    searchButton.BackColor = Color.FromArgb(147, 53, 53)
+    searchButton.ForeColor = Color.FromArgb(230, 216, 177)
+    searchButton.FlatStyle = FlatStyle.Flat
+    searchButton.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+    mainPanel.Controls.Add(searchButton)
 
-        ' Create clear button
-        Dim clearButton As New Button()
-        clearButton.Text = "Clear"
-        clearButton.Size = New Size(100, 30)
-        clearButton.Location = New Point(740, 50)
-        clearButton.BackColor = Color.FromArgb(147, 53, 53)
-        clearButton.ForeColor = Color.FromArgb(230, 216, 177)
-        clearButton.FlatStyle = FlatStyle.Flat
-        clearButton.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        AddHandler clearButton.Click, AddressOf ClearButton_Click
-        mainPanel.Controls.Add(clearButton)
+    ' Create clear button
+    Dim clearButton As New Button()
+    clearButton.Text = "Clear"
+    clearButton.Size = New Size(100, 30)
+    clearButton.Location = New Point(740, 50)
+    clearButton.BackColor = Color.FromArgb(147, 53, 53)
+    clearButton.ForeColor = Color.FromArgb(230, 216, 177)
+    clearButton.FlatStyle = FlatStyle.Flat
+    clearButton.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+    AddHandler clearButton.Click, AddressOf ClearButton_Click
+    mainPanel.Controls.Add(clearButton)
 
-        ' Create DataGridView
-        Dim dgv As New DataGridView()
-        dgv.Name = "productsDataGridView"
-        dgv.Location = New Point(20, 100)
-        dgv.Size = New Size(840, 380)
-        dgv.BackgroundColor = Color.White
-        dgv.GridColor = Color.FromArgb(79, 51, 40)
-        dgv.EnableHeadersVisualStyles = False
-        dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(79, 51, 40)
-        dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(230, 216, 177)
-        dgv.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
-        dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
-        ' Set column header selection colors (when clicking on header)
-        dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
-        dgv.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
+    ' Create DataGridView
+    Dim dgv As New DataGridView()
+    dgv.Name = "productsDataGridView"
+    dgv.Location = New Point(20, 100)
+    dgv.Size = New Size(840, 380)
+    dgv.BackgroundColor = Color.White
+    dgv.GridColor = Color.FromArgb(79, 51, 40)
+    dgv.EnableHeadersVisualStyles = False
+    dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(79, 51, 40)
+    dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(230, 216, 177)
+    dgv.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+    dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+    ' Set column header selection colors (when clicking on header)
+    dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
+    dgv.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
 
-        ' Set default cell colors (unselected)
-        dgv.DefaultCellStyle.BackColor = Color.White
-        dgv.DefaultCellStyle.ForeColor = Color.Black
+    ' Set default cell colors (unselected)
+    dgv.DefaultCellStyle.BackColor = Color.White
+    dgv.DefaultCellStyle.ForeColor = Color.Black
 
-        ' Set selection colors - dark brown background with light brown text
-        dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40) ' Dark brown
-        dgv.DefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177) ' Light brown
+    ' Set selection colors - dark brown background with light brown text
+    dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40) ' Dark brown
+    dgv.DefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177) ' Light brown
 
-        ' Set row header selection colors
-        dgv.RowHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
-        dgv.RowHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
+    ' Set row header selection colors
+    dgv.RowHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
+    dgv.RowHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
 
-        dgv.ReadOnly = True
-        dgv.AllowUserToAddRows = False
-        dgv.AllowUserToDeleteRows = False
-        dgv.RowHeadersVisible = False
-        dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect
-        dgv.MultiSelect = False
-        dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    dgv.ReadOnly = True
+    dgv.AllowUserToAddRows = False
+    dgv.AllowUserToDeleteRows = False
+    dgv.RowHeadersVisible = False
+    dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+    dgv.MultiSelect = False
+    dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 
-        ' Make columns and rows non-resizable
-        dgv.AllowUserToResizeColumns = False
-        dgv.AllowUserToResizeRows = False
+    ' Make columns and rows non-resizable
+    dgv.AllowUserToResizeColumns = False
+    dgv.AllowUserToResizeRows = False
 
-        dgv.DataSource = bs
-        AddHandler dgv.CellDoubleClick, AddressOf ProductsDataGridView_CellDoubleClick
-        mainPanel.Controls.Add(dgv)
+    dgv.DataSource = bs
+    AddHandler dgv.CellDoubleClick, AddressOf ProductsDataGridView_CellDoubleClick
+    mainPanel.Controls.Add(dgv)
 
-        ' Create instructions label
-        Dim instructionsLabel As New Label()
-        instructionsLabel.Text = "Double-click on a product to add it to cart, or select and click Add to Cart"
-        instructionsLabel.Font = New Font("Segoe UI", 9, FontStyle.Italic)
-        instructionsLabel.ForeColor = Color.FromArgb(79, 51, 40)
-        instructionsLabel.AutoSize = True
-        instructionsLabel.Location = New Point(20, 490)
-        mainPanel.Controls.Add(instructionsLabel)
+    ' Create instructions label
+    Dim instructionsLabel As New Label()
+    instructionsLabel.Text = "Double-click on a product to add it to cart, or select and click Add to Cart"
+    instructionsLabel.Font = New Font("Segoe UI", 9, FontStyle.Italic)
+    instructionsLabel.ForeColor = Color.FromArgb(79, 51, 40)
+    instructionsLabel.AutoSize = True
+    instructionsLabel.Location = New Point(20, 490)
+    mainPanel.Controls.Add(instructionsLabel)
 
-        ' Create Add to Cart button
-        Dim addToCartButton As New Button()
-        addToCartButton.Name = "addToCartButton"
-        addToCartButton.Text = "Add to Cart"
-        addToCartButton.Size = New Size(150, 40)
-        addToCartButton.Location = New Point(600, 510)
-        addToCartButton.BackColor = Color.FromArgb(147, 53, 53)
-        addToCartButton.ForeColor = Color.FromArgb(230, 216, 177)
-        addToCartButton.FlatStyle = FlatStyle.Flat
-        addToCartButton.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-        AddHandler addToCartButton.Click, AddressOf AddToCartButton_Click
-        mainPanel.Controls.Add(addToCartButton)
+    ' Create Add to Cart button
+    Dim addToCartButton As New Button()
+    addToCartButton.Name = "addToCartButton"
+    addToCartButton.Text = "Add to Cart"
+    addToCartButton.Size = New Size(150, 40)
+    addToCartButton.Location = New Point(600, 510)
+    addToCartButton.BackColor = Color.FromArgb(147, 53, 53)
+    addToCartButton.ForeColor = Color.FromArgb(230, 216, 177)
+    addToCartButton.FlatStyle = FlatStyle.Flat
+    addToCartButton.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+    AddHandler addToCartButton.Click, AddressOf AddToCartButton_Click
+    mainPanel.Controls.Add(addToCartButton)
 
-        ' Create Close button
-        Dim closeButton As New Button()
-        closeButton.Text = "Close"
-        closeButton.Size = New Size(100, 40)
-        closeButton.Location = New Point(760, 510)
-        closeButton.BackColor = Color.FromArgb(102, 66, 52)
-        closeButton.ForeColor = Color.FromArgb(230, 216, 177)
-        closeButton.FlatStyle = FlatStyle.Flat
-        closeButton.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-        AddHandler closeButton.Click, Sub() Me.Close()
-        mainPanel.Controls.Add(closeButton)
-    End Sub
+    ' Create Close button
+    Dim closeButton As New Button()
+    closeButton.Text = "Close"
+    closeButton.Size = New Size(100, 40)
+    closeButton.Location = New Point(760, 510)
+    closeButton.BackColor = Color.FromArgb(102, 66, 52)
+    closeButton.ForeColor = Color.FromArgb(230, 216, 177)
+    closeButton.FlatStyle = FlatStyle.Flat
+    closeButton.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+    AddHandler closeButton.Click, Sub() Me.Close()
+    mainPanel.Controls.Add(closeButton)
+End Sub
 
     Private Function GetConnectionString() As String
         Return SharedUtilities.GetConnectionString()
@@ -365,8 +365,11 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
         ' Extract ProductID from ProductCode (remove 'W' or 'R' prefix)
         Dim productID As Integer = Convert.ToInt32(productCode.Substring(1))
 
-        ' Add to parent POS form's cart
-        parentPOSForm.AddProductToCart(productID, productName, quantity, unitPrice, categoryID, isVATApplicable)
+        ' Determine product type from prefix
+        Dim productType As String = If(productCode.StartsWith("W"), "Wholesale", "Retail")
+
+        ' Add to parent POS form's cart with product type
+        parentPOSForm.AddProductToCart(productID, productName, quantity, unitPrice, categoryID, isVATApplicable, productType)
 
         MessageBox.Show($"Added {quantity} x {productName} to cart!", "Success",
   MessageBoxButtons.OK, MessageBoxIcon.Information)

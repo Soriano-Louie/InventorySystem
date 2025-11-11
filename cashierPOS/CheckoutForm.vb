@@ -22,7 +22,7 @@ Public Class CheckoutForm
 
     Private Sub CheckoutForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Display total amount
-        lblTotalAmount.Text = $"Total Amount: ?{totalAmount:N2}"
+        lblTotalAmount.Text = $"Total Amount: ₱{totalAmount:N2}"
         lblTotalAmount.Font = New Font("Segoe UI", 14, FontStyle.Bold)
         lblTotalAmount.ForeColor = Color.FromArgb(79, 51, 40)
 
@@ -82,7 +82,7 @@ Public Class CheckoutForm
     Private Sub btnConfirm_Click(sender As Object, e As EventArgs) Handles btnConfirm.Click
         If String.IsNullOrEmpty(selectedPaymentMethod) Then
             MessageBox.Show("Please select a payment method.", "Payment Method Required",
-      MessageBoxButtons.OK, MessageBoxIcon.Warning)
+             MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
@@ -93,28 +93,50 @@ Public Class CheckoutForm
         ' Check if cart contains wholesale products
         Dim cartItems As List(Of posForm.CartItem) = parentForm.GetCartItems()
         Dim hasWholesaleProducts As Boolean = False
+        Dim hasRetailProducts As Boolean = False
 
         Debug.WriteLine($"Total items in cart: {cartItems.Count}")
 
+        ' Check product types in cart - THOROUGH CHECK
         For Each item In cartItems
-            Dim isWholesale As Boolean = IsWholesaleProduct(item.ProductID)
-            Debug.WriteLine($"  - ProductID: {item.ProductID}, Name: {item.ProductName}, IsWholesale: {isWholesale}")
-            If isWholesale Then
+            ' Use the ProductType stored in the cart item (no database lookup needed!)
+            Dim productType As String = If(String.IsNullOrEmpty(item.ProductType), "Unknown", item.ProductType)
+            Debug.WriteLine($"  - ProductID: {item.ProductID}, Name: {item.ProductName}, Type: {productType}")
+
+            If productType = "Wholesale" Then
                 hasWholesaleProducts = True
+            ElseIf productType = "Retail" Then
+                hasRetailProducts = True
+            Else
+                ' Unknown product type - log warning
+                Debug.WriteLine($"  WARNING: Unknown product type for ProductID {item.ProductID}")
             End If
         Next
 
         Debug.WriteLine($"Cart has wholesale products: {hasWholesaleProducts}")
+        Debug.WriteLine($"Cart has retail products: {hasRetailProducts}")
 
-        ' If has wholesale products, ask for pickup or delivery
+        ' ONLY ask for delivery if cart has wholesale products
         If hasWholesaleProducts Then
+            Dim deliveryMessage As String
+
+            ' Customize message based on cart contents
+            If hasRetailProducts Then
+                deliveryMessage = "Your cart contains wholesale and retail products." & vbCrLf +
+                    "Do you want the WHOLESALE items delivered?" & vbCrLf & vbCrLf &
+                  "(Retail items are always for pickup)" & vbCrLf & vbCrLf &
+                  "Click 'Yes' for Delivery or 'No' for Pickup"
+            Else
+                deliveryMessage = "Your cart contains wholesale products." & vbCrLf +
+                     "Do you want this order delivered?" & vbCrLf & vbCrLf &
+                       "Click 'Yes' for Delivery or 'No' for Pickup"
+            End If
+
             Dim deliveryChoice As DialogResult = MessageBox.Show(
-   "Your cart contains wholesale products." & vbCrLf &
-           "Do you want this order delivered?" & vbCrLf & vbCrLf &
-           "Click 'Yes' for Delivery or 'No' for Pickup",
-             "Delivery or Pickup?",
-          MessageBoxButtons.YesNoCancel,
-    MessageBoxIcon.Question)
+             deliveryMessage,
+               "Delivery or Pickup?",
+                    MessageBoxButtons.YesNoCancel,
+                  MessageBoxIcon.Question)
 
             Debug.WriteLine($"User delivery choice: {deliveryChoice}")
 
@@ -122,11 +144,11 @@ Public Class CheckoutForm
                 Debug.WriteLine("User CANCELLED the delivery/pickup selection")
                 Return
             ElseIf deliveryChoice = DialogResult.Yes Then
-                ' Customer wants delivery - open address selection form with map
+                ' Customer wants delivery for wholesale items
                 isDelivery = True
-                Debug.WriteLine($"? User selected DELIVERY - isDelivery set to TRUE")
+                Debug.WriteLine($"✓ User selected DELIVERY for wholesale items - isDelivery set to TRUE")
 
-                ' Try to use map version first, fall back to simple if WebView2 not available
+                ' Open address selection form
                 Try
                     Dim addressForm As New DeliveryAddressFormWithMap(Me)
                     Debug.WriteLine("Opening DeliveryAddressFormWithMap...")
@@ -136,19 +158,19 @@ Public Class CheckoutForm
                         deliveryLatitude = addressForm.DeliveryLatitude
                         deliveryLongitude = addressForm.DeliveryLongitude
 
-                        Debug.WriteLine($"? DELIVERY DATA CAPTURED FROM MAP FORM:")
-                        Debug.WriteLine($"  ? isDelivery: {isDelivery}")
-                        Debug.WriteLine($"  ? Address: {deliveryAddress}")
-                        Debug.WriteLine($"  ? Latitude: {deliveryLatitude}")
-                        Debug.WriteLine($"  ? Longitude: {deliveryLongitude}")
+                        Debug.WriteLine($"✓ DELIVERY DATA CAPTURED FROM MAP FORM:")
+                        Debug.WriteLine($"  ✓ isDelivery: {isDelivery}")
+                        Debug.WriteLine($"  ✓ Address: {deliveryAddress}")
+                        Debug.WriteLine($"  ✓ Latitude: {deliveryLatitude}")
+                        Debug.WriteLine($"  ✓ Longitude: {deliveryLongitude}")
                     Else
                         ' User cancelled address selection
-                        Debug.WriteLine("? User CANCELLED WithMap address form - ABORTING checkout")
+                        Debug.WriteLine("✗ User CANCELLED WithMap address form - ABORTING checkout")
                         Return
                     End If
                 Catch ex As Exception
                     ' If map version fails, use simple form
-                    Debug.WriteLine($"? Map form error: {ex.Message} - falling back to simple form")
+                    Debug.WriteLine($"✗ Map form error: {ex.Message} - falling back to simple form")
                     Dim addressForm As New DeliveryAddressFormSimple(Me)
                     Debug.WriteLine("Opening DeliveryAddressFormSimple...")
 
@@ -157,28 +179,34 @@ Public Class CheckoutForm
                         deliveryLatitude = addressForm.DeliveryLatitude
                         deliveryLongitude = addressForm.DeliveryLongitude
 
-                        Debug.WriteLine($"? DELIVERY DATA CAPTURED FROM SIMPLE FORM:")
-                        Debug.WriteLine($"  ? isDelivery: {isDelivery}")
-                        Debug.WriteLine($"  ? Address: {deliveryAddress}")
-                        Debug.WriteLine($"  ? Latitude: {deliveryLatitude}")
-                        Debug.WriteLine($"  ? Longitude: {deliveryLongitude}")
+                        Debug.WriteLine($"✓ DELIVERY DATA CAPTURED FROM SIMPLE FORM:")
+                        Debug.WriteLine($"  ✓ isDelivery: {isDelivery}")
+                        Debug.WriteLine($"  ✓ Address: {deliveryAddress}")
+                        Debug.WriteLine($"  ✓ Latitude: {deliveryLatitude}")
+                        Debug.WriteLine($"  ✓ Longitude: {deliveryLongitude}")
                     Else
                         ' User cancelled address selection
-                        Debug.WriteLine("? User CANCELLED Simple address form - ABORTING checkout")
+                        Debug.WriteLine("✗ User CANCELLED Simple address form - ABORTING checkout")
                         Return
                     End If
                 End Try
             Else
-                ' Customer wants pickup - RESET delivery fields to ensure clean state
+                ' Customer wants pickup for wholesale items
                 isDelivery = False
                 deliveryAddress = ""
                 deliveryLatitude = 0
                 deliveryLongitude = 0
-                Debug.WriteLine($"? User selected PICKUP - isDelivery set to FALSE")
-                Debug.WriteLine($"  ? Delivery fields reset to empty/zero")
+                Debug.WriteLine($"✓ User selected PICKUP for wholesale items - isDelivery set to FALSE")
+                Debug.WriteLine($"  ✓ Delivery fields reset to empty/zero")
             End If
         Else
-            Debug.WriteLine("? Cart has NO wholesale products - skipping delivery/pickup selection")
+            ' No wholesale products in cart - skip delivery prompt entirely
+            isDelivery = False
+            deliveryAddress = ""
+            deliveryLatitude = 0
+            deliveryLongitude = 0
+            Debug.WriteLine("✓ Cart has NO wholesale products - skipping delivery/pickup selection")
+            Debug.WriteLine("✓ All items are retail - processing as pickup without delivery prompt")
         End If
 
         Debug.WriteLine($"")
@@ -187,35 +215,66 @@ Public Class CheckoutForm
         Debug.WriteLine($"  deliveryAddress: '{deliveryAddress}' (Length: {deliveryAddress.Length})")
         Debug.WriteLine($"  deliveryLatitude: {deliveryLatitude}")
         Debug.WriteLine($"  deliveryLongitude: {deliveryLongitude}")
+        Debug.WriteLine($"  hasWholesaleProducts: {hasWholesaleProducts}")
+        Debug.WriteLine($"  hasRetailProducts: {hasRetailProducts}")
         Debug.WriteLine($"========================================================")
         Debug.WriteLine($"")
 
         ' Process checkout
         If ProcessCheckout() Then
             MessageBox.Show("Checkout successful!", "Success",
-MessageBoxButtons.OK, MessageBoxIcon.Information)
+       MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Else
             MessageBox.Show("Checkout failed. Please try again.", "Error",
-    MessageBoxButtons.OK, MessageBoxIcon.Error)
+  MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
 
-    Private Function IsWholesaleProduct(productID As Integer) As Boolean
+    ''' <summary>
+    ''' Gets the product type (Wholesale or Retail) for a given product ID
+    ''' Returns "Wholesale", "Retail", or "Unknown"
+    ''' NOTE: This function is now deprecated - we use CartItem.ProductType instead
+    ''' Kept for backward compatibility only
+    ''' </summary>
+    Private Function GetProductType(productID As Integer) As String
         Try
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
-                Dim query As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductID = @ProductID"
-                Using cmd As New SqlCommand(query, conn)
+
+                ' Check wholesale products first
+                Dim wholesaleQuery As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(wholesaleQuery, conn)
                     cmd.Parameters.AddWithValue("@ProductID", productID)
-                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    Return count > 0
+                    Dim wholesaleCount As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    If wholesaleCount > 0 Then
+                        Debug.WriteLine($"    → ProductID {productID} found in wholesaleProducts table")
+                        Return "Wholesale"
+                    End If
+                End Using
+
+                ' Check retail products
+                Dim retailQuery As String = "SELECT COUNT(*) FROM retailProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(retailQuery, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim retailCount As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    If retailCount > 0 Then
+                        Debug.WriteLine($"    → ProductID {productID} found in retailProducts table")
+                        Return "Retail"
+                    End If
                 End Using
             End Using
         Catch ex As Exception
-            Return False
+            Debug.WriteLine($"    ✗ Error getting product type for ProductID {productID}: {ex.Message}")
         End Try
+
+        Debug.WriteLine($"    ✗ ProductID {productID} NOT found in any product table - returning Unknown")
+        Return "Unknown"
+    End Function
+
+    Private Function IsWholesaleProduct(productID As Integer) As Boolean
+        Return GetProductType(productID) = "Wholesale"
     End Function
 
     Private Function ProcessCheckout() As Boolean
@@ -232,7 +291,7 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
             Dim currentUserID As Integer = GlobalUserSession.CurrentUserID
             If currentUserID = 0 Then
                 MessageBox.Show("User session not found. Please log in again.", "Session Error",
-               MessageBoxButtons.OK, MessageBoxIcon.Error)
+  MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return False
             End If
 
@@ -241,26 +300,41 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
 
                 ' Process each cart item
                 For Each item As posForm.CartItem In cartItems
-                    ' Determine which table the product belongs to
-                    Dim productIsRetail As Boolean = IsRetailProduct(item.ProductID, conn)
+                    ' Use the ProductType stored in the cart item (no database lookup!)
+                    Dim productType As String = If(String.IsNullOrEmpty(item.ProductType), "Unknown", item.ProductType)
+                    Dim productIsRetail As Boolean = (productType = "Retail")
+                    Dim productIsWholesale As Boolean = (productType = "Wholesale")
+
+                    Debug.WriteLine($"Processing item: {item.ProductName} (ProductID: {item.ProductID}, Type: {productType})")
+
+                    ' Skip unknown products
+                    If productType = "Unknown" Then
+                        Debug.WriteLine($"✗ Skipping unknown product type for ProductID {item.ProductID}")
+                        Continue For
+                    End If
 
                     ' Get effective price (with discount if applicable)
                     Dim effectivePrice As Decimal = If(item.DiscountPrice.HasValue,
-                    item.DiscountPrice.Value,
-                    item.UnitPrice)
+  item.DiscountPrice.Value,
+         item.UnitPrice)
 
-                    ' FIXED: Calculate total correctly (price * quantity)
+                    ' Calculate total correctly (price * quantity)
                     Dim itemTotal As Decimal = effectivePrice * item.Quantity
 
-                    ' Insert into appropriate sales report table with delivery info
+                    ' Insert into appropriate sales report table
                     If productIsRetail Then
+                        ' Retail products - NEVER get delivery info
                         InsertRetailSalesReport(conn, item, effectivePrice, itemTotal, currentUserID)
-                    Else
+                        Debug.WriteLine($"  ✓ Inserted into RetailSalesReport (retail product - no delivery)")
+                    ElseIf productIsWholesale Then
+                        ' Wholesale products - include delivery info ONLY if isDelivery is true
                         InsertWholesaleSalesReport(conn, item, effectivePrice, itemTotal, currentUserID)
+                        Debug.WriteLine($"  ✓ Inserted into SalesReport (wholesale product - isDelivery: {isDelivery})")
                     End If
 
                     ' Update stock quantity
                     UpdateStockQuantity(conn, item.ProductID, item.Quantity, productIsRetail)
+                    Debug.WriteLine($"  ✓ Stock updated (-{item.Quantity})")
                 Next
             End Using
 
@@ -269,7 +343,9 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return True
         Catch ex As Exception
             MessageBox.Show("Error processing checkout: " & ex.Message, "Error",
-           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"Checkout error: {ex.Message}")
+            Debug.WriteLine($"Stack trace: {ex.StackTrace}")
             Return False
         End Try
     End Function
@@ -284,13 +360,13 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Function
 
     Private Sub InsertRetailSalesReport(conn As SqlConnection, item As posForm.CartItem,
-         effectivePrice As Decimal, itemTotal As Decimal,
-      handledBy As Integer)
+     effectivePrice As Decimal, itemTotal As Decimal,
+        handledBy As Integer)
         Dim query As String = "
-     INSERT INTO RetailSalesReport
-                (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy)
-   VALUES
-     (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy)"
+INSERT INTO RetailSalesReport
+            (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy)
+            VALUES
+   (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy)"
 
         Using cmd As New SqlCommand(query, conn)
             cmd.Parameters.AddWithValue("@ProductID", item.ProductID)
@@ -305,8 +381,8 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub InsertWholesaleSalesReport(conn As SqlConnection, item As posForm.CartItem,
- effectivePrice As Decimal, itemTotal As Decimal,
-   handledBy As Integer)
+     effectivePrice As Decimal, itemTotal As Decimal,
+    handledBy As Integer)
         Dim query As String = "INSERT INTO SalesReport (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, DeliveryStatus) VALUES (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, @DeliveryStatus)"
 
         Try
@@ -319,25 +395,41 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
                 cmd.Parameters.Add("@TotalAmount", SqlDbType.Decimal).Value = itemTotal
                 cmd.Parameters.Add("@PaymentMethod", SqlDbType.NVarChar, 50).Value = selectedPaymentMethod
                 cmd.Parameters.Add("@HandledBy", SqlDbType.Int).Value = handledBy
-                cmd.Parameters.Add("@IsDelivery", SqlDbType.Bit).Value = If(isDelivery, 1, 0)
 
+                ' CRITICAL: Only set delivery info if this is ACTUALLY a delivery for wholesale items
+                ' This ensures that when cart has both retail and wholesale, only wholesale items
+                ' marked for delivery get the delivery information
                 If isDelivery Then
+                    ' This is a delivery order for wholesale items
+                    cmd.Parameters.Add("@IsDelivery", SqlDbType.Bit).Value = 1
                     cmd.Parameters.Add("@DeliveryAddress", SqlDbType.NVarChar, -1).Value = deliveryAddress
                     cmd.Parameters.Add("@DeliveryLatitude", SqlDbType.Float).Value = deliveryLatitude
                     cmd.Parameters.Add("@DeliveryLongitude", SqlDbType.Float).Value = deliveryLongitude
                     cmd.Parameters.Add("@DeliveryStatus", SqlDbType.NVarChar, 50).Value = "Pending"
+
+                    Debug.WriteLine($"  ✓ Wholesale item (ProductID: {item.ProductID}) set for DELIVERY:")
+                    Debug.WriteLine($"    - Address: {deliveryAddress}")
+                    Debug.WriteLine($"    - Coordinates: ({deliveryLatitude}, {deliveryLongitude})")
+                    Debug.WriteLine($"    - Status: Pending")
+                    Debug.WriteLine($"    - This item WILL appear in delivery logs")
                 Else
+                    ' This is a pickup order for wholesale items (or user selected pickup)
+                    cmd.Parameters.Add("@IsDelivery", SqlDbType.Bit).Value = 0
                     cmd.Parameters.Add("@DeliveryAddress", SqlDbType.NVarChar, -1).Value = DBNull.Value
                     cmd.Parameters.Add("@DeliveryLatitude", SqlDbType.Float).Value = DBNull.Value
                     cmd.Parameters.Add("@DeliveryLongitude", SqlDbType.Float).Value = DBNull.Value
                     cmd.Parameters.Add("@DeliveryStatus", SqlDbType.NVarChar, 50).Value = DBNull.Value
+
+                    Debug.WriteLine($"  ✓ Wholesale item (ProductID: {item.ProductID}) set for PICKUP:")
+                    Debug.WriteLine($"    - No delivery info stored")
+                    Debug.WriteLine($"    - This item will NOT appear in delivery logs")
                 End If
 
                 cmd.ExecuteNonQuery()
-                Debug.WriteLine($"✓ Wholesale sale inserted: IsDelivery={isDelivery}, Address={If(isDelivery, deliveryAddress, "N/A")}")
+                Debug.WriteLine($"  ✓ Wholesale sale inserted successfully: ProductID={item.ProductID}, IsDelivery={isDelivery}")
             End Using
         Catch ex As Exception
-            Debug.WriteLine($"❌ Error: {ex.Message}")
+            Debug.WriteLine($"  ✗ Error inserting wholesale sale: {ex.Message}")
             Throw
         End Try
     End Sub
@@ -346,8 +438,8 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
         quantitySold As Integer, isRetailProduct As Boolean)
         Dim tableName As String = If(isRetailProduct, "retailProducts", "wholesaleProducts")
         Dim query As String = $"UPDATE {tableName}
-      SET StockQuantity = StockQuantity - @QuantitySold
-     WHERE ProductID = @ProductID"
+   SET StockQuantity = StockQuantity - @QuantitySold
+            WHERE ProductID = @ProductID"
 
         Using cmd As New SqlCommand(query, conn)
             cmd.Parameters.AddWithValue("@QuantitySold", quantitySold)

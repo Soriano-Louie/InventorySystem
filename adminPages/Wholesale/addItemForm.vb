@@ -5,6 +5,7 @@ Imports QRCoder
 
 Public Class addItemForm
     Private parentForm As InventoryForm
+
     Public Sub New(parent As InventoryForm)
         InitializeComponent()
         Me.MaximizeBox = False
@@ -23,7 +24,6 @@ Public Class addItemForm
         categoryDropDown.AutoCompleteMode = AutoCompleteMode.SuggestAppend
         categoryDropDown.AutoCompleteSource = AutoCompleteSource.ListItems
 
-
         addButton.BackColor = Color.FromArgb(224, 166, 109)
         cancelButton.BackColor = Color.FromArgb(224, 166, 109)
         addButton.ForeColor = Color.FromArgb(79, 51, 40)
@@ -34,6 +34,12 @@ Public Class addItemForm
 
         ' Initialize VAT checkbox
         VATCheckBox.Checked = False
+
+        ' Make SKU textbox read-only (auto-generated)
+        skuTextBox.ReadOnly = True
+        skuTextBox.BackColor = Color.FromArgb(240, 240, 240)
+        skuTextBox.ForeColor = Color.Gray
+        skuTextBox.Text = "Auto-generated"
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -60,6 +66,60 @@ Public Class addItemForm
 
     Private Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
+    End Function
+
+    ''' <summary>
+    ''' Auto-generates SKU based on product name and current date
+    ''' Format: First 3 letters of product name + YYMMDD + random 2-digit number
+    ''' Example: "COF250119-47" for "Coffee" on Jan 19, 2025
+    ''' </summary>
+    Private Function GenerateSKU(productName As String) As String
+        If String.IsNullOrWhiteSpace(productName) Then
+            Return ""
+        End If
+
+        ' Get first 3 letters of product name (uppercase, remove spaces)
+        Dim cleanName As String = productName.Trim().Replace(" ", "").ToUpper()
+        Dim prefix As String = If(cleanName.Length >= 3, cleanName.Substring(0, 3), cleanName.PadRight(3, "X"c))
+
+        ' Get current date in YYMMDD format
+        Dim dateCode As String = DateTime.Now.ToString("yyMMdd")
+
+        ' Generate random 2-digit number for uniqueness
+        Dim random As New Random()
+        Dim randomCode As String = random.Next(10, 99).ToString()
+
+        ' Combine to create SKU: ABC-YYMMDD-RR
+        Dim sku As String = $"{prefix}-{dateCode}-{randomCode}"
+
+        ' Check if SKU already exists, if so, regenerate random part
+        While SKUExists(sku)
+            randomCode = random.Next(10, 99).ToString()
+            sku = $"{prefix}-{dateCode}-{randomCode}"
+        End While
+
+        Return sku
+    End Function
+
+    ''' <summary>
+    ''' Checks if SKU already exists in database
+    ''' </summary>
+    Private Function SKUExists(sku As String) As Boolean
+        Dim connString As String = GetConnectionString()
+        Try
+            Using conn As New SqlConnection(connString)
+                conn.Open()
+                Dim query As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE SKU = @SKU"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@SKU", sku)
+                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            ' If error checking, assume doesn't exist
+            Return False
+        End Try
     End Function
 
     Private Function GetVATRate() As Decimal
@@ -105,7 +165,6 @@ Public Class addItemForm
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading categories: " & ex.Message)
         End Try
@@ -122,10 +181,10 @@ Public Class addItemForm
             conn.Open()
 
             ' Updated query with CategoryID, ExpirationDate, and IsVATApplicable
-            Dim query As String = "INSERT INTO wholesaleProducts 
-                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage, IsVATApplicable) 
+            Dim query As String = "INSERT INTO wholesaleProducts
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage, IsVATApplicable)
                                OUTPUT INSERTED.ProductID
-                               VALUES 
+                               VALUES
                                (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage, @IsVATApplicable)"
 
             Using cmd As New SqlCommand(query, conn)
@@ -181,7 +240,7 @@ Public Class addItemForm
             Dim discountForm As New discountForm(newProductID, productName)
             discountForm.ShowDialog()
         End If
-        ' Refresh parent form's product list    
+        ' Refresh parent form's product list
         If parentForm IsNot Nothing Then
             parentForm.LoadProducts()
         End If
@@ -207,9 +266,8 @@ Public Class addItemForm
         End If
     End Sub
 
-
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Me.BeginInvoke(Sub() skuTextBox.Focus())
+        Me.BeginInvoke(Sub() productTextBox.Focus())  ' Focus on product name instead of SKU
         LoadCategories()
     End Sub
 
@@ -217,19 +275,36 @@ Public Class addItemForm
         Me.Close()
     End Sub
 
+    ''' <summary>
+    ''' Event handler when product name changes - auto-generates SKU
+    ''' </summary>
+    Private Sub productTextBox_TextChanged(sender As Object, e As EventArgs) Handles productTextBox.TextChanged
+        ' Only generate if product name has at least 1 character
+        If Not String.IsNullOrWhiteSpace(productTextBox.Text) Then
+            skuTextBox.Text = GenerateSKU(productTextBox.Text)
+            skuTextBox.ForeColor = Color.Black
+        Else
+            skuTextBox.Text = "Auto-generated"
+            skuTextBox.ForeColor = Color.Gray
+        End If
+    End Sub
+
     Private Sub saveButton_Click(sender As Object, e As EventArgs) Handles addButton.Click
-        If String.IsNullOrWhiteSpace(skuTextBox.Text) OrElse
-           String.IsNullOrWhiteSpace(productTextBox.Text) OrElse
-           String.IsNullOrWhiteSpace(unitTextBox.Text) OrElse
-           String.IsNullOrWhiteSpace(retailTextBox.Text) OrElse
+        If String.IsNullOrWhiteSpace(productTextBox.Text) OrElse
+         String.IsNullOrWhiteSpace(unitTextBox.Text) OrElse
+       String.IsNullOrWhiteSpace(retailTextBox.Text) OrElse
            String.IsNullOrWhiteSpace(costTextBox.Text) OrElse
            String.IsNullOrWhiteSpace(quantityTextBox.Text) OrElse
-           String.IsNullOrWhiteSpace(reorderTextBox.Text) OrElse
-           categoryDropDown.SelectedValue Is Nothing Then
+ String.IsNullOrWhiteSpace(reorderTextBox.Text) OrElse
+ categoryDropDown.SelectedValue Is Nothing Then
 
             MessageBox.Show("Please fill in all required fields.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Exit Sub
         End If
+
+        ' Generate final SKU before saving (in case user hasn't typed in product name yet)
+        Dim finalSKU As String = GenerateSKU(productTextBox.Text)
+        skuTextBox.Text = finalSKU
 
         Dim expDate As Object
         If DateTimePicker1.Checked Then
@@ -240,19 +315,18 @@ Public Class addItemForm
 
         Try
             InsertProductWithQRCode(
-            skuTextBox.Text,                           ' SKU
-            productTextBox.Text,                       ' Product Name
-            unitTextBox.Text,                          ' Unit
+          finalSKU,         ' SKU (auto-generated)
+      productTextBox.Text,      ' Product Name
+            unitTextBox.Text,            ' Unit
             Decimal.Parse(retailTextBox.Text),         ' Retail Price
-            Decimal.Parse(costTextBox.Text),           ' Cost
-            Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
+          Decimal.Parse(costTextBox.Text),           ' Cost
+  Integer.Parse(quantityTextBox.Text),       ' Stock Quantity
             Integer.Parse(reorderTextBox.Text),        ' Reorder Level
-            expDate,                                   ' Expiration Date or NULL
+      expDate,            ' Expiration Date or NULL
             Convert.ToInt32(categoryDropDown.SelectedValue), ' CategoryID
-            VATCheckBox.Checked                        ' IsVATApplicable
-        )
+         VATCheckBox.Checked                ' IsVATApplicable
+   )
             MessageBox.Show("Product inserted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
         Catch ex As FormatException
             MessageBox.Show("Please enter valid numeric values for price, cost, quantity, and reorder level.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         Catch ex As Exception
@@ -291,12 +365,14 @@ Public Class addItemForm
         ' Reset VAT checkbox
         VATCheckBox.Checked = False
 
-        Me.BeginInvoke(Sub() skuTextBox.Focus())
+        ' Reset SKU display
+        skuTextBox.Text = "Auto-generated"
+        skuTextBox.ForeColor = Color.Gray
 
+        Me.BeginInvoke(Sub() productTextBox.Focus())
 
         ' Refresh the DataGridView
         InventoryForm.LoadProducts()
     End Sub
-
 
 End Class

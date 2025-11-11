@@ -178,14 +178,15 @@ Public Class QRScannerForm
             Dim productInfo = ValidateQRCodeInDatabase(scannedData)
 
             If productInfo.IsValid Then
-                ' Add to cart with quantity of 1
+                ' Add to cart with quantity of 1 and product type
                 parentForm.AddProductToCart(
      productInfo.ProductID,
   productInfo.ProductName,
          1, ' Always add quantity of 1 per scan
    productInfo.UnitPrice,
           productInfo.CategoryID,
-     productInfo.IsVATApplicable
+     productInfo.IsVATApplicable,
+       productInfo.ProductType ' Pass the product type
   )
 
                 ' Play success beep sound
@@ -237,21 +238,14 @@ Public Class QRScannerForm
             Using conn As New SqlConnection(SharedUtilities.GetConnectionString())
                 conn.Open()
 
-                ' Query both wholesale and retail products
-                Dim query As String = "
-                SELECT ProductID, ProductName, RetailPrice, CategoryID, 
-                    ISNULL(IsVATApplicable, 0) AS IsVATApplicable, QRCodeImage
-                    FROM wholesaleProducts 
-                WHERE QRCodeImage IS NOT NULL
-                
-                UNION
-         
-                SELECT ProductID, ProductName, RetailPrice, CategoryID,
-                ISNULL(IsVATApplicable, 0) AS IsVATApplicable, QRCodeImage
-                        FROM retailProducts 
-                WHERE QRCodeImage IS NOT NULL"
+                ' Query wholesale products first with product type
+                Dim wholesaleQuery As String = "
+         SELECT ProductID, ProductName, RetailPrice, CategoryID, 
+           ISNULL(IsVATApplicable, 0) AS IsVATApplicable, QRCodeImage, 'Wholesale' AS ProductType
+        FROM wholesaleProducts 
+               WHERE QRCodeImage IS NOT NULL"
 
-                Using cmd As New SqlCommand(query, conn)
+                Using cmd As New SqlCommand(wholesaleQuery, conn)
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
                             ' Get the QR code image from database
@@ -270,13 +264,14 @@ Public Class QRScannerForm
                                         Dim qrResult = qrReader.Decode(qrImage)
 
                                         If qrResult IsNot Nothing AndAlso qrResult.Text = scannedData Then
-                                            ' Match found!
+                                            ' Match found in wholesale!
                                             result.IsValid = True
                                             result.ProductID = reader.GetInt32(0)
                                             result.ProductName = reader.GetString(1)
                                             result.UnitPrice = reader.GetDecimal(2)
                                             result.CategoryID = reader.GetInt32(3)
                                             result.IsVATApplicable = reader.GetBoolean(4)
+                                            result.ProductType = "Wholesale"
                                             Exit While
                                         End If
                                     End Using
@@ -285,6 +280,51 @@ Public Class QRScannerForm
                         End While
                     End Using
                 End Using
+
+                ' If not found in wholesale, check retail
+                If Not result.IsValid Then
+                    Dim retailQuery As String = "
+  SELECT ProductID, ProductName, RetailPrice, CategoryID,
+      ISNULL(IsVATApplicable, 0) AS IsVATApplicable, QRCodeImage, 'Retail' AS ProductType
+  FROM retailProducts 
+           WHERE QRCodeImage IS NOT NULL"
+
+                    Using cmd As New SqlCommand(retailQuery, conn)
+                        Using reader = cmd.ExecuteReader()
+                            While reader.Read()
+                                ' Get the QR code image from database
+                                If Not reader.IsDBNull(5) Then
+                                    Dim qrImageBytes As Byte() = DirectCast(reader("QRCodeImage"), Byte())
+
+                                    ' Convert binary to image and decode
+                                    Using ms As New IO.MemoryStream(qrImageBytes)
+                                        Using qrImage As Bitmap = New Bitmap(ms)
+                                            ' Create a new barcode reader instance
+                                            Dim qrReader As New BarcodeReader()
+                                            qrReader.AutoRotate = True
+                                            qrReader.Options = New ZXing.Common.DecodingOptions()
+                                            qrReader.Options.TryHarder = True
+
+                                            Dim qrResult = qrReader.Decode(qrImage)
+
+                                            If qrResult IsNot Nothing AndAlso qrResult.Text = scannedData Then
+                                                ' Match found in retail!
+                                                result.IsValid = True
+                                                result.ProductID = reader.GetInt32(0)
+                                                result.ProductName = reader.GetString(1)
+                                                result.UnitPrice = reader.GetDecimal(2)
+                                                result.CategoryID = reader.GetInt32(3)
+                                                result.IsVATApplicable = reader.GetBoolean(4)
+                                                result.ProductType = "Retail"
+                                                Exit While
+                                            End If
+                                        End Using
+                                    End Using
+                                End If
+                            End While
+                        End Using
+                    End Using
+                End If
             End Using
         Catch ex As Exception
             MessageBox.Show("Database error: " & ex.Message, "Error",
@@ -361,5 +401,6 @@ Public Class QRScannerForm
         Public Property UnitPrice As Decimal
         Public Property CategoryID As Integer
         Public Property IsVATApplicable As Boolean
+        Public Property ProductType As String = "" ' "Wholesale" or "Retail"
     End Class
 End Class
