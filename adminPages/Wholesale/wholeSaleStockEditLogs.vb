@@ -53,6 +53,9 @@ Public Class wholeSaleStockEditLogs
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
+
+        ' Enable keyboard shortcuts
+        Me.KeyPreview = True
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -191,8 +194,11 @@ Public Class wholeSaleStockEditLogs
 
         ' Clear search box
         TextBoxSearch.Text = ""
+        
+   ' Clear any selected cells
+        tableDataGridView.ClearSelection()
 
-        ' Reload all stock edit logs
+    ' Reload all stock edit logs
         loadStockEditLogs()
     End Sub
 
@@ -602,5 +608,29 @@ End If
       Return False
      End Try
  End Function
+
+    ''' <summary>
+    ''' Handle keyboard shortcuts for stock edit logs form
+    ''' Enter = Search/Filter by date range
+    ''' F5 = Reset filters
+    ''' </summary>
+    Private Sub wholeSaleStockEditLogs_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        Select Case e.KeyCode
+      Case Keys.Enter
+          ' Press Enter to search/filter
+          If btnSearch.Enabled Then
+         btnSearch.PerformClick()
+     e.Handled = True
+               e.SuppressKeyPress = True
+              End If
+          Case Keys.F5
+                ' Press F5 to reset
+    If resetButton.Enabled Then
+ resetButton.PerformClick()
+ e.Handled = True
+                    e.SuppressKeyPress = True
+     End If
+        End Select
+    End Sub
 
 End Class

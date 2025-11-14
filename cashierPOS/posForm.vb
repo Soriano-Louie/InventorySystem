@@ -48,6 +48,7 @@ Public Class posForm
         Button5.ForeColor = Color.FromArgb(79, 51, 40)
         Button6.ForeColor = Color.FromArgb(79, 51, 40)
 
+        ' Set DataGridView background to light brown
         DataGridView1.BackgroundColor = Color.FromArgb(224, 166, 109)
 
         Label1.ForeColor = Color.FromArgb(79, 51, 40)
@@ -126,9 +127,13 @@ Public Class posForm
         DataGridView1.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
         DataGridView1.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
 
-        ' Set default cell colors (unselected)
+        ' Set default cell colors (unselected) - WHITE background
         DataGridView1.DefaultCellStyle.BackColor = Color.White
         DataGridView1.DefaultCellStyle.ForeColor = Color.Black
+
+        ' Set alternating row colors for better distinction
+        DataGridView1.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245) ' Light gray
+        DataGridView1.AlternatingRowsDefaultCellStyle.ForeColor = Color.Black
 
         ' Set selection colors - dark brown background with light brown text
         DataGridView1.DefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40) ' Dark brown
@@ -137,6 +142,9 @@ Public Class posForm
         ' Set row header selection colors (if ever visible)
         DataGridView1.RowHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(79, 51, 40)
         DataGridView1.RowHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(230, 216, 177)
+
+        ' Set grid line color for better row distinction
+        DataGridView1.GridColor = Color.FromArgb(200, 200, 200) ' Light gray grid lines
 
         ' Make columns and rows non-resizable
         DataGridView1.AllowUserToResizeColumns = False
@@ -378,34 +386,34 @@ Public Class posForm
     ''' </summary>
     Public Sub AddProductToCart(productID As Integer, productName As String, quantity As Integer,
     unitPrice As Decimal, categoryID As Integer, isVATApplicable As Boolean, Optional productType As String = "")
-      ' Check if product already exists in cart
+        ' Check if product already exists in cart
         Dim existingItem = cartItems.FirstOrDefault(Function(x) x.ProductID = productID)
 
         If existingItem IsNot Nothing Then
             ' Update quantity
-  existingItem.Quantity += quantity
+            existingItem.Quantity += quantity
         Else
             ' Determine product type if not provided
-  If String.IsNullOrEmpty(productType) Then
-      productType = DetermineProductType(productID)
+            If String.IsNullOrEmpty(productType) Then
+                productType = DetermineProductType(productID)
             End If
 
-       ' Add new item
-  Dim newItem As New CartItem With {
-      .ProductID = productID,
-          .ProductName = productName,
-      .Quantity = quantity,
-       .UnitPrice = unitPrice,
-       .IsVATApplicable = isVATApplicable,
-     .CategoryID = categoryID,
-          .DiscountPrice = GetDiscountPrice(productID, quantity),
-      .ProductType = productType
-      }
- cartItems.Add(newItem)
+            ' Add new item
+            Dim newItem As New CartItem With {
+                .ProductID = productID,
+                    .ProductName = productName,
+                .Quantity = quantity,
+                 .UnitPrice = unitPrice,
+                 .IsVATApplicable = isVATApplicable,
+               .CategoryID = categoryID,
+                    .DiscountPrice = GetDiscountPrice(productID, quantity),
+                .ProductType = productType
+                }
+            cartItems.Add(newItem)
         End If
 
-' Refresh display
-    RefreshDataGridView()
+        ' Refresh display
+        RefreshDataGridView()
         CalculateAllTotals()
     End Sub
 
@@ -414,29 +422,29 @@ Public Class posForm
     ''' </summary>
     Private Function DetermineProductType(productID As Integer) As String
         Try
-     Using conn As New SqlConnection(GetConnectionString())
-         conn.Open()
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
 
-  ' Check wholesale products first
-       Dim wholesaleQuery As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductID = @ProductID"
-Using cmd As New SqlCommand(wholesaleQuery, conn)
-      cmd.Parameters.AddWithValue("@ProductID", productID)
-      If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then
-       Return "Wholesale"
-  End If
-          End Using
+                ' Check wholesale products first
+                Dim wholesaleQuery As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(wholesaleQuery, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then
+                        Return "Wholesale"
+                    End If
+                End Using
 
                 ' Check retail products
-        Dim retailQuery As String = "SELECT COUNT(*) FROM retailProducts WHERE ProductID = @ProductID"
-          Using cmd As New SqlCommand(retailQuery, conn)
-  cmd.Parameters.AddWithValue("@ProductID", productID)
-        If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then
-         Return "Retail"
-              End If
+                Dim retailQuery As String = "SELECT COUNT(*) FROM retailProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(retailQuery, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then
+                        Return "Retail"
+                    End If
                 End Using
-   End Using
+            End Using
         Catch ex As Exception
- Console.WriteLine("Error determining product type: " & ex.Message)
+            Console.WriteLine("Error determining product type: " & ex.Message)
         End Try
 
         Return "Unknown"

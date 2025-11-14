@@ -26,6 +26,7 @@ Partial Class deliveryLogsForm
         Panel1 = New Panel()
         TableLayoutPanel1 = New TableLayoutPanel()
         TableLayoutPanel2 = New TableLayoutPanel()
+        resetButton = New Button()
         Panel5 = New Panel()
         DateTimePickerTo = New DateTimePicker()
         Label2 = New Label()
@@ -82,34 +83,47 @@ Partial Class deliveryLogsForm
         ' TableLayoutPanel2
         ' 
         TableLayoutPanel2.Anchor = AnchorStyles.None
-        TableLayoutPanel2.ColumnCount = 3
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
-        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333321F))
+        TableLayoutPanel2.ColumnCount = 4
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25F))
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25F))
+        TableLayoutPanel2.Controls.Add(resetButton, 3, 0)
         TableLayoutPanel2.Controls.Add(Panel5, 1, 0)
         TableLayoutPanel2.Controls.Add(Panel4, 0, 0)
         TableLayoutPanel2.Controls.Add(filterButton, 2, 0)
-        TableLayoutPanel2.Location = New Point(661, 55)
+        TableLayoutPanel2.Location = New Point(588, 55)
         TableLayoutPanel2.Name = "TableLayoutPanel2"
         TableLayoutPanel2.RowCount = 1
         TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
-        TableLayoutPanel2.Size = New Size(488, 56)
+        TableLayoutPanel2.Size = New Size(633, 56)
         TableLayoutPanel2.TabIndex = 1
+        ' 
+        ' resetButton
+        ' 
+        resetButton.Anchor = AnchorStyles.None
+        resetButton.FlatStyle = FlatStyle.Flat
+        resetButton.Location = New Point(516, 16)
+        resetButton.Name = "resetButton"
+        resetButton.Size = New Size(75, 23)
+        resetButton.TabIndex = 9
+        resetButton.Text = "Reset"
+        resetButton.UseVisualStyleBackColor = True
         ' 
         ' Panel5
         ' 
         Panel5.Controls.Add(DateTimePickerTo)
         Panel5.Controls.Add(Label2)
         Panel5.Dock = DockStyle.Fill
-        Panel5.Location = New Point(165, 3)
+        Panel5.Location = New Point(161, 3)
         Panel5.Name = "Panel5"
-        Panel5.Size = New Size(156, 50)
+        Panel5.Size = New Size(152, 50)
         Panel5.TabIndex = 7
         ' 
         ' DateTimePickerTo
         ' 
         DateTimePickerTo.Format = DateTimePickerFormat.Custom
-        DateTimePickerTo.Location = New Point(44, 12)
+        DateTimePickerTo.Location = New Point(34, 12)
         DateTimePickerTo.Name = "DateTimePickerTo"
         DateTimePickerTo.Size = New Size(98, 23)
         DateTimePickerTo.TabIndex = 9
@@ -119,7 +133,7 @@ Partial Class deliveryLogsForm
         Label2.Anchor = AnchorStyles.None
         Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 10F)
-        Label2.Location = New Point(7, 16)
+        Label2.Location = New Point(5, 16)
         Label2.Name = "Label2"
         Label2.Size = New Size(26, 19)
         Label2.TabIndex = 6
@@ -133,13 +147,13 @@ Partial Class deliveryLogsForm
         Panel4.Dock = DockStyle.Left
         Panel4.Location = New Point(3, 3)
         Panel4.Name = "Panel4"
-        Panel4.Size = New Size(156, 50)
+        Panel4.Size = New Size(152, 50)
         Panel4.TabIndex = 3
         ' 
         ' DateTimePickerFrom
         ' 
         DateTimePickerFrom.Format = DateTimePickerFormat.Custom
-        DateTimePickerFrom.Location = New Point(55, 13)
+        DateTimePickerFrom.Location = New Point(51, 13)
         DateTimePickerFrom.Name = "DateTimePickerFrom"
         DateTimePickerFrom.Size = New Size(98, 23)
         DateTimePickerFrom.TabIndex = 8
@@ -159,7 +173,8 @@ Partial Class deliveryLogsForm
         ' filterButton
         ' 
         filterButton.Anchor = AnchorStyles.None
-        filterButton.Location = New Point(368, 16)
+        filterButton.FlatStyle = FlatStyle.Flat
+        filterButton.Location = New Point(357, 16)
         filterButton.Name = "filterButton"
         filterButton.Size = New Size(75, 23)
         filterButton.TabIndex = 8
@@ -228,4 +243,5 @@ Partial Class deliveryLogsForm
     Friend WithEvents filterButton As Button
     Friend WithEvents DateTimePickerFrom As DateTimePicker
     Friend WithEvents DateTimePickerTo As DateTimePicker
+    Friend WithEvents resetButton As Button
 End Class

@@ -2,9 +2,11 @@ Imports Microsoft.Data.SqlClient
 Imports System.Net.Http
 Imports System.Text.RegularExpressions
 Imports System.Text.Json
+Imports Microsoft.Web.WebView2.Core
+Imports Microsoft.Web.WebView2.WinForms
 
 ''' <summary>
-''' Enhanced delivery address form with place search and map preview
+''' Enhanced delivery address form with place search and map preview using WebView2
 ''' Users search for places, see all matching locations, and confirm the correct one
 ''' </summary>
 Public Class DeliveryAddressFormSimple
@@ -12,7 +14,7 @@ Public Class DeliveryAddressFormSimple
     Private selectedLatitude As Double = 14.5995 ' Default Manila coordinates
     Private selectedLongitude As Double = 120.9842
     Private selectedAddress As String = ""
-    Private mapBrowser As WebBrowser
+    Private mapView As WebView2
     Private isMapReady As Boolean = False
     Private searchResults As New List(Of SearchResult)
 
@@ -115,6 +117,18 @@ Public Class DeliveryAddressFormSimple
         searchTextBox.Location = New Point(10, 40)
         searchTextBox.Font = New Font("Segoe UI", 12)
         searchTextBox.PlaceholderText = "e.g., Taguig City University"
+        ' Make Enter key trigger search button
+        AddHandler searchTextBox.KeyDown, Sub(s, ke)
+                                              If ke.KeyCode = Keys.Enter Then
+                                                  ke.SuppressKeyPress = True ' Prevent the beep sound
+                                                  ke.Handled = True ' Mark as handled
+                                                  ' Find and click the search button
+                                                  Dim searchBtn As Button = Me.Controls.Find("searchButton", True).FirstOrDefault()
+                                                  If searchBtn IsNot Nothing AndAlso searchBtn.Enabled Then
+                                                      searchBtn.PerformClick()
+                                                  End If
+                                              End If
+                                          End Sub
         leftPanel.Controls.Add(searchTextBox)
 
         ' Search button
@@ -132,6 +146,7 @@ Public Class DeliveryAddressFormSimple
 
         ' Results label
         Dim resultsLabel As New Label()
+        resultsLabel.Name = "resultsLabel"
         resultsLabel.Text = "Search Results:"
         resultsLabel.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         resultsLabel.ForeColor = Color.FromArgb(79, 51, 40)
@@ -146,6 +161,58 @@ Public Class DeliveryAddressFormSimple
         resultsListBox.Location = New Point(10, 175)
         resultsListBox.Font = New Font("Segoe UI", 10)
         resultsListBox.BackColor = Color.FromArgb(250, 250, 250)
+        resultsListBox.ForeColor = Color.FromArgb(79, 51, 40)
+        resultsListBox.ItemHeight = 35 ' Increase item height for better spacing
+        resultsListBox.DrawMode = DrawMode.OwnerDrawFixed ' Enable custom drawing
+
+        ' Add custom drawing for better visual distinction
+        AddHandler resultsListBox.DrawItem, Sub(sender As Object, e As DrawItemEventArgs)
+                                                If e.Index < 0 Then Return
+
+                                                e.DrawBackground()
+
+                                                ' Alternate row colors for better distinction
+                                                Dim bgColor As Color
+                                                If (e.State And DrawItemState.Selected) = DrawItemState.Selected Then
+                                                    ' Selected item - darker brown
+                                                    bgColor = Color.FromArgb(147, 53, 53)
+                                                    e.Graphics.FillRectangle(New SolidBrush(bgColor), e.Bounds)
+                                                ElseIf e.Index Mod 2 = 0 Then
+                                                    ' Even rows - light background
+                                                    bgColor = Color.FromArgb(255, 255, 255)
+                                                    e.Graphics.FillRectangle(New SolidBrush(bgColor), e.Bounds)
+                                                Else
+                                                    ' Odd rows - slightly darker background
+                                                    bgColor = Color.FromArgb(240, 240, 240)
+                                                    e.Graphics.FillRectangle(New SolidBrush(bgColor), e.Bounds)
+                                                End If
+
+                                                ' Draw text with proper color
+                                                Dim textColor As Color
+                                                If (e.State And DrawItemState.Selected) = DrawItemState.Selected Then
+                                                    textColor = Color.FromArgb(230, 216, 177) ' Light cream for selected
+                                                Else
+                                                    textColor = Color.FromArgb(79, 51, 40) ' Dark brown for normal
+                                                End If
+
+                                                ' Draw the item text with padding
+                                                Dim itemText As String = DirectCast(sender, ListBox).Items(e.Index).ToString()
+                                                Dim textBounds As New Rectangle(e.Bounds.X + 10, e.Bounds.Y + 5, e.Bounds.Width - 20, e.Bounds.Height - 10)
+
+                                                Using textBrush As New SolidBrush(textColor)
+                                                    e.Graphics.DrawString(itemText, e.Font, textBrush, textBounds, StringFormat.GenericDefault)
+                                                End Using
+
+                                                ' Draw separator line between items
+                                                If e.Index < DirectCast(sender, ListBox).Items.Count - 1 Then
+                                                    Using linePen As New Pen(Color.FromArgb(200, 200, 200), 1)
+                                                        e.Graphics.DrawLine(linePen, e.Bounds.Left + 5, e.Bounds.Bottom - 1, e.Bounds.Right - 5, e.Bounds.Bottom - 1)
+                                                    End Using
+                                                End If
+
+                                                e.DrawFocusRectangle()
+                                            End Sub
+
         AddHandler resultsListBox.SelectedIndexChanged, AddressOf ResultsListBox_SelectedIndexChanged
         leftPanel.Controls.Add(resultsListBox)
 
@@ -197,18 +264,15 @@ Public Class DeliveryAddressFormSimple
         mapLabel.Location = New Point(10, 10)
         rightPanel.Controls.Add(mapLabel)
 
-        ' WebBrowser for map
-        mapBrowser = New WebBrowser()
-        mapBrowser.Name = "mapBrowser"
-        mapBrowser.Location = New Point(10, 40)
-        mapBrowser.Size = New Size(570, 500)
-        mapBrowser.ScriptErrorsSuppressed = True
-        mapBrowser.AllowNavigation = True
-        AddHandler mapBrowser.DocumentCompleted, AddressOf MapBrowser_DocumentCompleted
-        rightPanel.Controls.Add(mapBrowser)
+        ' WebView2 for map
+        mapView = New WebView2()
+        mapView.Name = "mapView"
+        mapView.Location = New Point(10, 40)
+        mapView.Size = New Size(570, 500)
+        rightPanel.Controls.Add(mapView)
 
-        ' Load initial map
-        LoadMap(selectedLatitude, selectedLongitude, New List(Of SearchResult)())
+        ' Initialize WebView2 asynchronously
+        InitializeMapAsync()
 
         ' Confirm button
         Dim confirmButton As New Button()
@@ -240,36 +304,72 @@ Public Class DeliveryAddressFormSimple
         mainPanel.Controls.Add(cancelButton)
     End Sub
 
+    Private Async Sub InitializeMapAsync()
+        Try
+            Await mapView.EnsureCoreWebView2Async(Nothing)
+            isMapReady = True
+            ' Load initial map after WebView2 is ready
+            LoadMap(selectedLatitude, selectedLongitude, New List(Of SearchResult)())
+            Debug.WriteLine("WebView2 initialized successfully")
+        Catch ex As Exception
+            Debug.WriteLine($"WebView2 initialization error: {ex.Message}")
+            MessageBox.Show("Map preview requires Microsoft Edge WebView2 Runtime." & vbCrLf &
+"To use this feature, please install or update WebView2." & vbCrLf & vbCrLf &
+"Download WebView2 from: https://developer.microsoft.com/microsoft-edge/webview2/",
+  "Map Preview Unavailable",
+MessageBoxButtons.OK,
+    MessageBoxIcon.Information)
+            ' Hide map panel if WebView2 fails
+            mapView.Visible = False
+        End Try
+    End Sub
+
     Private Sub LoadMap(latitude As Double, longitude As Double, results As List(Of SearchResult))
+        If Not isMapReady OrElse mapView Is Nothing OrElse mapView.CoreWebView2 Is Nothing Then
+            Debug.WriteLine("Map not ready, skipping LoadMap")
+            Return
+        End If
+
         Try
             ' Build markers JavaScript
             Dim markersJS As String = ""
-            If results.Count > 0 Then
-                For i As Integer = 0 To results.Count - 1
-                    Dim result = results(i)
-                    Dim safeName = result.DisplayName.Replace("'", "\'")
-                    markersJS &= String.Format("var marker{0} = L.marker([{1}, {2}]).addTo(map).bindPopup('<b>Option {3}</b><br>{4}');{5}",
-                       i, result.Latitude, result.Longitude, i + 1, safeName, vbCrLf)
-                Next
+            Dim zoomLevel As Integer = 13 ' Default zoom
 
-                ' Fit bounds to show all markers
-                Dim boundsPoints As New List(Of String)
-                For Each r In results
-                    boundsPoints.Add(String.Format("[{0}, {1}]", r.Latitude, r.Longitude))
-                Next
-                Dim bounds = String.Join(", ", boundsPoints)
-                markersJS &= String.Format("var bounds = L.latLngBounds([{0}]); map.fitBounds(bounds, {{padding: [50, 50]}});", bounds)
+            If results.Count > 0 Then
+                If results.Count = 1 Then
+                    ' Single marker - zoom in closer
+                    zoomLevel = 16
+                    Dim safeName = results(0).DisplayName.Replace("'", "\'").Replace(vbCrLf, " ").Replace(vbLf, " ")
+                    markersJS = String.Format("var marker = L.marker([{0}, {1}]).addTo(map).bindPopup('<b>Selected Location</b><br>{2}').openPopup();",
+           results(0).Latitude, results(0).Longitude, safeName)
+                Else
+                    ' Multiple markers - show all
+                    For i As Integer = 0 To results.Count - 1
+                        Dim result = results(i)
+                        Dim safeName = result.DisplayName.Replace("'", "\'").Replace(vbCrLf, " ").Replace(vbLf, " ")
+                        markersJS &= String.Format("var marker{0} = L.marker([{1}, {2}]).addTo(map).bindPopup('<b>Option {3}</b><br>{4}');{5}",
+   i, result.Latitude, result.Longitude, i + 1, safeName, vbCrLf)
+                    Next
+
+                    ' Fit bounds to show all markers
+                    Dim boundsPoints As New List(Of String)
+                    For Each r In results
+                        boundsPoints.Add(String.Format("[{0}, {1}]", r.Latitude, r.Longitude))
+                    Next
+                    Dim bounds = String.Join(", ", boundsPoints)
+                    markersJS &= String.Format("var bounds = L.latLngBounds([{0}]); map.fitBounds(bounds, {{padding: [50, 50]}});{1}", bounds, vbCrLf)
+                End If
             Else
                 ' Single default marker
                 markersJS = String.Format("var marker = L.marker([{0}, {1}]).addTo(map).bindPopup('<b>Default Location</b><br>Search for your delivery location').openPopup();",
-                latitude, longitude)
+        latitude, longitude)
             End If
 
             Dim htmlContent As String = "<!DOCTYPE html>" & vbCrLf &
-   "<html>" & vbCrLf &
+"<html>" & vbCrLf &
    "<head>" & vbCrLf &
    "    <meta charset='utf-8'>" & vbCrLf &
-   "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>" & vbCrLf &
+"    <meta name='viewport' content='width=device-width, initial-scale=1.0'>" & vbCrLf &
    "    <title>Delivery Map</title>" & vbCrLf &
    "    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' integrity='sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=' crossorigin='' />" & vbCrLf &
    "    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' integrity='sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=' crossorigin=''></script>" & vbCrLf &
@@ -278,52 +378,44 @@ Public Class DeliveryAddressFormSimple
    "        #map { height: 100vh; width: 100%; }" & vbCrLf &
    "        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000; text-align: center; }" & vbCrLf &
    "        .hidden { display: none; }" & vbCrLf &
-   "    </style>" & vbCrLf &
+   "</style>" & vbCrLf &
    "</head>" & vbCrLf &
    "<body>" & vbCrLf &
    "    <div id='loading'><div style='font-size: 18px; margin-bottom: 10px;'>Loading map...</div><div style='font-size: 12px; color: #666;'>Please wait</div></div>" & vbCrLf &
    "    <div id='map'></div>" & vbCrLf &
    "    <script>" & vbCrLf &
    "        console.log('Starting map initialization...');" & vbCrLf &
-   "        setTimeout(function() { var loading = document.getElementById('loading'); if (loading) loading.className = 'hidden'; }, 5000);" & vbCrLf &
-   "   try {" & vbCrLf &
-   "         var map = L.map('map').setView([" & latitude & ", " & longitude & "], 13);" & vbCrLf &
+   "   setTimeout(function() { var loading = document.getElementById('loading'); if (loading) loading.className = 'hidden'; }, 5000);" & vbCrLf &
+   "        try {" & vbCrLf &
+"            var map = L.map('map').setView([" & latitude & ", " & longitude & "], " & zoomLevel & ");" & vbCrLf &
    "            console.log('Map created successfully');" & vbCrLf &
-   "     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);" & vbCrLf &
-   "          console.log('Tiles added successfully');" & vbCrLf &
-   "            " & markersJS & vbCrLf &
-   "      map.whenReady(function() { console.log('Map is ready'); var loading = document.getElementById('loading'); if (loading) loading.className = 'hidden'; });" & vbCrLf &
-   "     } catch(error) {" & vbCrLf &
-   "   console.error('Error initializing map:', error);" & vbCrLf &
-   "var loading = document.getElementById('loading');" & vbCrLf &
-   "            if (loading) { loading.innerHTML = '<div style=""color: red;"">Error loading map</div><div style=""font-size: 12px; margin-top: 10px;"">' + error.message + '</div><div style=""font-size: 11px; color: #999; margin-top: 5px;"">Check internet connection</div>'; }" & vbCrLf &
-   "        }" & vbCrLf &
+   "            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);" & vbCrLf &
+   "      console.log('Tiles added successfully');" & vbCrLf &
+   "     " & markersJS & vbCrLf &
+   "            map.whenReady(function() { console.log('Map is ready'); var loading = document.getElementById('loading'); if (loading) loading.className = 'hidden'; });" & vbCrLf &
+   "    } catch(error) {" & vbCrLf &
+   "    console.error('Error initializing map:', error);" & vbCrLf &
+   "          var loading = document.getElementById('loading');" & vbCrLf &
+   "  if (loading) { loading.innerHTML = '<div style=""color: red;"">Error loading map</div><div style=""font-size: 12px; margin-top: 10px;"">' + error.message + '</div><div style=""font-size: 11px; color: #999; margin-top: 5px;"">Check internet connection</div>'; }" & vbCrLf &
+   "}" & vbCrLf &
    "    </script>" & vbCrLf &
    "</body>" & vbCrLf &
    "</html>"
 
-            mapBrowser.DocumentText = htmlContent
-            Debug.WriteLine("Map HTML loaded successfully")
+            mapView.CoreWebView2.NavigateToString(htmlContent)
+            Debug.WriteLine($"Map HTML loaded successfully - Latitude: {latitude}, Longitude: {longitude}, Results: {results.Count}, Zoom: {zoomLevel}")
         Catch ex As Exception
             Debug.WriteLine("Error loading map: " & ex.Message)
             MessageBox.Show("Error loading map: " & ex.Message & vbCrLf & vbCrLf &
-         "Please ensure you have an active internet connection.",
-               "Map Load Error",
-             MessageBoxButtons.OK,
-                  MessageBoxIcon.Warning)
+   "Please ensure you have an active internet connection.",
+ "Map Load Error",
+       MessageBoxButtons.OK,
+   MessageBoxIcon.Warning)
         End Try
     End Sub
 
     Private Sub MapBrowser_DocumentCompleted(sender As Object, e As WebBrowserDocumentCompletedEventArgs)
-        Try
-            Debug.WriteLine("Map document completed. URL: " & If(e.Url?.ToString(), "null"))
-            If e.Url IsNot Nothing AndAlso e.Url.ToString().StartsWith("about:") Then
-                isMapReady = True
-                Debug.WriteLine("Map is ready for interaction")
-            End If
-        Catch ex As Exception
-            Debug.WriteLine("Error in DocumentCompleted: " & ex.Message)
-        End Try
+        ' Deprecated - not used with WebView2
     End Sub
 
     Private Async Sub SearchLocation_Click(sender As Object, e As EventArgs)
@@ -408,9 +500,20 @@ Public Class DeliveryAddressFormSimple
                         }
                         searchResults.Add(result)
                         If resultsListBox IsNot Nothing Then
-                            resultsListBox.Items.Add(String.Format("{0}. {1}", searchResults.Count, result.DisplayName))
+                            ' Format with number and truncate very long addresses
+                            Dim displayText As String = result.DisplayName
+                            If displayText.Length > 80 Then
+                                displayText = displayText.Substring(0, 77) & "..."
+                            End If
+                            resultsListBox.Items.Add($"{searchResults.Count}. {displayText}")
                         End If
                     Next
+
+                    ' Update results label with count
+                    Dim resultsLabel As Label = Me.Controls.Find("resultsLabel", True).FirstOrDefault()
+                    If resultsLabel IsNot Nothing Then
+                        resultsLabel.Text = $"Search Results ({searchResults.Count} found):"
+                    End If
 
                     ' Show all results on map
                     LoadMap(searchResults(0).Latitude, searchResults(0).Longitude, searchResults)
@@ -461,8 +564,9 @@ Public Class DeliveryAddressFormSimple
             confirmButton.Enabled = True
         End If
 
-        ' Center map on selected location
-        LoadMap(selectedLatitude, selectedLongitude, searchResults)
+        ' Center map on selected location with a single marker
+        Dim singleResult As New List(Of SearchResult) From {selectedResult}
+        LoadMap(selectedLatitude, selectedLongitude, singleResult)
 
         Debug.WriteLine(String.Format("Selected: {0} at {1}, {2}", selectedAddress, selectedLatitude, selectedLongitude))
     End Sub
@@ -470,7 +574,27 @@ Public Class DeliveryAddressFormSimple
     Private Sub ConfirmButton_Click(sender As Object, e As EventArgs)
         If String.IsNullOrWhiteSpace(selectedAddress) Then
             MessageBox.Show("Please select a location from the search results.", "No Location Selected",
-        MessageBoxButtons.OK, MessageBoxIcon.Warning)
+     MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ' Show confirmation prompt with address details
+        Dim confirmMessage As String = "Please confirm your delivery address:" & vbCrLf & vbCrLf &
+      selectedAddress & vbCrLf & vbCrLf &
+  String.Format("Coordinates: {0:F6}, {1:F6}", selectedLatitude, selectedLongitude) & vbCrLf & vbCrLf &
+        "Is this the correct delivery location?"
+
+        Dim result As DialogResult = MessageBox.Show(confirmMessage,
+            "Confirm Delivery Address",
+MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question)
+
+        If result = DialogResult.No Then
+            ' User wants to select a different address
+            MessageBox.Show("Please select a different location from the search results.",
+    "Address Not Confirmed",
+           MessageBoxButtons.OK,
+          MessageBoxIcon.Information)
             Return
         End If
 

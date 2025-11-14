@@ -18,6 +18,8 @@ Public Class CheckoutForm
         Me.MinimizeBox = False
         Me.StartPosition = FormStartPosition.CenterParent
         Me.BackColor = Color.FromArgb(230, 216, 177)
+        ' Enable keyboard shortcuts
+        Me.KeyPreview = True
     End Sub
 
     Private Sub CheckoutForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -51,6 +53,42 @@ Public Class CheckoutForm
         lblSelectedPayment.Text = "Please select a payment method"
         lblSelectedPayment.Font = New Font("Segoe UI", 10, FontStyle.Italic)
         lblSelectedPayment.ForeColor = Color.FromArgb(79, 51, 40)
+    End Sub
+
+    ''' <summary>
+    ''' Handle keyboard shortcuts for checkout form
+    ''' C = Cash, G = GCash, B = Bank Transaction
+    ''' Enter = Confirm, Esc = Cancel
+    ''' </summary>
+    Private Sub CheckoutForm_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        Select Case e.KeyCode
+            Case Keys.C
+                ' Press C for Cash
+                btnCash.PerformClick()
+                e.Handled = True
+
+            Case Keys.G
+                ' Press G for GCash
+                btnGCash.PerformClick()
+                e.Handled = True
+
+            Case Keys.B
+                ' Press B for Bank Transaction
+                btnBankTransaction.PerformClick()
+                e.Handled = True
+
+            Case Keys.Enter
+                ' Press Enter to Confirm (only if button is enabled)
+                If btnConfirm.Enabled Then
+                    btnConfirm.PerformClick()
+                    e.Handled = True
+                End If
+
+            Case Keys.Escape
+                ' Press Esc to Cancel/Exit
+                btnCancel.PerformClick()
+                e.Handled = True
+        End Select
     End Sub
 
     Private Sub btnCash_Click(sender As Object, e As EventArgs) Handles btnCash.Click
@@ -150,27 +188,6 @@ Public Class CheckoutForm
 
                 ' Open address selection form
                 Try
-                    Dim addressForm As New DeliveryAddressFormWithMap(Me)
-                    Debug.WriteLine("Opening DeliveryAddressFormWithMap...")
-
-                    If addressForm.ShowDialog() = DialogResult.OK Then
-                        deliveryAddress = addressForm.DeliveryAddress
-                        deliveryLatitude = addressForm.DeliveryLatitude
-                        deliveryLongitude = addressForm.DeliveryLongitude
-
-                        Debug.WriteLine($"✓ DELIVERY DATA CAPTURED FROM MAP FORM:")
-                        Debug.WriteLine($"  ✓ isDelivery: {isDelivery}")
-                        Debug.WriteLine($"  ✓ Address: {deliveryAddress}")
-                        Debug.WriteLine($"  ✓ Latitude: {deliveryLatitude}")
-                        Debug.WriteLine($"  ✓ Longitude: {deliveryLongitude}")
-                    Else
-                        ' User cancelled address selection
-                        Debug.WriteLine("✗ User CANCELLED WithMap address form - ABORTING checkout")
-                        Return
-                    End If
-                Catch ex As Exception
-                    ' If map version fails, use simple form
-                    Debug.WriteLine($"✗ Map form error: {ex.Message} - falling back to simple form")
                     Dim addressForm As New DeliveryAddressFormSimple(Me)
                     Debug.WriteLine("Opening DeliveryAddressFormSimple...")
 
@@ -179,16 +196,38 @@ Public Class CheckoutForm
                         deliveryLatitude = addressForm.DeliveryLatitude
                         deliveryLongitude = addressForm.DeliveryLongitude
 
-                        Debug.WriteLine($"✓ DELIVERY DATA CAPTURED FROM SIMPLE FORM:")
+                        Debug.WriteLine($"✓ DELIVERY DATA CAPTURED FROM ADDRESS FORM:")
                         Debug.WriteLine($"  ✓ isDelivery: {isDelivery}")
                         Debug.WriteLine($"  ✓ Address: {deliveryAddress}")
                         Debug.WriteLine($"  ✓ Latitude: {deliveryLatitude}")
-                        Debug.WriteLine($"  ✓ Longitude: {deliveryLongitude}")
+                        Debug.WriteLine($"✓ Longitude: {deliveryLongitude}")
                     Else
                         ' User cancelled address selection
-                        Debug.WriteLine("✗ User CANCELLED Simple address form - ABORTING checkout")
+                        Debug.WriteLine("✗ User CANCELLED address form - ABORTING checkout")
                         Return
                     End If
+                Catch ex As Exception
+                    ' If form fails, use simple text entry as fallback
+                    Debug.WriteLine($"✗ Address form error: {ex.Message} - falling back to text entry")
+
+                    ' Create a simple text input dialog as ultimate fallback
+                    Dim manualAddress As String = InputBox("Address form not available. Please enter delivery address manually:",
+                             "Enter Delivery Address",
+                          "")
+
+                    If String.IsNullOrWhiteSpace(manualAddress) Then
+                        Debug.WriteLine("✗ User cancelled manual address entry - ABORTING checkout")
+                        Return
+                    End If
+
+                    deliveryAddress = manualAddress
+                    deliveryLatitude = 14.5995 ' Default Manila coordinates
+                    deliveryLongitude = 120.9842
+
+                    Debug.WriteLine($"✓ DELIVERY DATA FROM MANUAL ENTRY:")
+                    Debug.WriteLine($"  ✓ isDelivery: {isDelivery}")
+                    Debug.WriteLine($"  ✓ Address: {deliveryAddress}")
+                    Debug.WriteLine($"  ✓ Using default coordinates")
                 End Try
             Else
                 ' Customer wants pickup for wholesale items

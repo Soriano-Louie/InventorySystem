@@ -8,7 +8,7 @@ Imports System.IO
 
 Public Class retailStockEditLogs
     Dim topPanel As New topPanelControl()
-    Friend WithEvents sidePanel As sidePanelControl2  ' Fixed: Use retail side panel, not wholesale
+    Friend WithEvents sidePanel As sidePanelControl2  ' Fixed: Use retail side panel
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
     Dim colorClicked As Color = Color.FromArgb(102, 66, 52)
     Dim dt As New DataTable()
@@ -53,6 +53,9 @@ Public Class retailStockEditLogs
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
+
+        ' Enable keyboard shortcuts
+        Me.KeyPreview = True
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -179,6 +182,30 @@ Public Class retailStockEditLogs
         loadStockEditLogs()
     End Sub
 
+    ''' <summary>
+    ''' Handle keyboard shortcuts for retail stock edit logs form
+    ''' Enter = Search/Filter by date range
+    ''' F5 = Reset filters
+  ''' </summary>
+    Private Sub retailStockEditLogs_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        Select Case e.KeyCode
+            Case Keys.Enter
+                ' Press Enter to search/filter
+                If btnSearch.Enabled Then
+                    btnSearch.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
+            Case Keys.F5
+                ' Press F5 to reset
+                If resetButton.Enabled Then
+                    resetButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
+        End Select
+    End Sub
+
     Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
         ' Reset date range to last 30 days
         DateTimePickerTo.Value = DateTime.Now
@@ -187,7 +214,10 @@ Public Class retailStockEditLogs
         ' Clear search box
         TextBoxSearch.Text = ""
 
-        ' Reload all stock edit logs
+        ' Clear any selected cells
+        tableDataGridView.ClearSelection()
+
+    ' Reload all stock edit logs
         loadStockEditLogs()
     End Sub
 
@@ -303,8 +333,8 @@ Public Class retailStockEditLogs
     End Sub
 
     Public Sub loadStockEditLogs()
-        Dim connString As String = GetConnectionString()
-        Dim query As String = "
+    Dim connString As String = GetConnectionString()
+    Dim query As String = "
             SELECT
                 rsel.logId AS 'Log ID',
                 rsel.editDate AS 'Edit Date',

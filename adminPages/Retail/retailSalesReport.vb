@@ -53,6 +53,9 @@ Public Class retailSalesReport
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
+
+        ' Enable keyboard shortcuts
+        Me.KeyPreview = True
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -232,6 +235,31 @@ Public Class retailSalesReport
         ' Load data
         loadSalesReport()
     End Sub
+    
+    ''' <summary>
+  ''' Handle keyboard shortcuts for retail sales report form
+    ''' Enter = Search/Filter by date range
+    ''' F5 = Reset filters
+    ''' </summary>
+    Private Sub retailSalesReport_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+      Select Case e.KeyCode
+   Case Keys.Enter
+       ' Press Enter to search/filter
+    If btnSearch.Enabled Then
+       btnSearch.PerformClick()
+       e.Handled = True
+       e.SuppressKeyPress = True
+         End If
+ Case Keys.F5
+           ' Press F5 to reset
+    If resetButton.Enabled Then
+     resetButton.PerformClick()
+       e.Handled = True
+              e.SuppressKeyPress = True
+  End If
+        End Select
+ End Sub
+
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
         Dim rect As New System.Drawing.Rectangle(0, 0, ctrl.Width, ctrl.Height)
         Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
@@ -345,6 +373,9 @@ Public Class retailSalesReport
         ' Reset the DateTimePickers to today's date
         DateTimePickerFrom.Value = DateTime.Today
         DateTimePickerTo.Value = DateTime.Today
+
+        ' Clear any selected cells
+        tableDataGridView.ClearSelection()
 
         ' Reload all records
         loadSalesReport()

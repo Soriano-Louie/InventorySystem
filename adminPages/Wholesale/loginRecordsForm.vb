@@ -37,6 +37,9 @@ Public Class loginRecordsForm
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
+
+        ' Enable keyboard shortcuts
+        Me.KeyPreview = True
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -291,6 +294,9 @@ Public Class loginRecordsForm
         DateTimePickerFrom.Value = DateTime.Today
         DateTimePickerTo.Value = DateTime.Today
 
+        ' Clear any selected cells
+        tableDataGridView.ClearSelection()
+
         ' Reload all records
         LoadLoginHistory()
     End Sub
@@ -379,5 +385,29 @@ MessageBoxIcon.Error)
             Return False
         End Try
     End Function
+
+    ''' <summary>
+    ''' Handle keyboard shortcuts for login records form
+    ''' Enter = Filter by date range
+    ''' F5 = Reset filters
+    ''' </summary>
+    Private Sub loginRecordsForm_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        Select Case e.KeyCode
+   Case Keys.Enter
+ ' Press Enter to filter
+           If filterButton.Enabled Then
+       filterButton.PerformClick()
+     e.Handled = True
+       e.SuppressKeyPress = True
+            End If
+            Case Keys.F5
+      ' Press F5 to reset
+ If resetButton.Enabled Then
+            resetButton.PerformClick()
+  e.Handled = True
+         e.SuppressKeyPress = True
+    End If
+        End Select
+    End Sub
 
 End Class

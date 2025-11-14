@@ -12,8 +12,8 @@ Public Class deliveryLogsForm
     Dim dv As New DataView()
     Dim bs As New BindingSource()
 
-    ' Class to store delivery information
-    Private Class DeliveryInfo
+    ' Class to store delivery information - NOW PUBLIC so DeliveryDetailsForm can use it
+    Public Class DeliveryInfo
         Public Property SaleID As Integer
         Public Property ProductName As String
         Public Property DeliveryAddress As String
@@ -23,6 +23,7 @@ Public Class deliveryLogsForm
         Public Property SaleDate As Date
         Public Property TotalAmount As Decimal
         Public Property QuantitySold As Integer
+        Public Property PaymentMethod As String ' Added for details form
     End Class
 
     Public Sub New()
@@ -46,6 +47,18 @@ Public Class deliveryLogsForm
         tableDataGridView.AllowUserToAddRows = False
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
+
+        ' Enable full row selection for better click experience
+        tableDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        tableDataGridView.MultiSelect = False
+
+        resetButton.BackColor = Color.FromArgb(147, 53, 53)
+        resetButton.ForeColor = Color.FromArgb(230, 216, 177)
+        filterButton.BackColor = Color.FromArgb(147, 53, 53)
+        filterButton.ForeColor = Color.FromArgb(230, 216, 177)
+
+        ' Enable keyboard shortcuts
+        Me.KeyPreview = True
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -68,6 +81,29 @@ Public Class deliveryLogsForm
         End If
 
         MyBase.WndProc(m)
+    End Sub
+
+    ''' <summary>
+    ''' Handle keyboard shortcuts for delivery logs form
+    ''' Enter = Filter deliveries by date range
+    ''' </summary>
+    Private Sub deliveryLogsForm_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        Select Case e.KeyCode
+            Case Keys.Enter
+                ' Press Enter to filter deliveries
+                If filterButton.Enabled Then
+                    filterButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
+            Case Keys.F5
+                ' Press F5 to reset
+                If resetButton.Enabled Then
+                    resetButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
+        End Select
     End Sub
 
     Private Function ShowSingleForm(Of T As {Form, New})() As T
@@ -201,19 +237,30 @@ Public Class deliveryLogsForm
         btnUpdateStatus.UseColumnTextForButtonValue = True
         tableDataGridView.Columns.Add(btnUpdateStatus)
 
+        ' Add view details button column
+        Dim btnViewDetails As New DataGridViewButtonColumn()
+        btnViewDetails.Name = "ColViewDetails"
+        btnViewDetails.HeaderText = "Details"
+        btnViewDetails.Text = "View Details"
+        btnViewDetails.UseColumnTextForButtonValue = True
+        tableDataGridView.Columns.Add(btnViewDetails)
+
         ' Set column widths
         tableDataGridView.Columns("ColSaleID").Width = 70
         tableDataGridView.Columns("ColTime").Width = 100
-        tableDataGridView.Columns("ColProduct").Width = 200
+        tableDataGridView.Columns("ColProduct").Width = 180
         tableDataGridView.Columns("ColQuantity").Width = 60
         tableDataGridView.Columns("ColAmount").Width = 100
         tableDataGridView.Columns("ColAddress").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
         tableDataGridView.Columns("ColStatus").Width = 100
         tableDataGridView.Columns("ColUpdateStatus").Width = 120
+        tableDataGridView.Columns("ColViewDetails").Width = 120
 
-        ' Handle button clicks
+        ' Handle button clicks and row clicks
         AddHandler tableDataGridView.CellContentClick, AddressOf DeliveryGrid_CellContentClick
         AddHandler tableDataGridView.CellFormatting, AddressOf DeliveryGrid_CellFormatting
+        AddHandler tableDataGridView.CellClick, AddressOf DeliveryGrid_CellClick
+        AddHandler tableDataGridView.CellDoubleClick, AddressOf DeliveryGrid_CellDoubleClick
     End Sub
 
     Private Sub LoadTodaysDeliveries()
@@ -223,15 +270,15 @@ Public Class deliveryLogsForm
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
                 Dim query As String = "
- SELECT sr.SaleID, p.ProductName, sr.DeliveryAddress,
-       sr.DeliveryLatitude, sr.DeliveryLongitude, sr.DeliveryStatus,
-     sr.SaleDate, sr.TotalAmount, sr.QuantitySold
-    FROM SalesReport sr
-                    INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
-     WHERE sr.IsDelivery = 1
-   AND CAST(sr.SaleDate AS DATE) = CAST(GETDATE() AS DATE)
-  AND sr.DeliveryStatus IS NOT NULL
-       ORDER BY sr.SaleDate DESC"
+     SELECT sr.SaleID, p.ProductName, sr.DeliveryAddress,
+    sr.DeliveryLatitude, sr.DeliveryLongitude, sr.DeliveryStatus,
+         sr.SaleDate, sr.TotalAmount, sr.QuantitySold, sr.PaymentMethod
+     FROM SalesReport sr
+  INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+                    WHERE sr.IsDelivery = 1
+      AND CAST(sr.SaleDate AS DATE) = CAST(GETDATE() AS DATE)
+    AND sr.DeliveryStatus IS NOT NULL
+      ORDER BY sr.SaleDate DESC"
 
                 Using cmd As New SqlCommand(query, conn)
                     Using reader As SqlDataReader = cmd.ExecuteReader()
@@ -247,18 +294,19 @@ Public Class deliveryLogsForm
                             row.Cells("ColAddress").Value = reader.GetString(2)
                             row.Cells("ColStatus").Value = reader.GetString(5)
 
-                            ' Store delivery info in tag for updates
+                            ' Store delivery info in tag for updates and details view
                             row.Tag = New DeliveryInfo() With {
-                         .SaleID = reader.GetInt32(0),
-                   .ProductName = reader.GetString(1),
-                   .DeliveryAddress = reader.GetString(2),
-                  .Latitude = reader.GetDouble(3),
-                        .Longitude = reader.GetDouble(4),
-                .DeliveryStatus = reader.GetString(5),
-                         .SaleDate = reader.GetDateTime(6),
-                          .TotalAmount = reader.GetDecimal(7),
-                             .QuantitySold = reader.GetInt32(8)
-                        }
+.SaleID = reader.GetInt32(0),
+       .ProductName = reader.GetString(1),
+        .DeliveryAddress = reader.GetString(2),
+               .Latitude = reader.GetDouble(3),
+          .Longitude = reader.GetDouble(4),
+     .DeliveryStatus = reader.GetString(5),
+           .SaleDate = reader.GetDateTime(6),
+     .TotalAmount = reader.GetDecimal(7),
+        .QuantitySold = reader.GetInt32(8),
+     .PaymentMethod = If(reader.IsDBNull(9), "N/A", reader.GetString(9))
+             }
                         End While
                     End Using
                 End Using
@@ -298,7 +346,55 @@ Public Class deliveryLogsForm
 
         If e.ColumnIndex = tableDataGridView.Columns("ColUpdateStatus").Index Then
             UpdateDeliveryStatus(e.RowIndex)
+        ElseIf e.ColumnIndex = tableDataGridView.Columns("ColViewDetails").Index Then
+            ShowDeliveryDetails(e.RowIndex)
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Handle single click on any cell (except buttons) to show details
+    ''' </summary>
+    Private Sub DeliveryGrid_CellClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then Return
+
+        ' Don't trigger on button columns
+        If e.ColumnIndex = tableDataGridView.Columns("ColUpdateStatus").Index OrElse
+      e.ColumnIndex = tableDataGridView.Columns("ColViewDetails").Index Then
+            Return
+        End If
+
+        ' Show details when clicking on any other cell
+        ShowDeliveryDetails(e.RowIndex)
+    End Sub
+
+    ''' <summary>
+    ''' Handle double click on row to show details
+    ''' </summary>
+    Private Sub DeliveryGrid_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then Return
+        ShowDeliveryDetails(e.RowIndex)
+    End Sub
+
+    ''' <summary>
+    ''' Show detailed delivery information with map in a popup form
+    ''' </summary>
+    Private Sub ShowDeliveryDetails(rowIndex As Integer)
+        Try
+            Dim row As DataGridViewRow = tableDataGridView.Rows(rowIndex)
+            Dim deliveryInfo As DeliveryInfo = DirectCast(row.Tag, DeliveryInfo)
+
+            If deliveryInfo Is Nothing Then
+                MessageBox.Show("No delivery information found for this row.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Create and show the delivery details form with map
+            Dim detailsForm As New DeliveryDetailsForm(deliveryInfo)
+            detailsForm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error showing delivery details: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"Error showing delivery details: {ex.ToString()}")
+        End Try
     End Sub
 
     Private Sub UpdateDeliveryStatus(rowIndex As Integer)
@@ -575,15 +671,15 @@ Public Class deliveryLogsForm
 
                 ' Query to get deliveries within date range
                 Dim query As String = "
-         SELECT sr.SaleID, p.ProductName, sr.DeliveryAddress,
-     sr.DeliveryLatitude, sr.DeliveryLongitude, sr.DeliveryStatus,
-     sr.SaleDate, sr.TotalAmount, sr.QuantitySold
-      FROM SalesReport sr
-          INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
-     WHERE sr.IsDelivery = 1
-          AND CAST(sr.SaleDate AS DATE) BETWEEN @FromDate AND @ToDate
+            SELECT sr.SaleID, p.ProductName, sr.DeliveryAddress,
+        sr.DeliveryLatitude, sr.DeliveryLongitude, sr.DeliveryStatus,
+         sr.SaleDate, sr.TotalAmount, sr.QuantitySold, sr.PaymentMethod
+            FROM SalesReport sr
+         INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+           WHERE sr.IsDelivery = 1
+  AND CAST(sr.SaleDate AS DATE) BETWEEN @FromDate AND @ToDate
           AND sr.DeliveryStatus IS NOT NULL
-          ORDER BY sr.SaleDate DESC"
+        ORDER BY sr.SaleDate DESC"
 
                 Using cmd As New SqlCommand(query, conn)
                     ' Get dates from DateTimePickers (use .Value.Date to get just the date part)
@@ -593,7 +689,7 @@ Public Class deliveryLogsForm
                     ' Validate date range
                     If fromDate > toDate Then
                         MessageBox.Show("'From' date cannot be later than 'To' date.", "Invalid Date Range",
-  MessageBoxButtons.OK, MessageBoxIcon.Warning)
+              MessageBoxButtons.OK, MessageBoxIcon.Warning)
                         Return
                     End If
 
@@ -613,18 +709,19 @@ Public Class deliveryLogsForm
                             row.Cells("ColAddress").Value = reader.GetString(2)
                             row.Cells("ColStatus").Value = reader.GetString(5)
 
-                            ' Store delivery info in tag for updates
+                            ' Store delivery info in tag for updates and details view
                             row.Tag = New DeliveryInfo() With {
-                            .SaleID = reader.GetInt32(0),
-                            .ProductName = reader.GetString(1),
-                            .DeliveryAddress = reader.GetString(2),
-                            .Latitude = reader.GetDouble(3),
-                            .Longitude = reader.GetDouble(4),
-                            .DeliveryStatus = reader.GetString(5),
-                            .SaleDate = reader.GetDateTime(6),
-                            .TotalAmount = reader.GetDecimal(7),
-                            .QuantitySold = reader.GetInt32(8)
-           }
+     .SaleID = reader.GetInt32(0),
+.ProductName = reader.GetString(1),
+     .DeliveryAddress = reader.GetString(2),
+                .Latitude = reader.GetDouble(3),
+      .Longitude = reader.GetDouble(4),
+             .DeliveryStatus = reader.GetString(5),
+              .SaleDate = reader.GetDateTime(6),
+               .TotalAmount = reader.GetDecimal(7),
+  .QuantitySold = reader.GetInt32(8),
+            .PaymentMethod = If(reader.IsDBNull(9), "N/A", reader.GetString(9))
+        }
                         End While
                     End Using
                 End Using
@@ -634,8 +731,20 @@ Public Class deliveryLogsForm
             Label1.Text = $"Deliveries ({tableDataGridView.Rows.Count}) - {DateTimePickerFrom.Value:MMM dd, yyyy} to {DateTimePickerTo.Value:MMM dd, yyyy}"
         Catch ex As Exception
             MessageBox.Show("Error filtering deliveries: " & ex.Message, "Error",
-    MessageBoxButtons.OK, MessageBoxIcon.Error)
+         MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
+        'reset datetimepickers to today
+        DateTimePickerFrom.Value = Date.Today
+        DateTimePickerTo.Value = Date.Today
+
+        ' Clear any selected cells
+        tableDataGridView.ClearSelection()
+
+        LoadTodaysDeliveries()
+
     End Sub
 
 End Class
