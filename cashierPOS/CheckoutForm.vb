@@ -1,4 +1,5 @@
 ﻿Imports Microsoft.Data.SqlClient
+Imports System.Drawing.Printing
 
 Public Class CheckoutForm
     Private parentForm As posForm
@@ -8,6 +9,12 @@ Public Class CheckoutForm
     Private deliveryAddress As String = ""
     Private deliveryLatitude As Double = 0
     Private deliveryLongitude As Double = 0
+
+    ' Receipt printing support
+    Private WithEvents printDocument As New PrintDocument()
+
+    Private receiptContent As String = ""
+    Private receiptLines As List(Of String)
 
     Public Sub New(parent As posForm, total As Decimal)
         InitializeComponent()
@@ -128,6 +135,13 @@ Public Class CheckoutForm
 
         ' Check if cart contains wholesale products
         Dim cartItems As List(Of posForm.CartItem) = parentForm.GetCartItems()
+
+        ' CRITICAL FIX: Store cart items BEFORE ProcessCheckout clears them
+        Dim cartItemsCopy As New List(Of posForm.CartItem)
+        For Each item In cartItems
+            cartItemsCopy.Add(item)
+        Next
+
         Dim hasWholesaleProducts As Boolean = False
         Dim hasRetailProducts As Boolean = False
 
@@ -261,6 +275,20 @@ Public Class CheckoutForm
         If ProcessCheckout() Then
             MessageBox.Show("Checkout successful!", "Success",
        MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+            ' Ask user if they want to print receipt
+            Dim printReceipt As DialogResult = MessageBox.Show(
+             "Transaction completed successfully!" & vbCrLf & vbCrLf &
+       "Would you like to print a receipt?",
+           "Print Receipt?",
+                MessageBoxButtons.YesNo,
+    MessageBoxIcon.Question)
+
+            If printReceipt = DialogResult.Yes Then
+                ' Use the COPY of cart items (original was cleared by ProcessCheckout)
+                PrintTransactionReceipt(cartItemsCopy)
+            End If
+
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Else
@@ -490,6 +518,241 @@ INSERT INTO RetailSalesReport
     Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
         Me.DialogResult = DialogResult.Cancel
         Me.Close()
+    End Sub
+
+    ''' Build and print transaction receipt for retail, wholesale, or mixed transactions
+    ''' Handles all product types and delivery information
+    Private Sub PrintTransactionReceipt(cartItems As List(Of posForm.CartItem))
+        Try
+            ' Build receipt content
+            receiptContent = BuildReceiptContent(cartItems)
+            receiptLines = receiptContent.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.None).ToList()
+
+            ' Configure print document for receipt size
+            printDocument.DefaultPageSettings.PaperSize = New PaperSize("Receipt", 300, 600) ' 3" width
+            printDocument.DefaultPageSettings.Margins = New Margins(10, 10, 10, 10)
+
+            ' Show print preview
+            Dim printPreview As New PrintPreviewDialog()
+            printPreview.Document = printDocument
+            printPreview.Width = 400
+            printPreview.Height = 600
+            printPreview.StartPosition = FormStartPosition.CenterParent
+            printPreview.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error preparing receipt: " & ex.Message, "Print Error",
+            MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"Receipt print error: {ex.ToString()}")
+        End Try
+    End Sub
+
+    ''' Build formatted receipt content with all transaction details
+    Private Function BuildReceiptContent(cartItems As List(Of posForm.CartItem)) As String
+        Dim content As New System.Text.StringBuilder()
+        Dim currentUser As String = If(GlobalUserSession.CurrentUsername, "Cashier")
+
+        ' Header
+        content.AppendLine("================================")
+        content.AppendLine("   INVENTORY SYSTEM POS")
+        content.AppendLine("     SALES RECEIPT")
+        content.AppendLine("================================")
+        content.AppendLine()
+        content.AppendLine($"Date: {Date.Now:MMM dd, yyyy}")
+        content.AppendLine($"Time: {Date.Now:hh:mm:ss tt}")
+        content.AppendLine($"Cashier: {currentUser}")
+        content.AppendLine()
+        content.AppendLine("--------------------------------")
+        content.AppendLine("ITEMS")
+        content.AppendLine("--------------------------------")
+
+        ' Group items by product type
+        Dim retailItems = cartItems.Where(Function(i) i.ProductType = "Retail").ToList()
+        Dim wholesaleItems = cartItems.Where(Function(i) i.ProductType = "Wholesale").ToList()
+
+        Dim retailTotal As Decimal = 0
+        Dim wholesaleTotal As Decimal = 0
+
+        ' Print Retail Items
+        If retailItems.Count > 0 Then
+            content.AppendLine()
+            content.AppendLine("** RETAIL ITEMS **")
+            content.AppendLine()
+
+            For Each item In retailItems
+                Dim effectivePrice As Decimal = If(item.DiscountPrice.HasValue, item.DiscountPrice.Value, item.UnitPrice)
+                Dim itemTotal As Decimal = effectivePrice * item.Quantity
+                retailTotal += itemTotal
+
+                ' Product name (truncate if too long)
+                Dim productName As String = item.ProductName
+                If productName.Length > 28 Then
+                    productName = productName.Substring(0, 25) & "..."
+
+                End If
+                content.AppendLine(productName)
+
+                ' Quantity and price
+                content.AppendLine($"  {item.Quantity} x ₱{effectivePrice:N2} = ₱{itemTotal:N2}")
+
+                ' Show discount if applicable
+                If item.DiscountPrice.HasValue Then
+                    Dim savings As Decimal = (item.UnitPrice - item.DiscountPrice.Value) * item.Quantity
+                    content.AppendLine($"  (Saved: ₱{savings:N2})")
+                End If
+                content.AppendLine()
+            Next
+
+            content.AppendLine($"Retail Subtotal: ₱{retailTotal:N2}")
+            content.AppendLine()
+        End If
+
+        ' Print Wholesale Items
+        If wholesaleItems.Count > 0 Then
+            content.AppendLine()
+            content.AppendLine("** WHOLESALE ITEMS **")
+            content.AppendLine()
+
+            For Each item In wholesaleItems
+                Dim effectivePrice As Decimal = If(item.DiscountPrice.HasValue, item.DiscountPrice.Value, item.UnitPrice)
+                Dim itemTotal As Decimal = effectivePrice * item.Quantity
+                wholesaleTotal += itemTotal
+
+                ' Product name (truncate if too long)
+                Dim productName As String = item.ProductName
+                If productName.Length > 28 Then
+                    productName = productName.Substring(0, 25) & "..."
+
+                End If
+                content.AppendLine(productName)
+
+                ' Quantity and price
+                content.AppendLine($"  {item.Quantity} x ₱{effectivePrice:N2} = ₱{itemTotal:N2}")
+
+                ' Show discount if applicable
+                If item.DiscountPrice.HasValue Then
+                    Dim savings As Decimal = (item.UnitPrice - item.DiscountPrice.Value) * item.Quantity
+                    content.AppendLine($"  (Saved: ₱{savings:N2})")
+                End If
+                content.AppendLine()
+            Next
+
+            content.AppendLine($"Wholesale Subtotal: ₱{wholesaleTotal:N2}")
+            content.AppendLine()
+        End If
+
+        ' Totals Section
+        content.AppendLine("================================")
+        If retailItems.Count > 0 AndAlso wholesaleItems.Count > 0 Then
+            content.AppendLine($"Retail Total:     ₱{retailTotal:N2}")
+            content.AppendLine($"Wholesale Total:  ₱{wholesaleTotal:N2}")
+            content.AppendLine("--------------------------------")
+        End If
+        content.AppendLine($"TOTAL AMOUNT:     ₱{totalAmount:N2}")
+        content.AppendLine($"Payment Method: {selectedPaymentMethod}")
+        content.AppendLine("================================")
+
+        ' Delivery Information (if applicable)
+        If isDelivery AndAlso wholesaleItems.Count > 0 Then
+            content.AppendLine()
+            content.AppendLine("--------------------------------")
+            content.AppendLine("DELIVERY INFORMATION")
+            content.AppendLine("--------------------------------")
+            content.AppendLine($"Status: Pending")
+            content.AppendLine($"Address:")
+
+            ' Word wrap address for receipt width
+            Dim addressWords = deliveryAddress.Split(" "c)
+            Dim currentLine As String = ""
+            For Each word In addressWords
+                If (currentLine & " " & word).Length > 30 Then
+                    content.AppendLine($"  {currentLine.Trim()}")
+                    currentLine = word
+                Else
+                    currentLine &= " " & word
+                End If
+            Next
+            If currentLine.Length > 0 Then
+                content.AppendLine($"  {currentLine.Trim()}")
+            End If
+            content.AppendLine()
+            content.AppendLine("Retail items: PICKUP")
+            content.AppendLine("Wholesale items: DELIVERY")
+        ElseIf wholesaleItems.Count > 0 Then
+            content.AppendLine()
+            content.AppendLine("--------------------------------")
+            content.AppendLine("PICKUP INFORMATION")
+            content.AppendLine("--------------------------------")
+            content.AppendLine("All items: PICKUP")
+        End If
+
+        ' Footer
+        content.AppendLine()
+        content.AppendLine("================================")
+        content.AppendLine("  Thank you for your purchase!")
+        content.AppendLine("================================")
+        content.AppendLine()
+        content.AppendLine($"Items: {cartItems.Count}")
+        content.AppendLine($"Receipt #: {Date.Now:yyyyMMddHHmmss}")
+        content.AppendLine()
+
+        Return content.ToString()
+    End Function
+
+    ''' Handle actual printing of receipt
+    Private Sub printDocument_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDocument.PrintPage
+        Try
+            ' Set up fonts for receipt
+            Dim headerFont As New Font("Courier New", 10, FontStyle.Bold)
+            Dim normalFont As New Font("Courier New", 8, FontStyle.Regular)
+            Dim boldFont As New Font("Courier New", 8, FontStyle.Bold)
+
+            ' Set up brush
+            Dim blackBrush As New SolidBrush(Color.Black)
+
+            ' Starting position
+            Dim leftMargin As Single = e.MarginBounds.Left
+            Dim topMargin As Single = e.MarginBounds.Top
+            Dim yPosition As Single = topMargin
+
+            ' Line height
+            Dim lineHeight As Single = normalFont.GetHeight(e.Graphics)
+
+            ' Print each line
+            For Each line As String In receiptLines
+                ' Check if we need a new page (unlikely for receipts)
+                If yPosition + lineHeight > e.MarginBounds.Bottom Then
+                    e.HasMorePages = True
+                    Return
+                End If
+
+                ' Choose font based on content
+                Dim currentFont As Font = normalFont
+                If line.Contains("INVENTORY SYSTEM") OrElse
+          line.Contains("SALES RECEIPT") OrElse
+ line.Contains("** RETAIL") OrElse
+  line.Contains("** WHOLESALE") OrElse
+    line.Contains("TOTAL AMOUNT") OrElse
+          line.Contains("DELIVERY INFORMATION") OrElse
+  line.Contains("PICKUP INFORMATION") Then
+                    currentFont = headerFont
+                ElseIf line.Contains("Subtotal") OrElse
+     line.Contains("Total:") OrElse
+            line.Contains("Payment Method") Then
+                    currentFont = boldFont
+                End If
+
+                ' Draw the line
+                e.Graphics.DrawString(line, currentFont, blackBrush, leftMargin, yPosition)
+                yPosition += lineHeight
+            Next
+
+            ' No more pages
+            e.HasMorePages = False
+        Catch ex As Exception
+            Debug.WriteLine($"Print page error: {ex.Message}")
+            MessageBox.Show("Error during printing: " & ex.Message, "Print Error",
+     MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
 End Class
