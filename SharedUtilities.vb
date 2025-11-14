@@ -2,16 +2,12 @@ Imports Microsoft.Data.SqlClient
 
 Public Module SharedUtilities
 
-    ''' <summary>
     ''' Gets the database connection string
-    ''' </summary>
     Public Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
 
-    ''' <summary>
     ''' Gets the current VAT rate from the database
-    ''' </summary>
     ''' <returns>The VAT rate as a decimal, or 0 if not found</returns>
     Public Function GetCurrentVATRate() As Decimal
         Try
@@ -36,9 +32,7 @@ Public Module SharedUtilities
         End Try
     End Function
 
-    ''' <summary>
     ''' Saves or updates the VAT rate in the database
-    ''' </summary>
     ''' <param name="vatRate">The VAT rate to save</param>
     ''' <param name="errorMessage">Output parameter containing error message if save fails</param>
     ''' <returns>True if successful, False otherwise</returns>
@@ -106,9 +100,7 @@ Public Module SharedUtilities
         End Try
     End Function
 
-    ''' <summary>
-    ''' Saves or updates the VAT rate in the database (backward compatible version)
-    ''' </summary>
+    ''' Saves or updates the VAT rate in the database (backward compatible version
     ''' <param name="vatRate">The VAT rate to save</param>
     ''' <returns>True if successful, False otherwise</returns>
     Public Function SaveVATRate(vatRate As Decimal) As Boolean

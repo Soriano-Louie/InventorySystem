@@ -83,10 +83,8 @@ Public Class deliveryLogsForm
         MyBase.WndProc(m)
     End Sub
 
-    ''' <summary>
     ''' Handle keyboard shortcuts for delivery logs form
     ''' Enter = Filter deliveries by date range
-    ''' </summary>
     Private Sub deliveryLogsForm_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         Select Case e.KeyCode
             Case Keys.Enter
@@ -367,17 +365,13 @@ Public Class deliveryLogsForm
         ShowDeliveryDetails(e.RowIndex)
     End Sub
 
-    ''' <summary>
     ''' Handle double click on row to show details
-    ''' </summary>
     Private Sub DeliveryGrid_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex < 0 Then Return
         ShowDeliveryDetails(e.RowIndex)
     End Sub
 
-    ''' <summary>
     ''' Show detailed delivery information with map in a popup form
-    ''' </summary>
     Private Sub ShowDeliveryDetails(rowIndex As Integer)
         Try
             Dim row As DataGridViewRow = tableDataGridView.Rows(rowIndex)

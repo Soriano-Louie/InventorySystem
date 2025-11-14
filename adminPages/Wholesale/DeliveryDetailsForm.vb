@@ -3,10 +3,8 @@ Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 Imports System.Drawing.Printing
 
-''' <summary>
 ''' Form to display delivery details with map location
 ''' Shows delivery information and exact location on an interactive map using WebView2
-''' </summary>
 Public Class DeliveryDetailsForm
     Private deliveryData As deliveryLogsForm.DeliveryInfo
     Private mapView As WebView2
@@ -355,9 +353,7 @@ Public Class DeliveryDetailsForm
         End Try
     End Sub
 
-    ''' <summary>
     ''' Handle print button click - generates and prints delivery details
-    ''' </summary>
     Private Sub PrintButton_Click(sender As Object, e As EventArgs)
         Try
             ' Build print content
@@ -380,9 +376,7 @@ Public Class DeliveryDetailsForm
         End Try
     End Sub
 
-    ''' <summary>
-    ''' Build formatted text content for printing
-    ''' </summary>
+    ' Build formatted text content for printing
     Private Function BuildPrintContent() As String
         Dim content As New System.Text.StringBuilder()
 
@@ -439,9 +433,7 @@ Public Class DeliveryDetailsForm
         Return content.ToString()
     End Function
 
-    ''' <summary>
     ''' Handle the actual printing - called when PrintDocument.Print() is invoked
-    ''' </summary>
     Private Sub PrintDocument_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDocument.PrintPage
         Try
             ' Set up fonts
@@ -489,10 +481,6 @@ Public Class DeliveryDetailsForm
             ' No more pages
             e.HasMorePages = False
         Catch ex As Exception
-            Debug.WriteLine($"Print page error: {ex.Message}")
-            MessageBox.Show("Error during printing: " & ex.Message, "Print Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
 End Class

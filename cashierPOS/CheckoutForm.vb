@@ -55,11 +55,9 @@ Public Class CheckoutForm
         lblSelectedPayment.ForeColor = Color.FromArgb(79, 51, 40)
     End Sub
 
-    ''' <summary>
     ''' Handle keyboard shortcuts for checkout form
     ''' C = Cash, G = GCash, B = Bank Transaction
     ''' Enter = Confirm, Esc = Cancel
-    ''' </summary>
     Private Sub CheckoutForm_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         Select Case e.KeyCode
             Case Keys.C
@@ -271,12 +269,10 @@ Public Class CheckoutForm
         End If
     End Sub
 
-    ''' <summary>
     ''' Gets the product type (Wholesale or Retail) for a given product ID
     ''' Returns "Wholesale", "Retail", or "Unknown"
     ''' NOTE: This function is now deprecated - we use CartItem.ProductType instead
     ''' Kept for backward compatibility only
-    ''' </summary>
     Private Function GetProductType(productID As Integer) As String
         Try
             Using conn As New SqlConnection(GetConnectionString())

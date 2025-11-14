@@ -5,10 +5,8 @@ Imports System.Text.Json
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 
-''' <summary>
 ''' Enhanced delivery address form with place search and map preview using WebView2
 ''' Users search for places, see all matching locations, and confirm the correct one
-''' </summary>
 Public Class DeliveryAddressFormSimple
     Private parentCheckoutForm As CheckoutForm
     Private selectedLatitude As Double = 14.5995 ' Default Manila coordinates

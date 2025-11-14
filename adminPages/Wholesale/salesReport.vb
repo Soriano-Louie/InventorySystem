@@ -230,42 +230,40 @@ Public Class salesReport
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
 
-    ' Example data
+        ' Example data
         ' Initialize
         dt = New DataTable()
- dv = New DataView(dt)
+        dv = New DataView(dt)
         bs = New BindingSource()
 
         ' Bindings
-     bs.DataSource = dv
+        bs.DataSource = dv
         tableDataGridView.DataSource = bs
 
         ' Load data
         loadSalesReport()
     End Sub
 
-  ''' <summary>
     ''' Handle keyboard shortcuts for wholesale sales report form
     ''' Enter = Search/Filter by date range
     ''' F5 = Reset filters
-    ''' </summary>
     Private Sub salesReport_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
-      Select Case e.KeyCode
-   Case Keys.Enter
-       ' Press Enter to search/filter
-          If btnSearch.Enabled Then
-btnSearch.PerformClick()
-    e.Handled = True
-          e.SuppressKeyPress = True
-  End If
-      Case Keys.F5
-     ' Press F5 to reset
-   If resetButton.Enabled Then
-       resetButton.PerformClick()
-   e.Handled = True
-  e.SuppressKeyPress = True
-    End If
-      End Select
+        Select Case e.KeyCode
+            Case Keys.Enter
+                ' Press Enter to search/filter
+                If btnSearch.Enabled Then
+                    btnSearch.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
+            Case Keys.F5
+                ' Press F5 to reset
+                If resetButton.Enabled Then
+                    resetButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
+        End Select
     End Sub
 
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
