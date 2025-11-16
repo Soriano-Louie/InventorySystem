@@ -2,6 +2,10 @@
 Imports Microsoft.Data.SqlClient
 
 Public Class retailDashboard
+
+    ' POLYMORPHISM: Add data loader instance
+    Private dataLoader As DashboardDataLoader
+
     Dim topPanel As New topPanelControl()
     Friend WithEvents sidePanel As sidePanelControl2
     Dim colorUnclicked As Color = Color.FromArgb(191, 181, 147)
@@ -45,6 +49,10 @@ Public Class retailDashboard
 
     Public Sub New()
         InitializeComponent()
+
+        ' POLYMORPHISM: Initialize retail-specific data loader
+        dataLoader = New RetailDashboardDataLoader()
+
         sidePanel = New sidePanelControl2()
         sidePanel.Dock = DockStyle.Left
         topPanel.Dock = DockStyle.Top
@@ -132,10 +140,6 @@ Public Class retailDashboard
 
     End Sub
 
-    'Private Sub WholesaleDashboard_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-    '    Application.Exit()
-    'End Sub
-
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
         For Each ctrl As Control In sidePanel.Controls
@@ -201,118 +205,158 @@ Public Class retailDashboard
         SetRoundedRegion2(Panel7, 30)
     End Sub
 
+    ' POLYMORPHISM: Refactored LoadDashboardData using polymorphic data loader
     Public Sub LoadDashboardData()
-        LoadTotalOrdersTodayForLabel8()
-        LoadTotalUsersForLabel1()
-        LoadStockLevelStatus()
-        LoadTotalProductsForLabel9()
-        LoadTotalCategoriesForLabel10()
+        ' Load total orders today using polymorphic method
+        Dim totalOrders = dataLoader.LoadTotalOrdersToday()
+        If totalOrders >= 0 Then
+            Label8.Text = totalOrders.ToString()
+        Else
+            Label8.Text = "Error"
+        End If
+
+        ' Load total users using polymorphic method
+        Dim totalUsers = dataLoader.LoadTotalUsers()
+        If totalUsers >= 0 Then
+            Label1.Text = totalUsers.ToString()
+        Else
+            Label1.Text = "Error"
+        End If
+
+        ' Load total products using polymorphic method
+        Dim totalProducts = dataLoader.LoadTotalProducts()
+        If totalProducts >= 0 Then
+            Label9.Text = totalProducts.ToString()
+        Else
+            Label9.Text = "Error"
+        End If
+
+        ' Load total categories using polymorphic method
+        Dim totalCategories = dataLoader.LoadTotalCategories()
+        If totalCategories >= 0 Then
+            Label10.Text = totalCategories.ToString()
+        Else
+            Label10.Text = "Error"
+        End If
+
+        ' Load critical stock products using polymorphic method
+        Dim criticalProducts = dataLoader.LoadCriticalStockProducts()
+        UpdateStockLevelPanel(criticalProducts)
+
         LoadTopProductsData()
     End Sub
 
-    Private Sub LoadTotalOrdersTodayForLabel8()
+    ' POLYMORPHISM: Modified to accept critical products list as parameter
+    Private Sub UpdateStockLevelPanel(criticalProducts As List(Of String))
         Try
-            Dim connStr As String = GetConnectionString()
-            Dim sql As String = "SELECT COUNT(*) FROM RetailSalesReport WHERE CAST(SaleDate AS date) = CAST(GETDATE() AS date)"
+            ' Clear existing dynamic controls in Panel4 (keep original labels)
+            Dim controlsToRemove As New List(Of Control)()
+            For Each ctrl As Control In Panel4.Controls
+                If TypeOf ctrl Is Label AndAlso (DirectCast(ctrl, Label).Name.StartsWith("lblStatus") OrElse
+      DirectCast(ctrl, Label).Name.StartsWith("lblCritical") OrElse
+      DirectCast(ctrl, Label).Name.StartsWith("lblError")) Then
+                    controlsToRemove.Add(ctrl)
+                ElseIf TypeOf ctrl Is Panel AndAlso DirectCast(ctrl, Panel).Name.StartsWith("containerPanel") Then
+                    controlsToRemove.Add(ctrl)
+                End If
+            Next
+            For Each ctrl As Control In controlsToRemove
+                Panel4.Controls.Remove(ctrl)
+            Next
 
-            Using conn As New SqlConnection(connStr)
-                Using cmd As New SqlCommand(sql, conn)
-                    conn.Open()
-                    Dim totalOrders As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    ' Direct assignment to Label8 for total orders today
-                    Try
-                        Label8.Text = totalOrders.ToString()
-                    Catch ex As Exception
-                        Console.WriteLine("Label8 not found: " & ex.Message)
-                    End Try
-                End Using
-            End Using
+            If criticalProducts.Count = 0 Then
+                ' All stock levels are normal
+                Dim lblStatus As New Label()
+                lblStatus.Name = "lblStatusNormal"
+                lblStatus.Text = "All Normal Level"
+                lblStatus.Font = New Font("Segoe UI", 18, FontStyle.Bold)
+                lblStatus.ForeColor = Color.Green
+                lblStatus.AutoSize = False
+                lblStatus.Size = New Size(Panel4.Width - 20, 70)
+                lblStatus.TextAlign = ContentAlignment.MiddleCenter
+                lblStatus.Location = New Point(10, (Panel4.Height - 70) \ 2)
+                Panel4.Controls.Add(lblStatus)
+            Else
+                ' There are critical stock levels - create a container panel for scrolling if needed
+                Dim containerPanel As New Panel()
+                containerPanel.Name = "containerPanelCritical"
+                containerPanel.AutoScroll = True
+                containerPanel.Dock = DockStyle.Fill
+                containerPanel.BackColor = Color.FromArgb(230, 216, 177)
+                Panel4.Controls.Add(containerPanel)
+
+                ' Calculate appropriate label height based on number of critical products
+                Dim fontSize As Integer = 18
+                Dim labelHeight As Integer = 50
+
+                If criticalProducts.Count > 3 Then
+                    fontSize = 12
+                    labelHeight = 40
+                ElseIf criticalProducts.Count > 6 Then
+                    fontSize = 10
+                    labelHeight = 35
+                End If
+
+                Dim yPosition As Integer = 15
+
+                For i As Integer = 0 To criticalProducts.Count - 1
+                    Dim product As String = criticalProducts(i)
+                    Dim lblCritical As New Label()
+                    lblCritical.Name = $"lblCritical{i}"
+                    lblCritical.Text = $"Critical: {product}"
+                    lblCritical.Font = New Font("Segoe UI", fontSize, FontStyle.Bold)
+                    lblCritical.ForeColor = Color.Red
+                    lblCritical.AutoSize = False
+                    lblCritical.Size = New Size(containerPanel.Width - 40, labelHeight)
+                    lblCritical.TextAlign = ContentAlignment.MiddleCenter
+                    lblCritical.Location = New Point(20, yPosition)
+
+                    ' Handle text wrapping for long product names
+                    If product.Length > 20 Then
+                        lblCritical.Text = $"Critical: {If(product.Length > 25, product.Substring(0, 22) + "...", product)}"
+                    End If
+
+                    containerPanel.Controls.Add(lblCritical)
+
+                    yPosition += labelHeight + 8
+                Next
+
+                ' Ensure container panel can scroll if content exceeds panel height
+                containerPanel.AutoScrollMinSize = New Size(0, yPosition + 15)
+            End If
         Catch ex As Exception
-            Try
-                Label8.Text = "Error"
-            Catch
-                Console.WriteLine("Error loading total orders for Label8: " & ex.Message)
-            End Try
+            ShowStockLevelError()
+            Console.WriteLine("Error updating stock level panel: " & ex.Message)
         End Try
     End Sub
 
-    Private Sub LoadTotalUsersForLabel1()
-        Try
-            Dim connStr As String = GetConnectionString()
-            Dim sql As String = "SELECT COUNT(*) FROM Users"
+    Private Sub ShowStockLevelError()
+        ' Clear existing dynamic controls in Panel4
+        Dim controlsToRemove As New List(Of Control)()
+        For Each ctrl As Control In Panel4.Controls
+            If TypeOf ctrl Is Label AndAlso (DirectCast(ctrl, Label).Name.StartsWith("lblStatus") OrElse
+ DirectCast(ctrl, Label).Name.StartsWith("lblCritical") OrElse
+       DirectCast(ctrl, Label).Name.StartsWith("lblError")) Then
+                controlsToRemove.Add(ctrl)
+            ElseIf TypeOf ctrl Is Panel AndAlso DirectCast(ctrl, Panel).Name.StartsWith("containerPanel") Then
+                controlsToRemove.Add(ctrl)
+            End If
+        Next
+        For Each ctrl As Control In controlsToRemove
+            Panel4.Controls.Remove(ctrl)
+        Next
 
-            Using conn As New SqlConnection(connStr)
-                Using cmd As New SqlCommand(sql, conn)
-                    conn.Open()
-                    Dim totalUsers As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    ' Direct assignment to Label1 for total users
-                    Try
-                        Label1.Text = totalUsers.ToString()
-                    Catch ex As Exception
-                        Console.WriteLine("Label1 not found: " & ex.Message)
-                    End Try
-                End Using
-            End Using
-        Catch ex As Exception
-            Try
-                Label1.Text = "Error"
-            Catch
-                Console.WriteLine("Error loading total users for Label1: " & ex.Message)
-            End Try
-        End Try
-    End Sub
-
-    Private Sub LoadTotalProductsForLabel9()
-        Try
-            Dim connStr As String = GetConnectionString()
-            ' Use retailProducs table as it's the main products table
-            Dim sql As String = "SELECT COUNT(*) FROM retailProducts"
-
-            Using conn As New SqlConnection(connStr)
-                Using cmd As New SqlCommand(sql, conn)
-                    conn.Open()
-                    Dim totalProducts As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    ' Direct assignment to Label9 for total products
-                    Try
-                        Label9.Text = totalProducts.ToString()
-                    Catch ex As Exception
-                        Console.WriteLine("Label9 not found: " & ex.Message)
-                    End Try
-                End Using
-            End Using
-        Catch ex As Exception
-            Try
-                Label9.Text = "Error"
-            Catch
-                Console.WriteLine("Error loading total products for Label9: " & ex.Message)
-            End Try
-        End Try
-    End Sub
-
-    Private Sub LoadTotalCategoriesForLabel10()
-        Try
-            Dim connStr As String = GetConnectionString()
-            Dim sql As String = "SELECT COUNT(*) FROM Categories"
-
-            Using conn As New SqlConnection(connStr)
-                Using cmd As New SqlCommand(sql, conn)
-                    conn.Open()
-                    Dim totalCategories As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    ' Direct assignment to Label10 for total categories
-                    Try
-                        Label10.Text = totalCategories.ToString()
-                    Catch ex As Exception
-                        Console.WriteLine("Label10 not found: " & ex.Message)
-                    End Try
-                End Using
-            End Using
-        Catch ex As Exception
-            Try
-                Label10.Text = "Error"
-            Catch
-                Console.WriteLine("Error loading total categories for Label10: " & ex.Message)
-            End Try
-        End Try
+        ' Show error in panel
+        Dim lblError As New Label()
+        lblError.Name = "lblErrorStock"
+        lblError.Text = "Error loading stock data"
+        lblError.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+        lblError.ForeColor = Color.Red
+        lblError.AutoSize = False
+        lblError.Size = New Size(Panel4.Width - 20, 60)
+        lblError.TextAlign = ContentAlignment.MiddleCenter
+        lblError.Location = New Point(10, (Panel4.Height - 60) \ 2)
+        Panel4.Controls.Add(lblError)
     End Sub
 
     Private Function GetConnectionString() As String
@@ -320,52 +364,14 @@ Public Class retailDashboard
     End Function
 
     Private Sub LoadSalesData()
-        ' Load sales data for the current month being viewed
-        Dim connStr As String = GetConnectionString()
+        ' POLYMORPHISM: Use polymorphic method for loading sales data
+        chartData = dataLoader.LoadSalesDataForMonth(currentMonth)
 
-        ' Get first and last day of the current month
-        Dim firstDayOfMonth As Date = New Date(currentMonth.Year, currentMonth.Month, 1)
-        Dim lastDayOfMonth As Date = firstDayOfMonth.AddMonths(1).AddDays(-1)
+        ' Fill in missing days with zero sales for the entire month
+        FillMissingDaysForMonth()
 
-        Dim sql As String = "
-        SELECT
-            CAST(SaleDate AS date) AS SaleDate,
-            ISNULL(SUM(TotalAmount), 0) AS TotalSales
-        FROM RetailSalesReport
-        WHERE SaleDate >= @StartDate AND SaleDate <= @EndDate
-        GROUP BY CAST(SaleDate AS date)
-        ORDER BY SaleDate ASC;
-    "
-
-        chartData.Clear()
-
-        Try
-            Using conn As New SqlConnection(connStr)
-                Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@StartDate", firstDayOfMonth)
-                    cmd.Parameters.AddWithValue("@EndDate", lastDayOfMonth)
-
-                    conn.Open()
-                    Using reader As SqlDataReader = cmd.ExecuteReader()
-                        While reader.Read()
-                            Dim saleDate As Date = reader.GetDateTime("SaleDate")
-                            Dim totalSales As Decimal = reader.GetDecimal("TotalSales")
-                            chartData.Add(New KeyValuePair(Of Date, Decimal)(saleDate, totalSales))
-                        End While
-                    End Using
-                End Using
-            End Using
-
-            ' Fill in missing days with zero sales for the entire month
-            FillMissingDaysForMonth()
-
-            ' Create and setup the chart panel
-            SetupChartPanel()
-        Catch ex As Exception
-            ' Handle error - show empty chart
-            chartData.Clear()
-            SetupChartPanel()
-        End Try
+        ' Create and setup the chart panel
+        SetupChartPanel()
     End Sub
 
     Private Sub FillMissingDaysForMonth()
