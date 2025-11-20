@@ -1,5 +1,5 @@
-﻿Imports Microsoft.Data.SqlClient
-Imports System.Drawing.Printing
+﻿Imports System.Drawing.Printing
+Imports Microsoft.Data.SqlClient
 
 Public Class CheckoutForm
     Private parentForm As posForm
@@ -9,6 +9,13 @@ Public Class CheckoutForm
     Private deliveryAddress As String = ""
     Private deliveryLatitude As Double = 0
     Private deliveryLongitude As Double = 0
+
+    ' Payment details for GCash and Bank Transaction
+    Private payerName As String = ""
+
+    Private referenceNumber As String = ""
+
+    Private bankName As String = ""
 
     ' Receipt printing support
     Private WithEvents printDocument As New PrintDocument()
@@ -120,6 +127,39 @@ Public Class CheckoutForm
 
         ' Highlight selected button
         selectedButton.BackColor = Color.FromArgb(79, 51, 40)
+
+        ' Prompt for payment details if GCash or Bank Transaction
+        If method = "GCash" OrElse method = "Bank Transaction" Then
+            Dim paymentDetailsForm As New PaymentDetailsForm(method)
+
+            If paymentDetailsForm.ShowDialog() = DialogResult.OK Then
+                ' Store payment details
+                payerName = paymentDetailsForm.PayerName
+                referenceNumber = paymentDetailsForm.ReferenceNumber
+                bankName = paymentDetailsForm.BankName
+
+                Debug.WriteLine($"Payment details captured:")
+                Debug.WriteLine($"  - Payer Name: {payerName}")
+                Debug.WriteLine($"  - Reference Number: {referenceNumber}")
+                If method = "Bank Transaction" Then
+                    Debug.WriteLine($"  - Bank Name: {bankName}")
+                End If
+            Else
+                ' User cancelled payment details - reset selection
+                selectedPaymentMethod = ""
+                lblSelectedPayment.Text = "Please select a payment method"
+                btnConfirm.Enabled = False
+                selectedButton.BackColor = Color.FromArgb(147, 53, 53)
+                payerName = ""
+                referenceNumber = ""
+                bankName = ""
+            End If
+        Else
+            ' Cash payment - no additional details needed
+            payerName = ""
+            referenceNumber = ""
+            bankName = ""
+        End If
     End Sub
 
     Private Sub btnConfirm_Click(sender As Object, e As EventArgs) Handles btnConfirm.Click
@@ -425,11 +465,12 @@ Public Class CheckoutForm
     Private Sub InsertRetailSalesReport(conn As SqlConnection, item As posForm.CartItem,
      effectivePrice As Decimal, itemTotal As Decimal,
         handledBy As Integer)
+        ' Use GETDATE() which includes both date and time components
         Dim query As String = "
 INSERT INTO RetailSalesReport
-            (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy)
-            VALUES
-   (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy)"
+ (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, PayerName, ReferenceNumber, BankName)
+  VALUES
+ (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @PayerName, @ReferenceNumber, @BankName)"
 
         Using cmd As New SqlCommand(query, conn)
             cmd.Parameters.AddWithValue("@ProductID", item.ProductID)
@@ -439,14 +480,23 @@ INSERT INTO RetailSalesReport
             cmd.Parameters.AddWithValue("@TotalAmount", itemTotal)
             cmd.Parameters.AddWithValue("@PaymentMethod", selectedPaymentMethod)
             cmd.Parameters.AddWithValue("@HandledBy", handledBy)
+
+            ' Add payment details (NULL for Cash)
+            cmd.Parameters.AddWithValue("@PayerName", If(String.IsNullOrWhiteSpace(payerName), DBNull.Value, payerName))
+            cmd.Parameters.AddWithValue("@ReferenceNumber", If(String.IsNullOrWhiteSpace(referenceNumber), DBNull.Value, referenceNumber))
+            cmd.Parameters.AddWithValue("@BankName", If(String.IsNullOrWhiteSpace(bankName), DBNull.Value, bankName))
+
+            ' Log the exact time being inserted
+            Debug.WriteLine($"Inserting retail sale at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}")
+
             cmd.ExecuteNonQuery()
         End Using
     End Sub
 
     Private Sub InsertWholesaleSalesReport(conn As SqlConnection, item As posForm.CartItem,
      effectivePrice As Decimal, itemTotal As Decimal,
-    handledBy As Integer)
-        Dim query As String = "INSERT INTO SalesReport (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, DeliveryStatus) VALUES (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, @DeliveryStatus)"
+  handledBy As Integer)
+        Dim query As String = "INSERT INTO SalesReport (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, DeliveryStatus, PayerName, ReferenceNumber, BankName) VALUES (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, @DeliveryStatus, @PayerName, @ReferenceNumber, @BankName)"
 
         Try
             Using cmd As New SqlCommand(query, conn)
@@ -487,6 +537,11 @@ INSERT INTO RetailSalesReport
                     Debug.WriteLine($"    - No delivery info stored")
                     Debug.WriteLine($"    - This item will NOT appear in delivery logs")
                 End If
+
+                ' Add payment details (NULL for Cash)
+                cmd.Parameters.Add("@PayerName", SqlDbType.NVarChar, 200).Value = If(String.IsNullOrWhiteSpace(payerName), DBNull.Value, payerName)
+                cmd.Parameters.Add("@ReferenceNumber", SqlDbType.NVarChar, 100).Value = If(String.IsNullOrWhiteSpace(referenceNumber), DBNull.Value, referenceNumber)
+                cmd.Parameters.Add("@BankName", SqlDbType.NVarChar, 200).Value = If(String.IsNullOrWhiteSpace(bankName), DBNull.Value, bankName)
 
                 cmd.ExecuteNonQuery()
                 Debug.WriteLine($"  ✓ Wholesale sale inserted successfully: ProductID={item.ProductID}, IsDelivery={isDelivery}")
@@ -625,8 +680,15 @@ INSERT INTO RetailSalesReport
                 End If
                 content.AppendLine(productName)
 
-                ' Quantity and price
-                content.AppendLine($"  {item.Quantity} x ₱{effectivePrice:N2} = ₱{itemTotal:N2}")
+                ' Quantity and price - include unit if kg
+                Dim quantityDisplay As String = item.Quantity.ToString()
+
+                ' Add unit type if it's kg (or any unit really)
+                If Not String.IsNullOrEmpty(item.Unit) Then
+                    quantityDisplay = $"{item.Quantity} {item.Unit}"
+                End If
+
+                content.AppendLine($"  {quantityDisplay} x ₱{effectivePrice:N2} = ₱{itemTotal:N2}")
 
                 ' Show discount if applicable
                 If item.DiscountPrice.HasValue Then
@@ -649,41 +711,21 @@ INSERT INTO RetailSalesReport
         End If
         content.AppendLine($"TOTAL AMOUNT:     ₱{totalAmount:N2}")
         content.AppendLine($"Payment Method: {selectedPaymentMethod}")
-        content.AppendLine("================================")
 
-        ' Delivery Information (if applicable)
-        If isDelivery AndAlso wholesaleItems.Count > 0 Then
+        ' Add payment details if GCash or Bank Transaction
+        If selectedPaymentMethod = "GCash" OrElse selectedPaymentMethod = "Bank Transaction" Then
             content.AppendLine()
             content.AppendLine("--------------------------------")
-            content.AppendLine("DELIVERY INFORMATION")
+            content.AppendLine("PAYMENT DETAILS")
             content.AppendLine("--------------------------------")
-            content.AppendLine($"Status: Pending")
-            content.AppendLine($"Address:")
-
-            ' Word wrap address for receipt width
-            Dim addressWords = deliveryAddress.Split(" "c)
-            Dim currentLine As String = ""
-            For Each word In addressWords
-                If (currentLine & " " & word).Length > 30 Then
-                    content.AppendLine($"  {currentLine.Trim()}")
-                    currentLine = word
-                Else
-                    currentLine &= " " & word
-                End If
-            Next
-            If currentLine.Length > 0 Then
-                content.AppendLine($"  {currentLine.Trim()}")
+            content.AppendLine($"Payer Name: {payerName}")
+            content.AppendLine($"Reference #: {referenceNumber}")
+            If selectedPaymentMethod = "Bank Transaction" Then
+                content.AppendLine($"Bank: {bankName}")
             End If
-            content.AppendLine()
-            content.AppendLine("Retail items: PICKUP")
-            content.AppendLine("Wholesale items: DELIVERY")
-        ElseIf wholesaleItems.Count > 0 Then
-            content.AppendLine()
-            content.AppendLine("--------------------------------")
-            content.AppendLine("PICKUP INFORMATION")
-            content.AppendLine("--------------------------------")
-            content.AppendLine("All items: PICKUP")
         End If
+
+        content.AppendLine("================================")
 
         ' Footer
         content.AppendLine()

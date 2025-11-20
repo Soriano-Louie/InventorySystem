@@ -10,6 +10,7 @@ Public Class categoriesForm
     Dim dt As New DataTable()
     Dim dv As New DataView()
     Dim bs As New BindingSource()
+
     ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
 
@@ -31,7 +32,6 @@ Public Class categoriesForm
         tableDataGridView.GridColor = Color.FromArgb(79, 51, 40)
 
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
-
 
         Button1.BackColor = Color.FromArgb(147, 53, 53)
         Button2.BackColor = Color.FromArgb(147, 53, 53)
@@ -119,7 +119,6 @@ Public Class categoriesForm
             Next
         End If
 
-
         ' Highlight the selected button (for whichever panel is active)
         Dim btn As Button = Nothing
         If sidePanel IsNot Nothing Then
@@ -149,6 +148,9 @@ Public Class categoriesForm
                 Case "Button4"
                     ShowSingleForm(Of deliveryLogsForm)()
                 Case "Button5"
+                    Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
+                    form.loadStockEditLogs()
+                Case "Button10"
                     Dim form = ShowSingleForm(Of salesReport)()
                     form.loadSalesReport()
                 Case "Button6"
@@ -174,10 +176,8 @@ Public Class categoriesForm
                     Dim form = ShowSingleForm(Of retailStockEditLogs)()
                     form.loadStockEditLogs()
                 Case "Button5"
-                    Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
-                    form.loadStockEditLogs()
-                Case "Button10"
-                    ShowSingleForm(Of retailSalesReport)()
+                    Dim form = ShowSingleForm(Of retailSalesReport)()
+                    form.loadSalesReport()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"
@@ -198,7 +198,7 @@ Public Class categoriesForm
             Me.Controls.Add(topPanel)
             Me.Controls.Add(sidePanel)
 
-            ' Attach event handler  
+            ' Attach event handler
             AddHandler sidePanel.ButtonClicked, AddressOf SidePanel_ButtonClicked
 
         ElseIf chooseDashboard2.globalPage.ToLower() = "retail" Then
@@ -398,7 +398,6 @@ Public Class categoriesForm
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Error)
             End If
-
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",

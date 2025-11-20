@@ -1,9 +1,10 @@
-﻿Imports System.Text
+﻿Imports System.Security.Cryptography
+Imports System.Text
 Imports Microsoft.Data.SqlClient
-Imports System.Security.Cryptography
 
 Public Class addUserForm
     Private parentForm As userManagementForm
+
     Public Sub New(parent As userManagementForm)
         InitializeComponent()
         Me.parentForm = parent
@@ -13,7 +14,6 @@ Public Class addUserForm
         Label1.ForeColor = Color.FromArgb(79, 51, 40)
 
         Label1.BackColor = Color.FromArgb(224, 166, 109)
-
 
         saveButton.BackColor = Color.FromArgb(224, 166, 109)
         cancelButton.BackColor = Color.FromArgb(224, 166, 109)
@@ -111,6 +111,23 @@ Public Class addUserForm
         End Try
     End Function
 
+    Private Function UsernameExists(username As String) As Boolean
+        Dim query As String = "SELECT COUNT(*) FROM Users WHERE Username = @Username"
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@Username", username)
+                    conn.Open()
+                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error checking username: " & ex.Message)
+            Return True ' Return True to prevent insertion if there's an error
+        End Try
+    End Function
+
     Private Function GetConnectionString() As String
         Return "Server=DESKTOP-3AKTMEV;Database=inventorySystem;User Id=sa;Password=24@Hakaaii07;TrustServerCertificate=True;"
     End Function
@@ -123,6 +140,17 @@ Public Class addUserForm
 
         If userRoleDropdown.SelectedValue Is Nothing Then
             MessageBox.Show("Please select a valid role from the list.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+
+        ' Check if username already exists
+        If UsernameExists(userNameText.Text.Trim()) Then
+            MessageBox.Show("This username is already taken. Please choose a different username.",
+              "Duplicate Username",
+              MessageBoxButtons.OK,
+    MessageBoxIcon.Warning)
+            userNameText.Focus()
+            userNameText.SelectAll()
             Return
         End If
 
@@ -228,4 +256,5 @@ Public Class addUserForm
             Return Nothing
         End If
     End Function
+
 End Class

@@ -1,10 +1,10 @@
-﻿Imports Microsoft.Data.SqlClient
-Imports Microsoft.Office.Interop
+﻿Imports System.Drawing.Drawing2D
+Imports System.IO
 Imports iTextSharp.text
 Imports iTextSharp.text.pdf
+Imports Microsoft.Data.SqlClient
+Imports Microsoft.Office.Interop
 Imports Document = iTextSharp.text.Document
-Imports System.Drawing.Drawing2D
-Imports System.IO
 
 Public Class retailStockEditLogs
     Dim topPanel As New topPanelControl()
@@ -186,7 +186,7 @@ Public Class retailStockEditLogs
     ''' Handle keyboard shortcuts for retail stock edit logs form
     ''' Enter = Search/Filter by date range
     ''' F5 = Reset filters
-  ''' </summary>
+    ''' </summary>
     Private Sub retailStockEditLogs_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         Select Case e.KeyCode
             Case Keys.Enter
@@ -217,7 +217,7 @@ Public Class retailStockEditLogs
         ' Clear any selected cells
         tableDataGridView.ClearSelection()
 
-    ' Reload all stock edit logs
+        ' Reload all stock edit logs
         loadStockEditLogs()
     End Sub
 
@@ -333,8 +333,8 @@ Public Class retailStockEditLogs
     End Sub
 
     Public Sub loadStockEditLogs()
-    Dim connString As String = GetConnectionString()
-    Dim query As String = "
+        Dim connString As String = GetConnectionString()
+        Dim query As String = "
             SELECT
                 rsel.logId AS 'Log ID',
                 rsel.editDate AS 'Edit Date',

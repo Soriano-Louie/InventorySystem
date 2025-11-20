@@ -14,6 +14,7 @@ Public Class posForm
         Public Property DiscountPrice As Decimal?
         Public Property CategoryID As Integer
         Public Property ProductType As String ' "Wholesale" or "Retail" - CRITICAL for delivery logic
+        Public Property Unit As String ' Unit type (kg, pcs, sack, etc.)
     End Class
 
     Private cartItems As New List(Of CartItem)()
@@ -385,7 +386,7 @@ Public Class posForm
     ''' Adds or updates a product in the cart and refreshes calculations
     ''' </summary>
     Public Sub AddProductToCart(productID As Integer, productName As String, quantity As Integer,
-    unitPrice As Decimal, categoryID As Integer, isVATApplicable As Boolean, Optional productType As String = "")
+ unitPrice As Decimal, categoryID As Integer, isVATApplicable As Boolean, Optional productType As String = "", Optional unit As String = "")
         ' Check if product already exists in cart
         Dim existingItem = cartItems.FirstOrDefault(Function(x) x.ProductID = productID)
 
@@ -398,17 +399,23 @@ Public Class posForm
                 productType = DetermineProductType(productID)
             End If
 
+            ' Get unit from database if not provided
+            If String.IsNullOrEmpty(unit) Then
+                unit = GetProductUnit(productID, productType)
+            End If
+
             ' Add new item
             Dim newItem As New CartItem With {
-                .ProductID = productID,
-                    .ProductName = productName,
-                .Quantity = quantity,
-                 .UnitPrice = unitPrice,
-                 .IsVATApplicable = isVATApplicable,
-               .CategoryID = categoryID,
-                    .DiscountPrice = GetDiscountPrice(productID, quantity),
-                .ProductType = productType
-                }
+      .ProductID = productID,
+  .ProductName = productName,
+     .Quantity = quantity,
+   .UnitPrice = unitPrice,
+     .IsVATApplicable = isVATApplicable,
+       .CategoryID = categoryID,
+       .DiscountPrice = GetDiscountPrice(productID, quantity),
+  .ProductType = productType,
+         .Unit = unit
+          }
             cartItems.Add(newItem)
         End If
 
@@ -416,6 +423,33 @@ Public Class posForm
         RefreshDataGridView()
         CalculateAllTotals()
     End Sub
+
+    ''' <summary>
+    ''' Gets the unit type for a product from the database
+    ''' </summary>
+    Private Function GetProductUnit(productID As Integer, productType As String) As String
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+
+                Dim tableName As String = If(productType = "Wholesale", "wholesaleProducts", "retailProducts")
+                Dim query As String = $"SELECT Unit FROM {tableName} WHERE ProductID = @ProductID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim result = cmd.ExecuteScalar()
+
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        Return result.ToString()
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("Error getting product unit: " & ex.Message)
+        End Try
+
+        Return "" ' Return empty string if unit not found
+    End Function
 
     ''' <summary>
     ''' Determines product type by checking which table contains the ProductID

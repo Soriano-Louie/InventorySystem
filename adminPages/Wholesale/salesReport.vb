@@ -1,12 +1,11 @@
 ﻿Imports System.Drawing.Drawing2D
-Imports System.Drawing.Printing
 Imports System.IO
-Imports System.Reflection.Metadata
 Imports Microsoft.Data.SqlClient
 Imports Microsoft.Office.Interop
 Imports iTextSharp.text
 Imports iTextSharp.text.pdf
 Imports Document = iTextSharp.text.Document
+Imports ITextFont = iTextSharp.text.Font ' Alias for iTextSharp font
 
 Public Class salesReport
 
@@ -59,6 +58,9 @@ Public Class salesReport
 
         ' Enable keyboard shortcuts
         Me.KeyPreview = True
+
+        ' Add cell click event handler
+        AddHandler tableDataGridView.CellClick, AddressOf TableDataGridView_CellClick
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -173,23 +175,22 @@ Public Class salesReport
     Public Sub loadSalesReport()
         Dim connStr As String = GetConnectionString()
         Dim query As String = "
-        SELECT
-            sr.SaleID,
-            sr.SaleDate,
-            p.ProductName,
-            p.unit,
-            c.CategoryName,
-            sr.QuantitySold,
-            sr.UnitPrice,
-            sr.TotalAmount,
-            sr.PaymentMethod,
-            u.username AS HandledBy
-        FROM SalesReport sr
-        INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
-        INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-        INNER JOIN Users u ON sr.HandledBy = u.userID
-        ORDER BY sr.SaleDate DESC
-    "
+SELECT
+    sr.SaleID,
+    sr.SaleDate,
+    p.ProductName,
+    p.unit,
+    c.CategoryName,
+    sr.QuantitySold,
+    sr.UnitPrice,
+ sr.TotalAmount,
+    sr.PaymentMethod,
+    u.username AS HandledBy
+FROM SalesReport sr
+INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+INNER JOIN Users u ON sr.HandledBy = u.userID
+ORDER BY sr.SaleDate DESC"
 
         Try
             Using conn As New SqlConnection(connStr)
@@ -266,6 +267,187 @@ Public Class salesReport
         End Select
     End Sub
 
+    ''' <summary>
+    ''' Handle cell click to show detailed sale information
+    ''' </summary>
+    Private Sub TableDataGridView_CellClick(sender As Object, e As DataGridViewCellEventArgs)
+        ' Ignore header clicks
+        If e.RowIndex < 0 Then Return
+
+        Try
+            ' Get the selected row
+            Dim row As DataGridViewRow = tableDataGridView.Rows(e.RowIndex)
+
+            ' Get Sale ID from the row
+            Dim saleID As Integer = Convert.ToInt32(row.Cells("SaleID").Value)
+
+            ' Show detailed information
+            ShowSaleDetails(saleID)
+        Catch ex As Exception
+            MessageBox.Show($"Error displaying sale details: {ex.Message}", "Error",
+            MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Display detailed information for a wholesale sale
+    ''' </summary>
+    Private Sub ShowSaleDetails(saleID As Integer)
+        Try
+            Dim connStr As String = GetConnectionString()
+            Dim detailsText As New System.Text.StringBuilder()
+
+            Using conn As New SqlConnection(connStr)
+                conn.Open()
+
+                ' Query to get complete sale details including payment and delivery information
+                Dim query As String = "
+SELECT
+    sr.SaleID,
+sr.SaleDate,
+    p.ProductName,
+    p.SKU,
+    p.unit AS Unit,
+    c.CategoryName,
+    sr.QuantitySold,
+    sr.UnitPrice,
+    sr.TotalAmount,
+    sr.PaymentMethod,
+    u.username AS HandledBy,
+sr.IsDelivery,
+    sr.DeliveryAddress,
+ sr.DeliveryStatus,
+    sr.PayerName,
+    sr.ReferenceNumber,
+    sr.BankName,
+    ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+    sr.RefundDate,
+    sr.RefundReason
+FROM SalesReport sr
+INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+INNER JOIN Users u ON sr.HandledBy = u.userID
+WHERE sr.SaleID = @SaleID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@SaleID", saleID)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            Dim isRefunded As Boolean = Convert.ToBoolean(reader("IsRefunded"))
+
+                            detailsText.AppendLine("=======================================")
+                            detailsText.AppendLine(vbTab & vbTab & "WHOLESALE SALE DETAILS")
+                            detailsText.AppendLine("=======================================")
+                            detailsText.AppendLine()
+
+                            If isRefunded Then
+                                detailsText.AppendLine("*** REFUNDED TRANSACTION ***")
+                                detailsText.AppendLine()
+                            End If
+
+                            detailsText.AppendLine("Transaction Information:")
+                            detailsText.AppendLine("----------------------------------------")
+                            detailsText.AppendLine($"Sale ID: {reader("SaleID")}")
+                            detailsText.AppendLine($"Date: {Convert.ToDateTime(reader("SaleDate")):MMMM dd, yyyy}")
+                            detailsText.AppendLine($"Time: {Convert.ToDateTime(reader("SaleDate")):hh:mm:ss tt}")
+                            detailsText.AppendLine($"Handled By: {reader("HandledBy")}")
+
+                            ' Transaction Type
+                            Dim isDelivery As Object = reader("IsDelivery")
+                            Dim transactionType As String
+                            If IsDBNull(isDelivery) Then
+                                transactionType = "In-Store"
+                            ElseIf Convert.ToBoolean(isDelivery) Then
+                                transactionType = "Delivery"
+                            Else
+                                transactionType = "Pickup"
+                            End If
+                            detailsText.AppendLine($"Type: {transactionType}")
+                            detailsText.AppendLine()
+
+                            detailsText.AppendLine("Product Information:")
+                            detailsText.AppendLine("----------------------------------------")
+                            detailsText.AppendLine($"Product: {reader("ProductName")}")
+                            detailsText.AppendLine($"SKU: {reader("SKU")}")
+                            detailsText.AppendLine($"Category: {reader("CategoryName")}")
+                            detailsText.AppendLine($"Unit: {reader("Unit")}")
+                            detailsText.AppendLine()
+
+                            detailsText.AppendLine("Pricing Information:")
+                            detailsText.AppendLine("----------------------------------------")
+                            detailsText.AppendLine($"Quantity Sold: {reader("QuantitySold")}")
+                            detailsText.AppendLine($"Unit Price: P{Convert.ToDecimal(reader("UnitPrice")):N2}")
+                            detailsText.AppendLine($"Total Amount: P{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                            detailsText.AppendLine()
+
+                            detailsText.AppendLine("Payment Information:")
+                            detailsText.AppendLine("----------------------------------------")
+                            Dim paymentMethod As String = reader("PaymentMethod").ToString()
+                            detailsText.AppendLine($"Payment Method: {paymentMethod}")
+
+                            ' Payment details for GCash and Bank Transaction
+                            If paymentMethod = "GCash" OrElse paymentMethod = "Bank Transaction" Then
+                                If Not IsDBNull(reader("PayerName")) Then
+                                    detailsText.AppendLine($"Payer Name: {reader("PayerName")}")
+                                End If
+                                If Not IsDBNull(reader("ReferenceNumber")) Then
+                                    detailsText.AppendLine($"Reference Number: {reader("ReferenceNumber")}")
+                                End If
+                                If paymentMethod = "Bank Transaction" AndAlso Not IsDBNull(reader("BankName")) Then
+                                    detailsText.AppendLine($"Bank Name: {reader("BankName")}")
+                                End If
+                            End If
+                            detailsText.AppendLine()
+
+                            ' Delivery Information (if applicable)
+                            If transactionType = "Delivery" Then
+                                detailsText.AppendLine("Delivery Information:")
+                                detailsText.AppendLine("----------------------------------------")
+                                If Not IsDBNull(reader("DeliveryAddress")) Then
+                                    detailsText.AppendLine($"Address: {reader("DeliveryAddress")}")
+                                End If
+                                If Not IsDBNull(reader("DeliveryStatus")) Then
+                                    detailsText.AppendLine($"Status: {reader("DeliveryStatus")}")
+                                End If
+                                detailsText.AppendLine()
+                            End If
+
+                            ' Refund Information (if applicable)
+                            If isRefunded Then
+                                detailsText.AppendLine("Refund Information:")
+                                detailsText.AppendLine("----------------------------------------")
+                                If Not IsDBNull(reader("RefundDate")) Then
+                                    detailsText.AppendLine($"Refund Date: {Convert.ToDateTime(reader("RefundDate")):MMMM dd, yyyy hh:mm tt}")
+                                End If
+                                If Not IsDBNull(reader("RefundReason")) Then
+                                    detailsText.AppendLine($"Refund Reason: {reader("RefundReason")}")
+                                End If
+                                detailsText.AppendLine($"Refunded Amount: P{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                                detailsText.AppendLine()
+                            End If
+
+                            detailsText.AppendLine("=======================================")
+
+                            Dim title As String = If(isRefunded,
+           $"Sale Details (REFUNDED) - #{saleID}",
+         $"Sale Details - #{saleID}")
+
+                            MessageBox.Show(detailsText.ToString(), title,
+     MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        Else
+                            MessageBox.Show("Sale record not found.", "Not Found",
+ MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error loading sale details: {ex.Message}", "Error",
+   MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     Private Sub SetRoundedRegion2(ctrl As Control, radius As Integer)
         Dim rect As New System.Drawing.Rectangle(0, 0, ctrl.Width, ctrl.Height)
         Using path As GraphicsPath = GetRoundedRectanglePath2(rect, radius)
@@ -278,25 +460,16 @@ Public Class salesReport
         Dim diameter As Integer = radius * 2
 
         path.StartFigure()
-
-        ' Top edge
         path.AddLine(rect.X + radius, rect.Y, rect.Right - radius, rect.Y)
-        ' Top-right corner
         path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90)
-        ' Right edge
         path.AddLine(rect.Right, rect.Y + radius, rect.Right, rect.Bottom - radius)
-        ' Bottom-right corner
         path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
-        ' Bottom edge
         path.AddLine(rect.Right - radius, rect.Bottom, rect.X + radius, rect.Bottom)
-        ' Bottom-left corner
         path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90)
-        ' Left edge
         path.AddLine(rect.X, rect.Bottom - radius, rect.X, rect.Y + radius)
-        ' Top-left corner
         path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90)
-
         path.CloseFigure()
+
         Return path
     End Function
 
@@ -304,13 +477,10 @@ Public Class salesReport
         placeholders(tb) = text
         tb.Text = text
         tb.ForeColor = Color.Gray
-
-        ' Attach shared events
         AddHandler tb.GotFocus, AddressOf RemovePlaceholder
         AddHandler tb.LostFocus, AddressOf RestorePlaceholder
     End Sub
 
-    ' When the user clicks/focuses the TextBox
     Private Sub RemovePlaceholder(sender As Object, e As EventArgs)
         Dim tb As TextBox = DirectCast(sender, TextBox)
         If tb.Text = placeholders(tb) Then
@@ -319,7 +489,6 @@ Public Class salesReport
         End If
     End Sub
 
-    ' When the TextBox loses focus
     Private Sub RestorePlaceholder(sender As Object, e As EventArgs)
         Dim tb As TextBox = DirectCast(sender, TextBox)
         If String.IsNullOrWhiteSpace(tb.Text) Then
@@ -328,15 +497,72 @@ Public Class salesReport
         End If
     End Sub
 
+    Private Sub SetVATRate()
+        Try
+            Dim currentVAT As Decimal = GetCurrentVATRate()
+            Dim input As String = InputBox($"Enter VAT Rate (%):{vbCrLf}Current VAT: {currentVAT:N2}%",
+     "Set VAT Rate", currentVAT.ToString())
+
+            If String.IsNullOrWhiteSpace(input) Then Return
+
+            Dim newVATRate As Decimal
+            If Not Decimal.TryParse(input, newVATRate) Then
+                MessageBox.Show("Please enter a valid numeric value for VAT rate.",
+ "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            If newVATRate < 0 OrElse newVATRate > 100 Then
+                MessageBox.Show("VAT rate must be between 0 and 100.",
+   "Invalid Range", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            If SaveVATRate(newVATRate) Then
+                MessageBox.Show($"VAT rate successfully set to {newVATRate:N2}%",
+      "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Error setting VAT rate: {ex.Message}",
+   "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Function GetCurrentVATRate() As Decimal
+        Return SharedUtilities.GetCurrentVATRate()
+    End Function
+
+    Private Function SaveVATRate(vatRate As Decimal) As Boolean
+        Try
+            Dim errorMessage As String = String.Empty
+            Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
+
+            If Not success Then
+                If Not String.IsNullOrEmpty(errorMessage) Then
+                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
+     "Error Details", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Else
+                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
+   "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
+            End If
+
+            Return success
+        Catch ex As Exception
+            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
+        "Critical Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
+
     Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
-        'reset place holder if focused to not interfere with search
         Dim placeholder = ""
         If placeholders.ContainsKey(TextBoxSearch) Then
             placeholder = placeholders(TextBoxSearch)
         End If
 
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
-            bs.Filter = ""   ' Show all rows
+            bs.Filter = ""
         Else
             bs.Filter = String.Format("ProductName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
@@ -345,44 +571,38 @@ Public Class salesReport
     Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
         Using con As New SqlConnection(GetConnectionString())
             Dim query As String = "
-            SELECT
-                sr.SaleID,
-                sr.SaleDate,
-                p.ProductName,
-                c.CategoryName,
-                sr.QuantitySold,
-                sr.UnitPrice,
-                sr.TotalAmount,
-                sr.PaymentMethod,
-                u.username AS HandledBy
-            FROM SalesReport sr
-            INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
-            INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-            INNER JOIN Users u ON sr.HandledBy = u.userID
-            WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
-            ORDER BY sr.SaleDate DESC"
+SELECT
+    sr.SaleID,
+    sr.SaleDate,
+    p.ProductName,
+    c.CategoryName,
+  sr.QuantitySold,
+    sr.UnitPrice,
+    sr.TotalAmount,
+    sr.PaymentMethod,
+    u.username AS HandledBy
+FROM SalesReport sr
+INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
+INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+INNER JOIN Users u ON sr.HandledBy = u.userID
+WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
+ORDER BY sr.SaleDate DESC"
 
             Using cmd As New SqlCommand(query, con)
                 cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
                 cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date)
 
                 Dim da As New SqlDataAdapter(cmd)
-                dt.Clear()                ' reuse class-level dt (mybase load) to keep the same binding
-                da.Fill(dt)               ' fills the same dt bound to dv/bs/grid
+                dt.Clear()
+                da.Fill(dt)
             End Using
         End Using
     End Sub
 
-    ' Reset button (show all records + reset pickers)
     Private Sub btnReset_Click(sender As Object, e As EventArgs) Handles resetButton.Click
-        ' Reset the DateTimePickers to today's date
         DateTimePickerFrom.Value = DateTime.Today
         DateTimePickerTo.Value = DateTime.Today
-
-        ' Clear any selected cells
         tableDataGridView.ClearSelection()
-
-        ' Reload all records
         loadSalesReport()
     End Sub
 
@@ -392,33 +612,28 @@ Public Class salesReport
             Dim workbook As Excel.Workbook = excelApp.Workbooks.Add()
             Dim worksheet As Excel.Worksheet = workbook.Sheets(1)
 
-            ' Export column headers
             For col As Integer = 0 To tableDataGridView.Columns.Count - 1
                 worksheet.Cells(1, col + 1) = tableDataGridView.Columns(col).HeaderText
             Next
 
-            ' Format header row
             Dim headerRange As Excel.Range = worksheet.Range("A1", worksheet.Cells(1, tableDataGridView.Columns.Count))
             headerRange.Font.Bold = True
             headerRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter
             headerRange.Interior.Color = RGB(230, 216, 177)
-            ' Export rows
+
             For row As Integer = 0 To tableDataGridView.Rows.Count - 1
                 For col As Integer = 0 To tableDataGridView.Columns.Count - 1
                     worksheet.Cells(row + 2, col + 1) = tableDataGridView.Rows(row).Cells(col).Value
                 Next
             Next
 
-            ' Save file
             Dim saveDialog As New SaveFileDialog()
             saveDialog.Filter = "Excel Files|*.xlsx"
             saveDialog.FileName = "SalesReport.xlsx"
 
             If saveDialog.ShowDialog() = DialogResult.OK Then
-                ' Auto fit columns and rows before saving
                 worksheet.Columns.AutoFit()
                 worksheet.Rows.AutoFit()
-
                 workbook.SaveAs(saveDialog.FileName)
                 workbook.Close()
                 excelApp.Quit()
@@ -439,15 +654,13 @@ Public Class salesReport
                 Dim pdfTable As New PdfPTable(tableDataGridView.Columns.Count)
                 pdfTable.WidthPercentage = 100
 
-                ' Set equal column widths
                 Dim widths(tableDataGridView.Columns.Count - 1) As Single
                 For i As Integer = 0 To widths.Length - 1
-                    widths(i) = 1 ' all equal weight
+                    widths(i) = 1
                 Next
                 pdfTable.SetWidths(widths)
 
-                ' Add styled headers
-                Dim headerFont As Font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.BLACK)
+                Dim headerFont As ITextFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.BLACK)
                 For Each column As DataGridViewColumn In tableDataGridView.Columns
                     Dim headerCell As New PdfPCell(New Phrase(column.HeaderText, headerFont))
                     headerCell.BackgroundColor = BaseColor.LIGHT_GRAY
@@ -455,8 +668,7 @@ Public Class salesReport
                     pdfTable.AddCell(headerCell)
                 Next
 
-                ' Add data rows
-                Dim cellFont As Font = FontFactory.GetFont(FontFactory.HELVETICA, 9, BaseColor.BLACK)
+                Dim cellFont As ITextFont = FontFactory.GetFont(FontFactory.HELVETICA, 9, BaseColor.BLACK)
                 For Each row As DataGridViewRow In tableDataGridView.Rows
                     If Not row.IsNewRow Then
                         For Each cell As DataGridViewCell In row.Cells
@@ -467,7 +679,6 @@ Public Class salesReport
                     End If
                 Next
 
-                ' Write file
                 Using stream As New FileStream(saveDialog.FileName, FileMode.Create)
                     Dim pdfDoc As New Document(PageSize.A4, 10, 10, 10, 10)
                     PdfWriter.GetInstance(pdfDoc, stream)
@@ -491,90 +702,5 @@ Public Class salesReport
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         ExportToPDF()
     End Sub
-
-    Private Sub SetVATRate()
-        Try
-            ' Get current VAT rate from database
-            Dim currentVAT As Decimal = GetCurrentVATRate()
-
-            ' Show input box with current VAT rate
-            Dim input As String = InputBox($"Enter VAT Rate (%):{vbCrLf}Current VAT: {currentVAT:N2}%",
-                                          "Set VAT Rate",
-                                          currentVAT.ToString())
-
-            ' Check if user cancelled
-            If String.IsNullOrWhiteSpace(input) Then
-                Return
-            End If
-
-            ' Validate input
-            Dim newVATRate As Decimal
-            If Not Decimal.TryParse(input, newVATRate) Then
-                MessageBox.Show("Please enter a valid numeric value for VAT rate.",
-                              "Invalid Input",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Warning)
-                Return
-            End If
-
-            ' Validate range (0 to 100)
-            If newVATRate < 0 OrElse newVATRate > 100 Then
-                MessageBox.Show("VAT rate must be between 0 and 100.",
-                              "Invalid Range",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Warning)
-                Return
-            End If
-
-            ' Save to database
-            If SaveVATRate(newVATRate) Then
-                MessageBox.Show($"VAT rate successfully set to {newVATRate:N2}%",
-                              "Success",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Information)
-            End If
-            ' Note: Error message is now displayed in SaveVATRate function
-        Catch ex As Exception
-            MessageBox.Show($"Error setting VAT rate: {ex.Message}",
-                          "Error",
-                          MessageBoxButtons.OK,
-                          MessageBoxIcon.Error)
-        End Try
-    End Sub
-
-    Private Function GetCurrentVATRate() As Decimal
-        Return SharedUtilities.GetCurrentVATRate()
-    End Function
-
-    Private Function SaveVATRate(vatRate As Decimal) As Boolean
-        Try
-            Dim errorMessage As String = String.Empty
-            Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
-
-            If Not success Then
-                ' Display detailed error or generic message
-                If Not String.IsNullOrEmpty(errorMessage) Then
-                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
-  "Error Details",
-             MessageBoxButtons.OK,
-    MessageBoxIcon.Error)
-                Else
-                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
-                                    "Error",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error)
-                End If
-            End If
-
-            Return success
-        Catch ex As Exception
-            ' Catch any unexpected errors in this wrapper function
-            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
-            "Critical Error",
-               MessageBoxButtons.OK,
-                   MessageBoxIcon.Error)
-            Return False
-        End Try
-    End Function
 
 End Class

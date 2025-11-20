@@ -1,9 +1,10 @@
-﻿Imports Microsoft.Data.SqlClient
+﻿Imports System.IO
+Imports Microsoft.Data.SqlClient
 Imports QRCoder
-Imports System.IO
 
 Public Class editItemRetail
     Private parentForm As inventoryRetail
+
     Public Sub New(parent As inventoryRetail)
 
         ' This call is required by the designer.
@@ -15,7 +16,6 @@ Public Class editItemRetail
         Label1.ForeColor = Color.FromArgb(79, 51, 40)
 
         Label1.BackColor = Color.FromArgb(224, 166, 109)
-
 
         updateButton.BackColor = Color.FromArgb(224, 166, 109)
         cancelButton.BackColor = Color.FromArgb(224, 166, 109)
@@ -77,7 +77,6 @@ Public Class editItemRetail
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading categories: " & ex.Message)
         End Try
@@ -104,7 +103,6 @@ Public Class editItemRetail
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading products: " & ex.Message)
         End Try
@@ -123,7 +121,7 @@ Public Class editItemRetail
 
         Dim query As String = "
         UPDATE retailProducts
-        SET 
+        SET
             ProductName    = COALESCE(@ProductName, ProductName),
             CategoryID     = COALESCE(@CategoryID, CategoryID),
             StockQuantity  = COALESCE(@Quantity, StockQuantity),
@@ -226,9 +224,9 @@ Public Class editItemRetail
         ' Now insert the new batch with the new QR code
         Using conn As New SqlConnection(connString)
             conn.Open()
-            Dim insertQuery As String = "INSERT INTO retailProducts 
-                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage) 
-                               VALUES 
+            Dim insertQuery As String = "INSERT INTO retailProducts
+                               (SKU, ProductName, Unit, RetailPrice, Cost, StockQuantity, ReorderLevel, ExpirationDate, CategoryID, QRCodeImage)
+                               VALUES
                                (@SKU, @ProductName, @Unit, @RetailPrice, @Cost, @StockQuantity, @ReorderLevel, @ExpirationDate, @CategoryID, @QRCodeImage)"
 
             Using cmd As New SqlCommand(insertQuery, conn)
@@ -272,9 +270,9 @@ Public Class editItemRetail
 
         Using conn As New SqlConnection(connString)
             conn.Open()
-            Dim logQuery As String = "INSERT INTO retailStockEditLogs 
-                                     (retailProductId, oldQuantity, newQuantity, unitType, editedBy, editReason, editDate) 
-                                     VALUES 
+            Dim logQuery As String = "INSERT INTO retailStockEditLogs
+                                     (retailProductId, oldQuantity, newQuantity, unitType, editedBy, editReason, editDate)
+                                     VALUES
                                      (@ProductID, @OldQty, @NewQty, @UnitType, @EditedBy, @EditReason, GETDATE())"
 
             Using cmd As New SqlCommand(logQuery, conn)
@@ -414,7 +412,7 @@ Public Class editItemRetail
 
         ' 4. Handle quantity edit with batch tracking and logging
         If isQuantityEdit Then
-            ' Get user ID 
+            ' Get user ID
             Dim currentUserID As Integer = GetCurrentUserID()
 
             ' Ensure user is logged in

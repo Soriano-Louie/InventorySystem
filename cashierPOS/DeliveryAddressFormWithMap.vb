@@ -1,4 +1,3 @@
-Imports Microsoft.Data.SqlClient
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 

@@ -1,9 +1,8 @@
 Imports AForge.Video
 Imports AForge.Video.DirectShow
+Imports Microsoft.Data.SqlClient
 Imports ZXing
 Imports ZXing.Windows.Compatibility
-Imports Microsoft.Data.SqlClient
-Imports System.Drawing.Imaging
 
 Public Class QRScannerForm
     Inherits Form
@@ -19,6 +18,7 @@ Public Class QRScannerForm
 
     ' Controls
     Private WithEvents pictureBoxCamera As PictureBox
+
     Private WithEvents labelStatus As Label
     Private WithEvents btnClose As Button
 
@@ -218,7 +218,6 @@ Public Class QRScannerForm
                 isScanning = True
                 isProcessing = False
             End If
-
         Catch ex As Exception
             MessageBox.Show("Error processing QR code: " & ex.Message, "Error",
     MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -240,9 +239,9 @@ Public Class QRScannerForm
 
                 ' Query wholesale products first with product type
                 Dim wholesaleQuery As String = "
-         SELECT ProductID, ProductName, RetailPrice, CategoryID, 
+         SELECT ProductID, ProductName, RetailPrice, CategoryID,
            ISNULL(IsVATApplicable, 0) AS IsVATApplicable, QRCodeImage, 'Wholesale' AS ProductType
-        FROM wholesaleProducts 
+        FROM wholesaleProducts
                WHERE QRCodeImage IS NOT NULL"
 
                 Using cmd As New SqlCommand(wholesaleQuery, conn)
@@ -286,7 +285,7 @@ Public Class QRScannerForm
                     Dim retailQuery As String = "
   SELECT ProductID, ProductName, RetailPrice, CategoryID,
       ISNULL(IsVATApplicable, 0) AS IsVATApplicable, QRCodeImage, 'Retail' AS ProductType
-  FROM retailProducts 
+  FROM retailProducts
            WHERE QRCodeImage IS NOT NULL"
 
                     Using cmd As New SqlCommand(retailQuery, conn)
@@ -403,4 +402,5 @@ Public Class QRScannerForm
         Public Property IsVATApplicable As Boolean
         Public Property ProductType As String = "" ' "Wholesale" or "Retail"
     End Class
+
 End Class

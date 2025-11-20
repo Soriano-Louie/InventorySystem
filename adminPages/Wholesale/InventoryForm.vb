@@ -1,7 +1,7 @@
 ﻿Imports System.Drawing.Drawing2D
+Imports System.Drawing.Printing
 Imports System.IO
 Imports Microsoft.Data.SqlClient
-Imports System.Drawing.Printing
 
 Public Class InventoryForm
     Dim topPanel As New topPanelControl()
@@ -12,11 +12,18 @@ Public Class InventoryForm
     Dim dv As New DataView()
     Dim bs As New BindingSource()
 
+    ' Track if we're showing summary or detail view
+    Private isShowingDetailView As Boolean = False
+
+    Private currentSelectedProductName As String = ""
+
+    ' Back to Summary button
+    Private WithEvents btnBackToSummary As New Button()
+
     Private WithEvents printDoc As New PrintDocument
     Private WithEvents printDocAll As New PrintDocument
 
     Public Sub New()
-
         ' This call is required by the designer.
         InitializeComponent()
 
@@ -35,7 +42,6 @@ Public Class InventoryForm
 
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
 
-
         Button1.BackColor = Color.FromArgb(147, 53, 53)
         Button2.BackColor = Color.FromArgb(147, 53, 53)
         Button1.ForeColor = Color.FromArgb(230, 216, 177)
@@ -48,6 +54,44 @@ Public Class InventoryForm
         tableDataGridView.AllowUserToDeleteRows = False
         tableDataGridView.RowHeadersVisible = False
         tableDataGridView.TabStop = False
+
+        ' Initialize Back to Summary button
+        InitializeBackButton()
+
+        ' Add cell click event handler for expanding product batches
+        AddHandler tableDataGridView.CellClick, AddressOf TableDataGridView_RowClick
+    End Sub
+
+    ''' Initialize the Back to Summary button
+    Private Sub InitializeBackButton()
+        With btnBackToSummary
+            .Text = "← Back to Summary"
+            .Size = New Size(160, 40)
+            .BackColor = Color.FromArgb(147, 53, 53)
+            .ForeColor = Color.FromArgb(230, 216, 177)
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Cursor = Cursors.Hand
+            .Visible = False ' Hidden by default
+            .FlatStyle = FlatStyle.Flat
+            .FlatAppearance.BorderSize = 0
+            .AutoSize = False
+        End With
+
+        ' Position it near the top-left of the data grid
+        btnBackToSummary.Location = New Point(tableDataGridView.Left + 250, tableDataGridView.Top - -50)
+
+        Me.Controls.Add(btnBackToSummary)
+        btnBackToSummary.BringToFront()
+
+        ' Round the corners
+        SetRoundedRegion2(btnBackToSummary, 15)
+    End Sub
+
+    ''' <summary>
+    ''' Handle Back to Summary button click
+    ''' </summary>
+    Private Sub btnBackToSummary_Click(sender As Object, e As EventArgs) Handles btnBackToSummary.Click
+        LoadProducts()
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -100,14 +144,8 @@ Public Class InventoryForm
     End Function
 
     Private Sub ChildFormClosed(sender As Object, e As FormClosedEventArgs)
-
         ' No need to call HighlightButton here
-
     End Sub
-
-    'Private Sub InventoryForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-    '    Application.Exit()
-    'End Sub
 
     Private Sub HighlightButton(buttonName As String)
         ' Reset all buttons
@@ -154,54 +192,126 @@ Public Class InventoryForm
                 SetVATRate()
         End Select
     End Sub
+
     Private Function GetConnectionString() As String
         Return SharedUtilities.GetConnectionString()
     End Function
 
+    ''' Load products in aggregated summary view (one row per product name)
     Public Sub LoadProducts()
         Dim connString As String = GetConnectionString()
+
+        ' Query to get aggregated product summary
         Dim query As String = "
-            SELECT p.SKU, 
-                   p.ProductName,
-                   c.CategoryName,
-                   p.unit, 
-                   p.retailPrice, 
-                   p.cost, 
-                   p.StockQuantity, 
-                   p.ReorderLevel, 
-                   p.expirationDate, 
-                   p.QRCodeImage
-            FROM wholesaleProducts p
-            INNER JOIN Categories c ON p.CategoryID = c.CategoryID
-            ORDER BY 
-            CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END, 
-            p.expirationDate ASC"
-
-
-        'Using conn As New SqlConnection(connString)
-        '    Using cmd As New SqlCommand(query, conn)
-        '        ' Create a Data Adapter
-        '        Using adapter As New SqlDataAdapter(cmd)
-        '            Dim dt As New DataTable()
-        '            Try
-        '                adapter.Fill(dt)
-        '                tableDataGridView.DataSource = dt
-        '            Catch ex As Exception
-        '                MessageBox.Show("Error retrieving data: " & ex.Message)
-        '            End Try
-        '        End Using
-        '    End Using
-        'End Using
+        SELECT
+        p.ProductName,
+        c.CategoryName,
+        SUM(p.StockQuantity) AS TotalQuantity,
+        COUNT(*) AS BatchCount
+        FROM wholesaleProducts p
+        INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+        GROUP BY p.ProductName, c.CategoryName
+        ORDER BY p.ProductName"
 
         Try
             Using conn As New SqlConnection(connString)
                 Using da As New SqlDataAdapter(query, conn)
-                    dt.Clear() ' clear old data
+                    dt.Clear()
                     da.Fill(dt)
                 End Using
             End Using
 
-            ' add extra column for QR hex
+            ' Reset to summary view
+            isShowingDetailView = False
+            currentSelectedProductName = ""
+
+            ' Hide back button in summary view
+            btnBackToSummary.Visible = False
+
+            ' Re-bind DataView and BindingSource
+            dv = New DataView(dt)
+            bs.DataSource = dv
+            tableDataGridView.DataSource = bs
+
+            ' Configure headers for summary view
+            With tableDataGridView
+                .EnableHeadersVisualStyles = False
+                .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
+
+                ' Ensure only summary columns are visible
+                For Each col As DataGridViewColumn In .Columns
+                    ' Hide all columns first
+                    col.Visible = False
+                Next
+
+                ' Show only summary columns
+                If .Columns.Contains("ProductName") Then
+                    .Columns("ProductName").HeaderText = "Product Name (Click to view batches)"
+                    .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
+                    .Columns("ProductName").Visible = True
+                End If
+
+                If .Columns.Contains("CategoryName") Then
+                    .Columns("CategoryName").HeaderText = "Category"
+                    .Columns("CategoryName").Visible = True
+                End If
+
+                If .Columns.Contains("TotalQuantity") Then
+                    .Columns("TotalQuantity").HeaderText = "Total Stock"
+                    .Columns("TotalQuantity").Visible = True
+                End If
+
+                If .Columns.Contains("BatchCount") Then
+                    .Columns("BatchCount").HeaderText = "# of Batches"
+                    .Columns("BatchCount").Visible = True
+                End If
+            End With
+
+            tableDataGridView.Refresh()
+        Catch ex As Exception
+            MessageBox.Show("Error loading data: " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Load detailed batch view for a specific product name
+    ''' </summary>
+    Private Sub LoadProductBatches(productName As String)
+        Dim connString As String = GetConnectionString()
+
+        ' Query to get all batches for the selected product
+        Dim query As String = "
+          SELECT
+        p.SKU,
+        p.ProductName,
+        c.CategoryName,
+        p.unit,
+        p.retailPrice,
+        p.cost,
+        p.StockQuantity,
+        p.ReorderLevel,
+        p.expirationDate,
+        p.QRCodeImage
+        FROM wholesaleProducts p
+        INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+        WHERE p.ProductName = @ProductName
+        ORDER BY
+        CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END,
+        p.expirationDate ASC"
+
+        Try
+            Using conn As New SqlConnection(connString)
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductName", productName)
+
+                    Using da As New SqlDataAdapter(cmd)
+                        dt.Clear()
+                        da.Fill(dt)
+                    End Using
+                End Using
+            End Using
+
+            ' Add QR Code Hex column
             If Not dt.Columns.Contains("QR Code Hex") Then
                 dt.Columns.Add("QR Code Hex", GetType(String))
             End If
@@ -213,31 +323,161 @@ Public Class InventoryForm
                 End If
             Next
 
+            ' Mark as detail view
+            isShowingDetailView = True
+            currentSelectedProductName = productName
+
+            ' Show back button in detail view
+            btnBackToSummary.Visible = True
+            btnBackToSummary.BringToFront()
+
             ' Re-bind DataView and BindingSource
             dv = New DataView(dt)
             bs.DataSource = dv
             tableDataGridView.DataSource = bs
 
-            ' rename headers
+            ' Configure headers for detail view
             With tableDataGridView
                 .EnableHeadersVisualStyles = False
                 .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
-                .Columns("SKU").HeaderText = "Product Code"
-                .Columns("ProductName").HeaderText = "Product Name"
-                .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
-                .Columns("CategoryName").HeaderText = "Category"
-                .Columns("unit").HeaderText = "Unit"
-                .Columns("retailPrice").HeaderText = "Retail Price"
-                .Columns("cost").HeaderText = "Cost"
-                .Columns("StockQuantity").HeaderText = "Quantity in Stock"
-                .Columns("ReorderLevel").HeaderText = "Reorder Level"
-                .Columns("expirationDate").HeaderText = "Expiration Date"
-            End With
-            tableDataGridView.Refresh()
 
-            tableDataGridView.Columns("QRCodeImage").Visible = False
+                ' Make all detail columns visible
+                For Each col As DataGridViewColumn In .Columns
+                    col.Visible = True ' Show all columns by default
+                Next
+
+                ' Set headers and ensure visibility for each column
+                If .Columns.Contains("SKU") Then
+                    .Columns("SKU").HeaderText = "Product Code"
+                    .Columns("SKU").Visible = True
+                End If
+
+                If .Columns.Contains("ProductName") Then
+                    .Columns("ProductName").HeaderText = "Product Name"
+                    .Columns("ProductName").Visible = True
+                End If
+
+                If .Columns.Contains("CategoryName") Then
+                    .Columns("CategoryName").HeaderText = "Category"
+                    .Columns("CategoryName").Visible = True
+                End If
+
+                If .Columns.Contains("unit") Then
+                    .Columns("unit").HeaderText = "Unit"
+                    .Columns("unit").Visible = True
+                End If
+
+                If .Columns.Contains("retailPrice") Then
+                    .Columns("retailPrice").HeaderText = "Retail Price"
+                    .Columns("retailPrice").Visible = True
+                End If
+
+                If .Columns.Contains("cost") Then
+                    .Columns("cost").HeaderText = "Cost"
+                    .Columns("cost").Visible = True
+                End If
+
+                If .Columns.Contains("StockQuantity") Then
+                    .Columns("StockQuantity").HeaderText = "Quantity in Stock"
+                    .Columns("StockQuantity").Visible = True
+                End If
+
+                If .Columns.Contains("ReorderLevel") Then
+                    .Columns("ReorderLevel").HeaderText = "Reorder Level"
+                    .Columns("ReorderLevel").Visible = True
+                End If
+
+                If .Columns.Contains("expirationDate") Then
+                    .Columns("expirationDate").HeaderText = "Expiration Date"
+                    .Columns("expirationDate").Visible = True
+                End If
+
+                If .Columns.Contains("QR Code Hex") Then
+                    .Columns("QR Code Hex").HeaderText = "QR Code (Click to view)"
+                    .Columns("QR Code Hex").Visible = True
+                End If
+
+                ' Hide columns that don't belong in detail view
+                If .Columns.Contains("QRCodeImage") Then
+                    .Columns("QRCodeImage").Visible = False
+                End If
+
+                If .Columns.Contains("TotalQuantity") Then
+                    .Columns("TotalQuantity").Visible = False
+                End If
+
+                If .Columns.Contains("BatchCount") Then
+                    .Columns("BatchCount").Visible = False
+                End If
+            End With
+
+            tableDataGridView.Refresh()
         Catch ex As Exception
-            MessageBox.Show("Error loading data: " & ex.Message)
+            MessageBox.Show("Error loading product batches: " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Handle row click - toggle between summary and detail view
+    ''' </summary>
+    Private Sub TableDataGridView_RowClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then Return ' Ignore header clicks
+
+        Try
+            If Not isShowingDetailView Then
+                ' Currently in summary view - show batches for clicked product
+                Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("ProductName").Value?.ToString()
+
+                If Not String.IsNullOrWhiteSpace(productName) Then
+                    LoadProductBatches(productName)
+                End If
+            Else
+                ' Currently in detail view - handle QR code click if applicable
+                If e.ColumnIndex >= 0 AndAlso tableDataGridView.Columns(e.ColumnIndex).Name = "QR Code Hex" Then
+                    Dim hexString As String = tableDataGridView.Rows(e.RowIndex).Cells(e.ColumnIndex).Value?.ToString()
+
+                    If Not String.IsNullOrWhiteSpace(hexString) Then
+                        ' Convert HEX string back to Byte()
+                        Dim bytes As Byte() = Enumerable.Range(0, hexString.Length \ 2) _
+                        .Select(Function(i) Convert.ToByte(hexString.Substring(i * 2, 2), 16)).ToArray()
+
+                        ' Create image from Byte()
+                        Using ms As New MemoryStream(bytes)
+                            Dim qrImage As Image = Image.FromStream(ms)
+                            Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("ProductName").Value.ToString()
+
+                            ' Show the image in a preview form
+                            Dim previewForm As New Form With {
+                      .Text = "QR Code Preview",
+                .Size = New Size(300, 300),
+                       .StartPosition = FormStartPosition.CenterParent
+                     }
+
+                            Dim pb As New PictureBox With {
+                                            .Dock = DockStyle.Fill,
+                                     .Image = qrImage,
+                                    .SizeMode = PictureBoxSizeMode.Zoom
+                            }
+                            previewForm.Controls.Add(pb)
+
+                            ' Add a Print button
+                            Dim btnPrint As New Button With {
+                          .Text = "Print QR Code",
+                       .Dock = DockStyle.Bottom
+                        }
+
+                            AddHandler btnPrint.Click, Sub()
+                                                           PrintQRCode(qrImage, productName)
+                                                       End Sub
+                            previewForm.Controls.Add(btnPrint)
+
+                            previewForm.ShowDialog()
+                        End Using
+                    End If
+                End If
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error handling row click: " & ex.Message)
         End Try
     End Sub
 
@@ -269,72 +509,17 @@ Public Class InventoryForm
         End If
     End Sub
 
-    'cell double click for previewing and printing QR code
-    Private Sub tableDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles tableDataGridView.CellDoubleClick
-        If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 Then
-            ' Make sure they clicked the QR column
-            If tableDataGridView.Columns(e.ColumnIndex).Name = "QR Code Hex" Then
-                Dim hexString As String = tableDataGridView.Rows(e.RowIndex).Cells(e.ColumnIndex).Value.ToString()
-
-                ' Convert HEX string back to Byte()
-                Dim bytes As Byte() = Enumerable.Range(0, hexString.Length \ 2) _
-                .Select(Function(i) Convert.ToByte(hexString.Substring(i * 2, 2), 16)).ToArray()
-
-                ' Create image from Byte()
-                Using ms As New MemoryStream(bytes)
-                    Dim qrImage As Image = Image.FromStream(ms)
-
-                    ' Get product name from the row 
-                    Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("productName").Value.ToString()
-
-                    ' Show the image in a preview form
-                    Dim previewForm As New Form With {
-                    .Text = "QR Code Preview",
-                    .Size = New Size(300, 300),
-                    .StartPosition = FormStartPosition.CenterParent
-                }
-
-                    Dim pb As New PictureBox With {
-                    .Dock = DockStyle.Fill,
-                    .Image = qrImage,
-                    .SizeMode = PictureBoxSizeMode.Zoom
-                }
-                    previewForm.Controls.Add(pb)
-
-                    ' Add a Print button
-                    Dim btnPrint As New Button With {
-                    .Text = "Print QR Code",
-                    .Dock = DockStyle.Bottom
-                }
-
-                    ' Pass both QR and ProductName to the new print function
-                    AddHandler btnPrint.Click, Sub()
-                                                   PrintQRCode(qrImage, productName)
-                                               End Sub
-                    previewForm.Controls.Add(btnPrint)
-
-                    previewForm.ShowDialog()
-                End Using
-            End If
-        End If
-    End Sub
-
-
     Private qrImageToPrint As Image
     Private productNameToPrint As String
     Private numberOfCopies As Integer
 
-    ' Call this when user clicks "Print QR"
-    ' Ask user how many copies they want before printing
     Private Sub PrintQRCode(qrImage As Image, productName As String)
         qrImageToPrint = qrImage
         productNameToPrint = productName
 
-        ' Ask user which paper size to use
         Dim sizeChoice As String = InputBox("Choose paper size (Letter, Legal, A4):", "Paper Size", "Letter")
 
         If String.IsNullOrWhiteSpace(sizeChoice) Then
-            ' User cancelled
             Exit Sub
         End If
 
@@ -350,11 +535,9 @@ Public Class InventoryForm
                 printDoc.DefaultPageSettings.PaperSize = New PaperSize("Letter", 850, 1100)
         End Select
 
-        ' Ask how many copies to print
         Dim input As String = InputBox("How many copies per product?", "Copies", "1")
 
         If String.IsNullOrWhiteSpace(input) Then
-            ' User cancelled
             Exit Sub
         End If
 
@@ -363,40 +546,26 @@ Public Class InventoryForm
             Exit Sub
         End If
 
-        ' Reduce margins
         Dim settings = printDoc.DefaultPageSettings
-        settings.Margins = New Margins(10, 10, 10, 10) ' 0.1 inch on all sides
+        settings.Margins = New Margins(10, 10, 10, 10)
         printDoc.DefaultPageSettings = settings
 
-        ' show preview before printing, must be connected to a printer
         Dim printPreview As New PrintPreviewDialog()
         printPreview.Document = printDoc
         printPreview.ShowDialog()
-
-        'Dim printPreview As New PrintPreviewDialog()
-        'printPreview.Document = printDoc
-        'printPreview.UseAntiAlias = True
-
-        '' Avoid printer check
-        'printDoc.PrintController = New Printing.StandardPrintController()
-
-        'printPreview.ShowDialog()
     End Sub
 
-
-    ' Handles actual drawing on paper
     Private Sub printDoc_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDoc.PrintPage
         If qrImageToPrint IsNot Nothing Then
-            Dim qrSize As Integer = 100   ' Size of each QR code
-            Dim margin As Integer = 20    ' Space between QR codes
+            Dim qrSize As Integer = 100
+            Dim margin As Integer = 20
             Dim font As New Font("Arial", 10, FontStyle.Bold)
 
             Dim pageWidth As Integer = e.MarginBounds.Width
             Dim pageHeight As Integer = e.MarginBounds.Height
 
-            ' Calculate how many QR codes fit per row
             Dim qrPerRow As Integer = Math.Floor((pageWidth + margin) / (qrSize + margin))
-            Dim qrPerCol As Integer = Math.Floor((pageHeight + margin) / (qrSize + 30 + margin)) ' 30px for text
+            Dim qrPerCol As Integer = Math.Floor((pageHeight + margin) / (qrSize + 30 + margin))
 
             Dim totalPerPage As Integer = qrPerRow * qrPerCol
 
@@ -405,25 +574,20 @@ Public Class InventoryForm
             Dim y As Integer = e.MarginBounds.Top
 
             While copiesPrinted < numberOfCopies
-                ' Draw QR code
                 e.Graphics.DrawImage(qrImageToPrint, x, y, qrSize, qrSize)
 
-                ' Draw Product Name below QR
                 Dim textY As Integer = y + qrSize + 5
                 e.Graphics.DrawString(productNameToPrint, font, Brushes.Black, x, textY)
 
                 copiesPrinted += 1
 
-                ' Move to next position
                 x += qrSize + margin
 
-                ' If we reach end of row
                 If (copiesPrinted Mod qrPerRow = 0) Then
                     x = e.MarginBounds.Left
-                    y += qrSize + 30 + margin ' QR height + text + spacing
+                    y += qrSize + 30 + margin
                 End If
 
-                ' If page is full, tell printer there’s more pages
                 If copiesPrinted < numberOfCopies AndAlso copiesPrinted Mod totalPerPage = 0 Then
                     e.HasMorePages = True
                     Return
@@ -432,36 +596,14 @@ Public Class InventoryForm
         End If
     End Sub
 
-    ' Handles actual drawing on paper, print single top left qr code on paper
-    'Private Sub printDoc_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDoc.PrintPage
-    '    If qrImageToPrint IsNot Nothing Then
-    '        ' Define size for QR code (small square)
-    '        Dim qrSize As Integer = 150  ' You can adjust this to make it smaller/larger
-
-    '        ' Position at top-left (X=0, Y=0)
-    '        Dim x As Integer = 0
-    '        Dim y As Integer = 0
-
-    '        ' Draw QR code on the paper
-    '        e.Graphics.DrawImage(qrImageToPrint, x, y, qrSize, qrSize)
-    '    End If
-    'End Sub
-
-    ' PRINTING FOR ALL QR CODES 
-    ' Store data to print
     Private qrImagesToPrint As New List(Of Image)
     Private productNamesToPrint As New List(Of String)
-
-    ' Copies for each QR
     Private copiesPerProduct As Integer = 1
 
     Private Sub btnPrintAllQRCodes_Click(sender As Object, e As EventArgs) Handles btnPrintAllQRCodes.Click
-        ' 1. Ask paper size
-        ' Ask user which paper size to use
         Dim sizeChoice As String = InputBox("Choose paper size (Letter, Legal, A4):", "Paper Size", "Letter")
 
         If String.IsNullOrWhiteSpace(sizeChoice) Then
-            ' User cancelled
             Exit Sub
         End If
 
@@ -477,11 +619,9 @@ Public Class InventoryForm
                 printDocAll.DefaultPageSettings.PaperSize = New PaperSize("Letter", 850, 1100)
         End Select
 
-        ' 2. Ask copies
         Dim input As String = InputBox("How many copies per product?", "Copies", "1")
 
         If String.IsNullOrWhiteSpace(input) Then
-            ' User cancelled
             Exit Sub
         End If
 
@@ -490,13 +630,14 @@ Public Class InventoryForm
             Exit Sub
         End If
 
-        ' 3. Load products & QRs from database
         qrImagesToPrint.Clear()
         productNamesToPrint.Clear()
 
         Using conn As New SqlConnection(GetConnectionString())
             conn.Open()
-            Dim query As String = "SELECT ProductName, QRCodeImage FROM wholesaleProducts"
+            Dim query As String = "
+  SELECT ProductName, QRCodeImage
+     FROM wholesaleProducts"
 
             Using cmd As New SqlCommand(query, conn)
                 Using rdr As SqlDataReader = cmd.ExecuteReader()
@@ -509,7 +650,6 @@ Public Class InventoryForm
                             qrBytes = DirectCast(rdr("QRCodeImage"), Byte())
                         End If
 
-
                         Dim qrImg As Image = Nothing
                         If qrBytes IsNot Nothing Then
                             Using ms As New MemoryStream(qrBytes)
@@ -517,9 +657,8 @@ Public Class InventoryForm
                             End Using
                         End If
 
-                        ' Store the product name + image (Nothing means no QR)
                         For i As Integer = 1 To copiesPerProduct
-                            qrImagesToPrint.Add(qrImg) ' Can be Nothing
+                            qrImagesToPrint.Add(qrImg)
                             productNamesToPrint.Add(productName)
                         Next
                     End While
@@ -527,12 +666,10 @@ Public Class InventoryForm
             End Using
         End Using
 
-        ' Reduce margins
         Dim settings = printDocAll.DefaultPageSettings
-        settings.Margins = New Margins(10, 10, 10, 10) ' 0.1 inch on all sides
+        settings.Margins = New Margins(10, 10, 10, 10)
         printDocAll.DefaultPageSettings = settings
 
-        ' 4. Show preview before printing
         Dim preview As New PrintPreviewDialog()
         preview.Document = printDocAll
         preview.Width = 800
@@ -540,15 +677,12 @@ Public Class InventoryForm
         preview.ShowDialog()
     End Sub
 
-    Private printIndex As Integer = 0
-
-    Private currentIndex As Integer = 0 ' Track across pages
+    Private currentIndex As Integer = 0
 
     Private Sub printDocAll_PrintPage(sender As Object, e As Printing.PrintPageEventArgs) Handles printDocAll.PrintPage
         Dim margin As Integer = 20
         Dim qrSize As Integer = 100
 
-        ' Grid layout calculation
         Dim qrPerRow As Integer = (e.MarginBounds.Width - margin) \ (qrSize + margin)
         Dim qrPerCol As Integer = (e.MarginBounds.Height - margin) \ (qrSize + margin)
         Dim maxPerPage As Integer = qrPerRow * qrPerCol
@@ -562,7 +696,6 @@ Public Class InventoryForm
             Dim img As Image = qrImagesToPrint(currentIndex)
             Dim name As String = productNamesToPrint(currentIndex)
 
-            ' Draw QR or placeholder
             If img IsNot Nothing Then
                 e.Graphics.DrawImage(img, x, y, qrSize, qrSize)
             Else
@@ -570,10 +703,8 @@ Public Class InventoryForm
                 e.Graphics.DrawString("NO QR", New Font("Arial", 8), Brushes.Black, x + 10, y + (qrSize \ 2) - 5)
             End If
 
-            ' Print product name
             e.Graphics.DrawString(name, New Font("Arial", 8), Brushes.Black, x, y + qrSize + 5)
 
-            ' Move to next cell
             count += 1
             currentIndex += 1
             x += qrSize + margin
@@ -584,62 +715,53 @@ Public Class InventoryForm
             End If
         End While
 
-        ' Check if more pages are needed
         If currentIndex < qrImagesToPrint.Count Then
             e.HasMorePages = True
         Else
             e.HasMorePages = False
-            currentIndex = 0 ' Reset for next print job
+            currentIndex = 0
         End If
     End Sub
 
-
-
-
-    ' Dictionary to store placeholder texts for each TextBox
     Private placeholders As New Dictionary(Of TextBox, String)
 
     Private Sub InventoryForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         HighlightButton("Button2")
-
-        ' Set placeholder texts
-        'SetPlaceholder(TextBox1, "Product Name")
-        'SetPlaceholder(TextBox2, "Weight")
-        'SetPlaceholder(TextBox3, "Price")
-        'SetPlaceholder(TextBox4, "Stock")
         SetPlaceholder(TextBoxSearch, "Search Product Name...")
-
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
         SetRoundedRegion2(btnPrintAllQRCodes, 20)
 
-        ' Initialize
         dt = New DataTable()
         dv = New DataView(dt)
         bs = New BindingSource()
 
-        ' Bindings
         bs.DataSource = dv
         tableDataGridView.DataSource = bs
 
-
-        ' Load data
         LoadProducts()
-
     End Sub
 
-    ' Method to assign placeholder text to a TextBox
+    ''' <summary>
+    ''' Override KeyDown to add ESC key for returning to summary view
+    ''' </summary>
+    Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
+        If isShowingDetailView AndAlso e.KeyCode = Keys.Escape Then
+            LoadProducts()
+            e.Handled = True
+        End If
+        MyBase.OnKeyDown(e)
+    End Sub
+
     Private Sub SetPlaceholder(tb As TextBox, text As String)
         placeholders(tb) = text
         tb.Text = text
         tb.ForeColor = Color.Gray
 
-        ' Attach shared events
         AddHandler tb.GotFocus, AddressOf RemovePlaceholder
         AddHandler tb.LostFocus, AddressOf RestorePlaceholder
     End Sub
 
-    ' When the user clicks/focuses the TextBox
     Private Sub RemovePlaceholder(sender As Object, e As EventArgs)
         Dim tb As TextBox = DirectCast(sender, TextBox)
         If tb.Text = placeholders(tb) Then
@@ -648,7 +770,6 @@ Public Class InventoryForm
         End If
     End Sub
 
-    ' When the TextBox loses focus
     Private Sub RestorePlaceholder(sender As Object, e As EventArgs)
         Dim tb As TextBox = DirectCast(sender, TextBox)
         If String.IsNullOrWhiteSpace(tb.Text) Then
@@ -669,73 +790,29 @@ Public Class InventoryForm
         Dim diameter As Integer = radius * 2
 
         path.StartFigure()
-
-        ' Top edge
         path.AddLine(rect.X + radius, rect.Y, rect.Right - radius, rect.Y)
-        ' Top-right corner
         path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90)
-        ' Right edge
         path.AddLine(rect.Right, rect.Y + radius, rect.Right, rect.Bottom - radius)
-        ' Bottom-right corner
         path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
-        ' Bottom edge
         path.AddLine(rect.Right - radius, rect.Bottom, rect.X + radius, rect.Bottom)
-        ' Bottom-left corner
         path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90)
-        ' Left edge
         path.AddLine(rect.X, rect.Bottom - radius, rect.X, rect.Y + radius)
-        ' Top-left corner
         path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90)
-
         path.CloseFigure()
+
         Return path
     End Function
 
-    'Private Sub ComboBox1_DrawItem(sender As Object, e As DrawItemEventArgs)
-    '    If e.Index < 0 Then Return
-
-    '    ' Use your custom color for background
-    '    'Dim customBack As Color = Color.FromArgb(230, 216, 177)
-    '    'e.Graphics.FillRectangle(New SolidBrush(customBack), e.Bounds)
-
-    '    ' Draw the item text in black
-    '    Dim itemText = ComboBox1.Items(e.Index).ToString
-    '    e.Graphics.DrawString(itemText, e.Font, Brushes.Black, e.Bounds)
-
-    '    ' Draw focus rectangle if selected
-    '    e.DrawFocusRectangle()
-    'End Sub
-
-    'Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
-    '    Dim searchText As String = TextBoxSearch.Text.ToLower()
-
-    '    For Each row As DataGridViewRow In tableDataGridView.Rows
-    '        row.Visible = True ' reset first
-
-    '        Dim match As Boolean = False
-    '        For Each cell As DataGridViewCell In row.Cells
-    '            If cell.Value IsNot Nothing AndAlso cell.Value.ToString().ToLower().Contains(searchText) Then
-    '                match = True
-    '                Exit For
-    '            End If
-    '        Next
-
-    '        row.Visible = match
-    '    Next
-    'End Sub
-
-    'search using dataview filter  
     Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
-        'reset place holder if focused to not interfere with search
         Dim placeholder = ""
         If placeholders.ContainsKey(TextBoxSearch) Then
             placeholder = placeholders(TextBoxSearch)
         End If
 
         If String.IsNullOrWhiteSpace(TextBoxSearch.Text) OrElse TextBoxSearch.Text = placeholder Then
-            bs.Filter = ""   ' Show all rows
+            bs.Filter = ""
         Else
-            bs.Filter = String.Format("productName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
+            bs.Filter = String.Format("ProductName LIKE '%{0}%'", TextBoxSearch.Text.Replace("'", "''"))
         End If
     End Sub
 
@@ -751,56 +828,49 @@ Public Class InventoryForm
 
     Private Sub SetVATRate()
         Try
-            ' Get current VAT rate from database
             Dim currentVAT As Decimal = GetCurrentVATRate()
 
-            ' Show input box with current VAT rate
             Dim input As String = InputBox($"Enter VAT Rate (%):{vbCrLf}Current VAT: {currentVAT:N2}%",
-                                          "Set VAT Rate",
-                                          currentVAT.ToString())
+                        "Set VAT Rate",
+              currentVAT.ToString())
 
-            ' Check if user cancelled
             If String.IsNullOrWhiteSpace(input) Then
                 Return
             End If
 
-            ' Validate input
             Dim newVATRate As Decimal
             If Not Decimal.TryParse(input, newVATRate) Then
                 MessageBox.Show("Please enter a valid numeric value for VAT rate.",
-                              "Invalid Input",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Warning)
+                   "Invalid Input",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Warning)
                 Return
             End If
 
-            ' Validate range (0 to 100)
             If newVATRate < 0 OrElse newVATRate > 100 Then
                 MessageBox.Show("VAT rate must be between 0 and 100.",
-                              "Invalid Range",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Warning)
+           "Invalid Range",
+         MessageBoxButtons.OK,
+         MessageBoxIcon.Warning)
                 Return
             End If
 
-            ' Save to database
             If SaveVATRate(newVATRate) Then
                 MessageBox.Show($"VAT rate successfully set to {newVATRate:N2}%",
-                              "Success",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Information)
+                "Success",
+            MessageBoxButtons.OK,
+         MessageBoxIcon.Information)
             Else
                 MessageBox.Show("Failed to save VAT rate. Please try again.",
-                              "Error",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Error)
+        "Error",
+                MessageBoxButtons.OK,
+           MessageBoxIcon.Error)
             End If
-
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
-                          "Error",
-                          MessageBoxButtons.OK,
-                          MessageBoxIcon.Error)
+           "Error",
+     MessageBoxButtons.OK,
+              MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -811,4 +881,5 @@ Public Class InventoryForm
     Private Function SaveVATRate(vatRate As Decimal) As Boolean
         Return SharedUtilities.SaveVATRate(vatRate)
     End Function
+
 End Class

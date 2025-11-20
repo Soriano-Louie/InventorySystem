@@ -12,7 +12,10 @@ Public Module SharedUtilities
     Public Function GetCurrentVATRate() As Decimal
         Try
             Dim connStr As String = GetConnectionString()
-            Dim sql As String = "SELECT TOP 1 vatRate FROM settings ORDER BY id DESC"
+            Dim sql As String = "
+SELECT TOP 1 vatRate
+          FROM settings
+      ORDER BY id DESC"
 
             Using conn As New SqlConnection(connStr)
                 Using cmd As New SqlCommand(sql, conn)

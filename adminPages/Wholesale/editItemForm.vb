@@ -1,6 +1,6 @@
-﻿Imports Microsoft.Data.SqlClient
+﻿Imports System.IO
+Imports Microsoft.Data.SqlClient
 Imports QRCoder
-Imports System.IO
 
 Public Class editItemForm
     Private parentForm As InventoryForm

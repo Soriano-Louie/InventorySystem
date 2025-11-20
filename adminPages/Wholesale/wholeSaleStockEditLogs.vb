@@ -1,10 +1,10 @@
-﻿Imports Microsoft.Data.SqlClient
-Imports Microsoft.Office.Interop
+﻿Imports System.Drawing.Drawing2D
+Imports System.IO
 Imports iTextSharp.text
 Imports iTextSharp.text.pdf
+Imports Microsoft.Data.SqlClient
+Imports Microsoft.Office.Interop
 Imports Document = iTextSharp.text.Document
-Imports System.Drawing.Drawing2D
-Imports System.IO
 
 Public Class wholeSaleStockEditLogs
     Dim topPanel As New topPanelControl()
@@ -194,11 +194,11 @@ Public Class wholeSaleStockEditLogs
 
         ' Clear search box
         TextBoxSearch.Text = ""
-        
-   ' Clear any selected cells
+
+        ' Clear any selected cells
         tableDataGridView.ClearSelection()
 
-    ' Reload all stock edit logs
+        ' Reload all stock edit logs
         loadStockEditLogs()
     End Sub
 
@@ -565,7 +565,7 @@ Public Class wholeSaleStockEditLogs
                               MessageBoxButtons.OK,
                               MessageBoxIcon.Information)
             End If
-' Note: Error message is now displayed in SaveVATRate function
+            ' Note: Error message is now displayed in SaveVATRate function
         Catch ex As Exception
             MessageBox.Show($"Error setting VAT rate: {ex.Message}",
                           "Error",
@@ -584,30 +584,30 @@ Public Class wholeSaleStockEditLogs
             Dim success As Boolean = SharedUtilities.SaveVATRate(vatRate, errorMessage)
 
             If Not success Then
-' Display detailed error or generic message
-   If Not String.IsNullOrEmpty(errorMessage) Then
-      MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
-      "Error Details",
-          MessageBoxButtons.OK,
-   MessageBoxIcon.Error)
-       Else
- MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
-     "Error",
-   MessageBoxButtons.OK,
-  MessageBoxIcon.Error)
-  End If
-End If
+                ' Display detailed error or generic message
+                If Not String.IsNullOrEmpty(errorMessage) Then
+                    MessageBox.Show($"Failed to save VAT rate: {errorMessage}",
+                    "Error Details",
+                        MessageBoxButtons.OK,
+                 MessageBoxIcon.Error)
+                Else
+                    MessageBox.Show("Failed to save VAT rate. No specific error message was returned from the database operation.",
+                        "Error",
+                      MessageBoxButtons.OK,
+                     MessageBoxIcon.Error)
+                End If
+            End If
 
-   Return success
+            Return success
         Catch ex As Exception
-   ' Catch any unexpected errors in this wrapper function
-    MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
-   "Critical Error",
-   MessageBoxButtons.OK,
-    MessageBoxIcon.Error)
-      Return False
-     End Try
- End Function
+            ' Catch any unexpected errors in this wrapper function
+            MessageBox.Show($"Unexpected error in SaveVATRate wrapper: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}",
+           "Critical Error",
+           MessageBoxButtons.OK,
+            MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
 
     ''' <summary>
     ''' Handle keyboard shortcuts for stock edit logs form
@@ -616,20 +616,20 @@ End If
     ''' </summary>
     Private Sub wholeSaleStockEditLogs_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         Select Case e.KeyCode
-      Case Keys.Enter
-          ' Press Enter to search/filter
-          If btnSearch.Enabled Then
-         btnSearch.PerformClick()
-     e.Handled = True
-               e.SuppressKeyPress = True
-              End If
-          Case Keys.F5
-                ' Press F5 to reset
-    If resetButton.Enabled Then
- resetButton.PerformClick()
- e.Handled = True
+            Case Keys.Enter
+                ' Press Enter to search/filter
+                If btnSearch.Enabled Then
+                    btnSearch.PerformClick()
+                    e.Handled = True
                     e.SuppressKeyPress = True
-     End If
+                End If
+            Case Keys.F5
+                ' Press F5 to reset
+                If resetButton.Enabled Then
+                    resetButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
         End Select
     End Sub
 

@@ -3,7 +3,6 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports Microsoft.Data.SqlClient
-Imports Microsoft.VisualBasic.ApplicationServices
 
 Public Class LoginForm
     'Private Sub loginForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load

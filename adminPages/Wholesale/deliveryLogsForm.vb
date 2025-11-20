@@ -1,7 +1,4 @@
-﻿Imports System.Drawing.Drawing2D
-Imports InventorySystem.sidePanelControl
-Imports InventorySystem.topPanelControl
-Imports Microsoft.Data.SqlClient
+﻿Imports Microsoft.Data.SqlClient
 
 Public Class deliveryLogsForm
     Dim topPanel As New topPanelControl()

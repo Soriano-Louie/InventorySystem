@@ -1,8 +1,5 @@
-Imports Microsoft.Data.SqlClient
 Imports System.Net.Http
-Imports System.Text.RegularExpressions
 Imports System.Text.Json
-Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 
 ''' Enhanced delivery address form with place search and map preview using WebView2

@@ -1,5 +1,4 @@
 ﻿Imports Microsoft.Data.SqlClient
-Imports System.Data
 
 Public Class loginRecordsForm
     Dim topPanel As topPanelControl
@@ -393,20 +392,20 @@ MessageBoxIcon.Error)
     ''' </summary>
     Private Sub loginRecordsForm_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         Select Case e.KeyCode
-   Case Keys.Enter
- ' Press Enter to filter
-           If filterButton.Enabled Then
-       filterButton.PerformClick()
-     e.Handled = True
-       e.SuppressKeyPress = True
-            End If
+            Case Keys.Enter
+                ' Press Enter to filter
+                If filterButton.Enabled Then
+                    filterButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
             Case Keys.F5
-      ' Press F5 to reset
- If resetButton.Enabled Then
-            resetButton.PerformClick()
-  e.Handled = True
-         e.SuppressKeyPress = True
-    End If
+                ' Press F5 to reset
+                If resetButton.Enabled Then
+                    resetButton.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
         End Select
     End Sub
 

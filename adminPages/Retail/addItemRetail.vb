@@ -1,5 +1,4 @@
-﻿Imports System.Data.SqlClient
-Imports System.IO
+﻿Imports System.IO
 Imports Microsoft.Data.SqlClient
 Imports QRCoder
 

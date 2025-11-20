@@ -1,9 +1,10 @@
-﻿Imports System.Text
+﻿Imports System.Security.Cryptography
+Imports System.Text
 Imports Microsoft.Data.SqlClient
-Imports System.Security.Cryptography
 
 Public Class editUserForm
     Private parentForm As userManagementForm
+
     Public Sub New(parent As userManagementForm)
         InitializeComponent()
         Me.parentForm = parent
@@ -93,7 +94,6 @@ Public Class editUserForm
                     End With
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Error loading users: " & ex.Message)
         End Try
@@ -124,7 +124,6 @@ Public Class editUserForm
             Return False
         End Try
     End Function
-
 
     Private Sub saveButton_Click(sender As Object, e As EventArgs) Handles saveButton.Click
         ' Prompt for admin password
@@ -390,7 +389,7 @@ Public Class editUserForm
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
                 Dim query As String = "
-                    SELECT 
+                    SELECT
                         u.Username,
                         r.RoleName,
                         u.lastLogin,
@@ -421,4 +420,5 @@ Public Class editUserForm
 
         Return details
     End Function
+
 End Class

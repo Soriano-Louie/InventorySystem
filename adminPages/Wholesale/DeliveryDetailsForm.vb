@@ -1,10 +1,8 @@
-﻿Imports Microsoft.Data.SqlClient
-Imports Microsoft.Web.WebView2.Core
+﻿Imports System.Drawing.Printing
 Imports Microsoft.Web.WebView2.WinForms
-Imports System.Drawing.Printing
 
-''' Form to display delivery details with map location
-''' Shows delivery information and exact location on an interactive map using WebView2
+' Form to display delivery details with map location
+' Shows delivery information and exact location on an interactive map using WebView2
 Public Class DeliveryDetailsForm
     Private deliveryData As deliveryLogsForm.DeliveryInfo
     Private mapView As WebView2
@@ -353,7 +351,7 @@ Public Class DeliveryDetailsForm
         End Try
     End Sub
 
-    ''' Handle print button click - generates and prints delivery details
+    ' Handle print button click - generates and prints delivery details
     Private Sub PrintButton_Click(sender As Object, e As EventArgs)
         Try
             ' Build print content
@@ -433,7 +431,7 @@ Public Class DeliveryDetailsForm
         Return content.ToString()
     End Function
 
-    ''' Handle the actual printing - called when PrintDocument.Print() is invoked
+    ' Handle the actual printing - called when PrintDocument.Print() is invoked
     Private Sub PrintDocument_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDocument.PrintPage
         Try
             ' Set up fonts
@@ -483,4 +481,5 @@ Public Class DeliveryDetailsForm
         Catch ex As Exception
         End Try
     End Sub
+
 End Class

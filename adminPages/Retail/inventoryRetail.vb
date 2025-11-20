@@ -1,7 +1,7 @@
-﻿Imports System.Drawing.Printing
+﻿Imports System.Drawing.Drawing2D
+Imports System.Drawing.Printing
 Imports System.IO
 Imports Microsoft.Data.SqlClient
-Imports System.Drawing.Drawing2D
 
 Public Class inventoryRetail
     Dim topPanel As New topPanelControl()
@@ -12,8 +12,17 @@ Public Class inventoryRetail
     Dim dv As New DataView()
     Dim bs As New BindingSource()
 
+    ' Track if we're showing summary or detail view
+    Private isShowingDetailView As Boolean = False
+
+    Private currentSelectedProductName As String = ""
+
+    ' Back to Summary button
+    Private WithEvents btnBackToSummary As New Button()
+
     Private WithEvents printDoc As New PrintDocument
     Private WithEvents printDocAll As New PrintDocument
+
     Public Sub New()
         ' This call is required by the designer.
         InitializeComponent()
@@ -32,7 +41,6 @@ Public Class inventoryRetail
 
         TextBoxSearch.BackColor = Color.FromArgb(230, 216, 177)
 
-
         Button1.BackColor = Color.FromArgb(147, 53, 53)
         Button2.BackColor = Color.FromArgb(147, 53, 53)
         Button1.ForeColor = Color.FromArgb(230, 216, 177)
@@ -46,6 +54,45 @@ Public Class inventoryRetail
         tableDataGridView.RowHeadersVisible = False
         tableDataGridView.TabStop = False
 
+        ' Initialize Back to Summary button
+        InitializeBackButton()
+
+        ' Add cell click event handler for expanding product batches
+        AddHandler tableDataGridView.CellClick, AddressOf TableDataGridView_RowClick
+    End Sub
+
+    ''' <summary>
+    ''' Initialize the Back to Summary button
+    ''' </summary>
+    Private Sub InitializeBackButton()
+        With btnBackToSummary
+            .Text = "← Back to Summary"
+            .Size = New Size(160, 40)
+            .BackColor = Color.FromArgb(147, 53, 53)
+            .ForeColor = Color.FromArgb(230, 216, 177)
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Cursor = Cursors.Hand
+            .Visible = False
+            .FlatStyle = FlatStyle.Flat
+            .FlatAppearance.BorderSize = 0
+            .AutoSize = False
+        End With
+
+        ' Position it near the top-left of the data grid
+        btnBackToSummary.Location = New Point(tableDataGridView.Left + 250, tableDataGridView.Top - -50)
+
+        Me.Controls.Add(btnBackToSummary)
+        btnBackToSummary.BringToFront()
+
+        ' Round the corners
+        SetRoundedRegion2(btnBackToSummary, 15)
+    End Sub
+
+    ''' <summary>
+    ''' Handle Back to Summary button click
+    ''' </summary>
+    Private Sub btnBackToSummary_Click(sender As Object, e As EventArgs) Handles btnBackToSummary.Click
+        LoadProducts()
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -141,8 +188,7 @@ Public Class inventoryRetail
         bs.DataSource = dv
         tableDataGridView.DataSource = bs
 
-
-        ' Load data
+        ' Load data in summary view
         LoadProducts()
     End Sub
 
@@ -177,50 +223,123 @@ Public Class inventoryRetail
         Return SharedUtilities.GetConnectionString()
     End Function
 
+    ''' <summary>
+    ''' Load products in aggregated summary view (one row per product name)
+    ''' </summary>
     Public Sub LoadProducts()
         Dim connString As String = GetConnectionString()
+
+        ' Query to get aggregated product summary
         Dim query As String = "
-            SELECT p.SKU, 
-                   p.productName,
-                   c.CategoryName,
-                   p.unit, 
-                   p.retailPrice, 
-                   p.cost, 
-                   p.StockQuantity, 
-                   p.ReorderLevel, 
-                   p.expirationDate, 
-                   p.QRCodeImage
-            FROM retailProducts p
-            INNER JOIN Categories c ON p.CategoryID = c.CategoryID
-            ORDER BY 
-            CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END, 
-            p.expirationDate ASC"
-
-
-        'Using conn As New SqlConnection(connString)
-        '    Using cmd As New SqlCommand(query, conn)
-        '        ' Create a Data Adapter
-        '        Using adapter As New SqlDataAdapter(cmd)
-        '            Dim dt As New DataTable()
-        '            Try
-        '                adapter.Fill(dt)
-        '                tableDataGridView.DataSource = dt
-        '            Catch ex As Exception
-        '                MessageBox.Show("Error retrieving data: " & ex.Message)
-        '            End Try
-        '        End Using
-        '    End Using
-        'End Using
+       SELECT
+          p.ProductName,
+                c.CategoryName,
+     SUM(p.StockQuantity) AS TotalQuantity,
+    COUNT(*) AS BatchCount
+  FROM retailProducts p
+        INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+            GROUP BY p.ProductName, c.CategoryName
+            ORDER BY p.ProductName"
 
         Try
             Using conn As New SqlConnection(connString)
                 Using da As New SqlDataAdapter(query, conn)
-                    dt.Clear() ' clear old data
+                    dt.Clear()
                     da.Fill(dt)
                 End Using
             End Using
 
-            ' add extra column for QR hex
+            ' Reset to summary view
+            isShowingDetailView = False
+            currentSelectedProductName = ""
+
+            ' Hide back button in summary view
+            btnBackToSummary.Visible = False
+
+            ' Re-bind DataView and BindingSource
+            dv = New DataView(dt)
+            bs.DataSource = dv
+            tableDataGridView.DataSource = bs
+
+            ' Configure headers for summary view
+            With tableDataGridView
+                .EnableHeadersVisualStyles = False
+                .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
+
+                ' Ensure only summary columns are visible
+                For Each col As DataGridViewColumn In .Columns
+                    ' Hide all columns first
+                    col.Visible = False
+                Next
+
+                ' Show only summary columns
+                If .Columns.Contains("ProductName") Then
+                    .Columns("ProductName").HeaderText = "Product Name (Click to view batches)"
+                    .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
+                    .Columns("ProductName").Visible = True
+                End If
+
+                If .Columns.Contains("CategoryName") Then
+                    .Columns("CategoryName").HeaderText = "Category"
+                    .Columns("CategoryName").Visible = True
+                End If
+
+                If .Columns.Contains("TotalQuantity") Then
+                    .Columns("TotalQuantity").HeaderText = "Total Stock"
+                    .Columns("TotalQuantity").Visible = True
+                End If
+
+                If .Columns.Contains("BatchCount") Then
+                    .Columns("BatchCount").HeaderText = "# of Batches"
+                    .Columns("BatchCount").Visible = True
+                End If
+            End With
+
+            tableDataGridView.Refresh()
+        Catch ex As Exception
+            MessageBox.Show("Error loading data: " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Load detailed batch view for a specific product name
+    ''' </summary>
+    Private Sub LoadProductBatches(productName As String)
+        Dim connString As String = GetConnectionString()
+
+        ' Query to get all batches for the selected product
+        Dim query As String = "
+SELECT
+           p.SKU,
+       p.productName,
+        c.CategoryName,
+ p.unit,
+       p.retailPrice,
+         p.cost,
+      p.StockQuantity,
+            p.ReorderLevel,
+       p.expirationDate,
+     p.QRCodeImage
+          FROM retailProducts p
+   INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+    WHERE p.productName = @ProductName
+      ORDER BY
+       CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END,
+    p.expirationDate ASC"
+
+        Try
+            Using conn As New SqlConnection(connString)
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductName", productName)
+
+                    Using da As New SqlDataAdapter(cmd)
+                        dt.Clear()
+                        da.Fill(dt)
+                    End Using
+                End Using
+            End Using
+
+            ' Add QR Code Hex column
             If Not dt.Columns.Contains("QR Code Hex (Dbl Click)") Then
                 dt.Columns.Add("QR Code Hex (Dbl Click)", GetType(String))
             End If
@@ -232,31 +351,163 @@ Public Class inventoryRetail
                 End If
             Next
 
+            ' Mark as detail view
+            isShowingDetailView = True
+            currentSelectedProductName = productName
+
+            ' Show back button in detail view
+            btnBackToSummary.Visible = True
+            btnBackToSummary.BringToFront()
+
             ' Re-bind DataView and BindingSource
             dv = New DataView(dt)
             bs.DataSource = dv
             tableDataGridView.DataSource = bs
 
-            ' rename headers
+            ' Configure headers for detail view
             With tableDataGridView
                 .EnableHeadersVisualStyles = False
                 .ColumnHeadersDefaultCellStyle.Font = New Font(.Font, FontStyle.Bold)
-                .Columns("SKU").HeaderText = "Product Code"
-                .Columns("ProductName").HeaderText = "Product Name"
-                .Columns("ProductName").SortMode = DataGridViewColumnSortMode.Automatic
-                .Columns("CategoryName").HeaderText = "Category"
-                .Columns("unit").HeaderText = "Unit"
-                .Columns("retailPrice").HeaderText = "Retail Price"
-                .Columns("cost").HeaderText = "Cost"
-                .Columns("StockQuantity").HeaderText = "Quantity in Stock"
-                .Columns("ReorderLevel").HeaderText = "Reorder Level"
-                .Columns("expirationDate").HeaderText = "Expiration Date"
-            End With
-            tableDataGridView.Refresh()
 
-            tableDataGridView.Columns("QRCodeImage").Visible = False
+                ' Make all detail columns visible
+                For Each col As DataGridViewColumn In .Columns
+                    col.Visible = True ' Show all columns by default
+                Next
+
+                ' Set headers and ensure visibility for each column
+                If .Columns.Contains("SKU") Then
+                    .Columns("SKU").HeaderText = "Product Code"
+                    .Columns("SKU").Visible = True
+                End If
+
+                If .Columns.Contains("ProductName") Then
+                    .Columns("ProductName").HeaderText = "Product Name"
+                    .Columns("ProductName").Visible = True
+                End If
+
+                If .Columns.Contains("CategoryName") Then
+                    .Columns("CategoryName").HeaderText = "Category"
+                    .Columns("CategoryName").Visible = True
+                End If
+
+                If .Columns.Contains("unit") Then
+                    .Columns("unit").HeaderText = "Unit"
+                    .Columns("unit").Visible = True
+                End If
+
+                If .Columns.Contains("retailPrice") Then
+                    .Columns("retailPrice").HeaderText = "Retail Price"
+                    .Columns("retailPrice").Visible = True
+                End If
+
+                If .Columns.Contains("cost") Then
+                    .Columns("cost").HeaderText = "Cost"
+                    .Columns("cost").Visible = True
+                End If
+
+                If .Columns.Contains("StockQuantity") Then
+                    .Columns("StockQuantity").HeaderText = "Quantity in Stock"
+                    .Columns("StockQuantity").Visible = True
+                End If
+
+                If .Columns.Contains("ReorderLevel") Then
+                    .Columns("ReorderLevel").HeaderText = "Reorder Level"
+                    .Columns("ReorderLevel").Visible = True
+                End If
+
+                If .Columns.Contains("expirationDate") Then
+                    .Columns("expirationDate").HeaderText = "Expiration Date"
+                    .Columns("expirationDate").Visible = True
+                End If
+
+                If .Columns.Contains("QR Code Hex (Dbl Click)") Then
+                    .Columns("QR Code Hex (Dbl Click)").HeaderText = "QR Code (Click to view)"
+                    .Columns("QR Code Hex (Dbl Click)").Visible = True
+                End If
+
+                ' Hide the binary QR image column
+                If .Columns.Contains("QRCodeImage") Then
+                    .Columns("QRCodeImage").Visible = False
+                End If
+
+                ' Hide columns that don't belong in detail view
+                If .Columns.Contains("TotalQuantity") Then
+                    .Columns("TotalQuantity").Visible = False
+                End If
+
+                If .Columns.Contains("BatchCount") Then
+                    .Columns("BatchCount").Visible = False
+                End If
+            End With
+
+            tableDataGridView.Refresh()
         Catch ex As Exception
-            MessageBox.Show("Error loading data: " & ex.Message)
+            MessageBox.Show("Error loading product batches: " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Handle row click - toggle between summary and detail view
+    ''' </summary>
+    Private Sub TableDataGridView_RowClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then Return ' Ignore header clicks
+
+        Try
+            If Not isShowingDetailView Then
+                ' Currently in summary view - show batches for clicked product
+                Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("ProductName").Value?.ToString()
+
+                If Not String.IsNullOrWhiteSpace(productName) Then
+                    LoadProductBatches(productName)
+                End If
+            Else
+                ' Currently in detail view - handle QR code click if applicable
+                If e.ColumnIndex >= 0 AndAlso tableDataGridView.Columns(e.ColumnIndex).Name = "QR Code Hex (Dbl Click)" Then
+                    Dim hexString As String = tableDataGridView.Rows(e.RowIndex).Cells(e.ColumnIndex).Value?.ToString()
+
+                    If Not String.IsNullOrWhiteSpace(hexString) Then
+                        ' Convert HEX string back to Byte()
+                        Dim bytes As Byte() = Enumerable.Range(0, hexString.Length \ 2) _
+   .Select(Function(i) Convert.ToByte(hexString.Substring(i * 2, 2), 16)) _
+  .ToArray()
+
+                        ' Create image from Byte()
+                        Using ms As New MemoryStream(bytes)
+                            Dim qrImage As Image = Image.FromStream(ms)
+                            Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("ProductName").Value.ToString()
+
+                            ' Show the image in a preview form
+                            Dim previewForm As New Form With {
+    .Text = "QR Code Preview",
+      .Size = New Size(300, 300),
+                .StartPosition = FormStartPosition.CenterParent
+          }
+
+                            Dim pb As New PictureBox With {
+   .Dock = DockStyle.Fill,
+             .Image = qrImage,
+          .SizeMode = PictureBoxSizeMode.Zoom
+         }
+                            previewForm.Controls.Add(pb)
+
+                            ' Add a Print button
+                            Dim btnPrint As New Button With {
+        .Text = "Print QR Code",
+         .Dock = DockStyle.Bottom
+    }
+
+                            AddHandler btnPrint.Click, Sub()
+                                                           PrintQRCode(qrImage, productName)
+                                                       End Sub
+                            previewForm.Controls.Add(btnPrint)
+
+                            previewForm.ShowDialog()
+                        End Using
+                    End If
+                End If
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error handling row click: " & ex.Message)
         End Try
     End Sub
 
@@ -288,69 +539,26 @@ Public Class inventoryRetail
         End If
     End Sub
 
-    'cell double click for previewing and printing QR code
-    Private Sub tableDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles tableDataGridView.CellDoubleClick
-        If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 Then
-            Dim clickedColumn As String = tableDataGridView.Columns(e.ColumnIndex).Name
+    ' Remove old CellDoubleClick handler - now using CellClick for row selection
+    'Private Sub tableDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles tableDataGridView.CellClick
+    '    ' REMOVED - replaced with TableDataGridView_RowClick
+    'End Sub
 
-            If clickedColumn = "QR Code Hex (Dbl Click)" Then
-                Dim hexString As String = tableDataGridView.Rows(e.RowIndex).Cells(e.ColumnIndex).Value?.ToString()
-
-                If String.IsNullOrWhiteSpace(hexString) Then
-                    MessageBox.Show("No QR code data available for this product.")
-                    Exit Sub
-                End If
-
-                Try
-                    ' Convert HEX string back to Byte()
-                    Dim bytes As Byte() = Enumerable.Range(0, hexString.Length \ 2) _
-                    .Select(Function(i) Convert.ToByte(hexString.Substring(i * 2, 2), 16)) _
-                    .ToArray()
-
-                    ' Create image from Byte()
-                    Using ms As New MemoryStream(bytes)
-                        Dim qrImage As Image = Image.FromStream(ms)
-
-                        ' Get product name
-                        Dim productName As String = tableDataGridView.Rows(e.RowIndex).Cells("ProductName").Value.ToString()
-
-                        ' Show image in preview
-                        Dim previewForm As New Form With {
-                        .Text = "QR Code Preview",
-                        .Size = New Size(300, 300),
-                        .StartPosition = FormStartPosition.CenterParent
-                    }
-
-                        Dim pb As New PictureBox With {
-                        .Dock = DockStyle.Fill,
-                        .Image = qrImage,
-                        .SizeMode = PictureBoxSizeMode.Zoom
-                    }
-                        previewForm.Controls.Add(pb)
-
-                        ' Add Print button
-                        Dim btnPrint As New Button With {
-                        .Text = "Print QR Code",
-                        .Dock = DockStyle.Bottom
-                    }
-                        AddHandler btnPrint.Click, Sub()
-                                                       PrintQRCode(qrImage, productName)
-                                                   End Sub
-                        previewForm.Controls.Add(btnPrint)
-
-                        previewForm.ShowDialog()
-                    End Using
-
-                Catch ex As Exception
-                    MessageBox.Show("Error decoding QR code: " & ex.Message)
-                End Try
-            End If
+    ''' <summary>
+    ''' Override KeyDown to add ESC key for returning to summary view
+    ''' </summary>
+    Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
+        If isShowingDetailView AndAlso e.KeyCode = Keys.Escape Then
+            ' Return to summary view
+            LoadProducts()
+            e.Handled = True
         End If
+        MyBase.OnKeyDown(e)
     End Sub
 
-
-
+    ' PRINTING FOR SELECTED QR CODE
     Private qrImageToPrint As Image
+
     Private productNameToPrint As String
     Private numberOfCopies As Integer
 
@@ -404,7 +612,6 @@ Public Class inventoryRetail
         printPreview.ShowDialog()
     End Sub
 
-
     ' Handles actual drawing on paper
     Private Sub printDoc_PrintPage(sender As Object, e As PrintPageEventArgs) Handles printDoc.PrintPage
         If qrImageToPrint IsNot Nothing Then
@@ -453,9 +660,10 @@ Public Class inventoryRetail
         End If
     End Sub
 
-    ' PRINTING FOR ALL QR CODES 
+    ' PRINTING FOR ALL QR CODES
     ' Store data to print
     Private qrImagesToPrint As New List(Of Image)
+
     Private productNamesToPrint As New List(Of String)
 
     ' Copies for each QR
@@ -502,7 +710,9 @@ Public Class inventoryRetail
 
         Using conn As New SqlConnection(GetConnectionString())
             conn.Open()
-            Dim query As String = "SELECT ProductName, QRCodeImage FROM retailProducts"
+            Dim query As String = "
+ SELECT ProductName, QRCodeImage
+   FROM retailProducts"
 
             Using cmd As New SqlCommand(query, conn)
                 Using rdr As SqlDataReader = cmd.ExecuteReader()
@@ -514,7 +724,6 @@ Public Class inventoryRetail
                         If Not IsDBNull(rdr("QRCodeImage")) Then
                             qrBytes = DirectCast(rdr("QRCodeImage"), Byte())
                         End If
-
 
                         Dim qrImg As Image = Nothing
                         If qrBytes IsNot Nothing Then
@@ -547,8 +756,7 @@ Public Class inventoryRetail
     End Sub
 
     Private printIndex As Integer = 0
-
-    Private currentIndex As Integer = 0 ' Track across pages
+    Private currentIndex As Integer = 0
 
     Private Sub printDocAll_PrintPage(sender As Object, e As Printing.PrintPageEventArgs) Handles printDocAll.PrintPage
         Dim margin As Integer = 20
@@ -773,4 +981,5 @@ Public Class inventoryRetail
             Return False
         End Try
     End Function
+
 End Class
