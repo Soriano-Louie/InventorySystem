@@ -20,6 +20,12 @@ Public Class InventoryForm
     ' Back to Summary button
     Private WithEvents btnBackToSummary As New Button()
 
+    ' Delete Batch button (only shown in detail view)
+    Private WithEvents btnDeleteBatch As New Button()
+
+    ' Archived Products button
+    Private WithEvents btnArchivedProducts As New Button()
+
     Private WithEvents printDoc As New PrintDocument
     Private WithEvents printDocAll As New PrintDocument
 
@@ -58,8 +64,16 @@ Public Class InventoryForm
         ' Initialize Back to Summary button
         InitializeBackButton()
 
+        ' Initialize Delete Batch button
+        InitializeDeleteBatchButton()
+
+        ' Initialize Archived Products button
+        InitializeArchivedProductsButton()
+
         ' Add cell click event handler for expanding product batches
         AddHandler tableDataGridView.CellClick, AddressOf TableDataGridView_RowClick
+        ' Add cell double-click event handler for editing products in detail view
+        AddHandler tableDataGridView.CellDoubleClick, AddressOf TableDataGridView_CellDoubleClick
     End Sub
 
     ''' Initialize the Back to Summary button
@@ -78,7 +92,7 @@ Public Class InventoryForm
         End With
 
         ' Position it near the top-left of the data grid
-        btnBackToSummary.Location = New Point(tableDataGridView.Left + 250, tableDataGridView.Top - -50)
+        btnBackToSummary.Location = New Point(tableDataGridView.Left + 230, tableDataGridView.Top - -70)
 
         Me.Controls.Add(btnBackToSummary)
         btnBackToSummary.BringToFront()
@@ -93,6 +107,289 @@ Public Class InventoryForm
     Private Sub btnBackToSummary_Click(sender As Object, e As EventArgs) Handles btnBackToSummary.Click
         LoadProducts()
     End Sub
+
+    ''' <summary>
+    ''' Initialize the Delete Batch button
+    ''' </summary>
+    Private Sub InitializeDeleteBatchButton()
+        With btnDeleteBatch
+            .Text = "Delete Selected Batch"
+            .Size = New Size(180, 40)
+            .BackColor = Color.FromArgb(147, 53, 53)
+            .ForeColor = Color.FromArgb(230, 216, 177)
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Cursor = Cursors.Hand
+            .Visible = False ' Hidden by default
+            .FlatStyle = FlatStyle.Flat
+            .FlatAppearance.BorderSize = 0
+            .AutoSize = False
+        End With
+
+        ' Position it next to the Back button
+        btnDeleteBatch.Location = New Point(btnBackToSummary.Right + 20, btnBackToSummary.Top)
+
+        Me.Controls.Add(btnDeleteBatch)
+        btnDeleteBatch.BringToFront()
+
+        ' Round the corners
+        SetRoundedRegion2(btnDeleteBatch, 15)
+    End Sub
+
+    ''' <summary>
+    ''' Initialize the Archived Products button
+    ''' </summary>
+    Private Sub InitializeArchivedProductsButton()
+        With btnArchivedProducts
+            .Text = "📦 Archived Products"
+            .Size = New Size(180, 40)
+            .BackColor = Color.FromArgb(147, 53, 53)
+            .ForeColor = Color.FromArgb(230, 216, 177)
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Cursor = Cursors.Hand
+            .Visible = True ' Always visible
+            .FlatStyle = FlatStyle.Flat
+            .FlatAppearance.BorderSize = 0
+            .AutoSize = False
+        End With
+
+        ' Position it to the right of the search area
+        btnArchivedProducts.Location = New Point(TextBoxSearch.Right + 80, TextBoxSearch.Top + 140)
+
+        Me.Controls.Add(btnArchivedProducts)
+        btnArchivedProducts.BringToFront()
+
+        ' Round the corners
+        SetRoundedRegion2(btnArchivedProducts, 15)
+    End Sub
+
+    ''' <summary>
+    ''' Handle Archived Products button click
+    ''' </summary>
+    Private Sub btnArchivedProducts_Click(sender As Object, e As EventArgs) Handles btnArchivedProducts.Click
+        ' Pass "Wholesale" as the initial product type
+        Dim archivedForm As New ArchivedProductsForm("Wholesale")
+        archivedForm.ShowDialog()
+
+        ' Reload products after closing archived form (in case products were restored)
+        LoadProducts()
+    End Sub
+
+    ''' <summary>
+    ''' Handle Delete Batch button click
+    ''' </summary>
+    Private Sub btnDeleteBatch_Click(sender As Object, e As EventArgs) Handles btnDeleteBatch.Click
+        If Not isShowingDetailView Then
+            MessageBox.Show("Delete is only available in detail view.", "Info",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        ' Check if a row is selected using CurrentRow
+        If tableDataGridView.CurrentRow Is Nothing OrElse tableDataGridView.CurrentRow.Index < 0 Then
+            MessageBox.Show("Please select a batch to delete.", "No Selection",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        ' Declare variables at method scope so they're accessible in catch block
+        Dim sku As String = ""
+        Dim productName As String = ""
+        Dim stockQty As Object = Nothing
+        Dim unit As String = ""
+        Dim productID As Integer = 0
+
+        Try
+            ' Use CurrentRow instead of SelectedRows
+            Dim selectedRow = tableDataGridView.CurrentRow
+            sku = selectedRow.Cells("SKU").Value?.ToString()
+            productName = selectedRow.Cells("ProductName").Value?.ToString()
+            stockQty = selectedRow.Cells("StockQuantity").Value
+            unit = selectedRow.Cells("unit").Value?.ToString()
+
+            ' Get ProductID first
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim getProductIDQuery As String = "SELECT ProductID FROM wholesaleProducts WHERE SKU = @SKU"
+                Using cmd As New SqlCommand(getProductIDQuery, conn)
+                    cmd.Parameters.AddWithValue("@SKU", sku)
+                    Dim productIDResult = cmd.ExecuteScalar()
+                    If productIDResult IsNot Nothing Then
+                        productID = Convert.ToInt32(productIDResult)
+                    Else
+                        MessageBox.Show("Product not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        Return
+                    End If
+                End Using
+            End Using
+
+            ' CHECK FOR SALES RECORDS BEFORE ATTEMPTING DELETION
+            If ProductHasSalesRecords(productID) Then
+                ' Product has sales records - offer to archive instead
+                Dim archiveMsg As String = "⚠️ Cannot Delete - Sales Records Exist" & vbCrLf & vbCrLf &
+                                          $"Product '{productName}' (SKU: {sku}) has sales records and cannot be permanently deleted." & vbCrLf & vbCrLf &
+                                          "Would you like to ARCHIVE this batch instead?" & vbCrLf & vbCrLf &
+                                          "Archived batches:" & vbCrLf &
+                                          "  ✓ Will be hidden from active inventory" & vbCrLf &
+                                          "  ✓ Can be restored later if needed" & vbCrLf &
+                                          "  ✓ Sales history will be preserved" & vbCrLf & vbCrLf &
+                                          "Click YES to archive, NO to cancel."
+
+                Dim archiveResult As DialogResult = MessageBox.Show(archiveMsg,
+                                                                    "Archive Instead?",
+                                                                    MessageBoxButtons.YesNo,
+                                                                    MessageBoxIcon.Question,
+                                                                    MessageBoxDefaultButton.Button1)
+
+                If archiveResult = DialogResult.Yes Then
+                    ' Get archive reason from user
+                    Dim reason As String = InputBox("Please provide a reason for archiving this batch:",
+                                                   "Archive Reason",
+                                                   "Product with sales history - cannot delete")
+
+                    If String.IsNullOrWhiteSpace(reason) Then
+                        MessageBox.Show("Archive reason is required.", "Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        Return
+                    End If
+
+                    ' Archive the product
+                    Dim currentUserID As Integer = GlobalUserSession.CurrentUserID
+                    If currentUserID = 0 Then
+                        MessageBox.Show("User session not found. Please log in again.", "Session Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        Return
+                    End If
+
+                    Using conn As New SqlConnection(GetConnectionString())
+                        conn.Open()
+                        Dim archiveQuery As String = "UPDATE wholesaleProducts SET IsArchived = 1, ArchivedDate = GETDATE(), ArchivedBy = @ArchivedBy, ArchiveReason = @ArchiveReason WHERE SKU = @SKU"
+                        Using cmd As New SqlCommand(archiveQuery, conn)
+                            cmd.Parameters.AddWithValue("@SKU", sku)
+                            cmd.Parameters.AddWithValue("@ArchivedBy", currentUserID)
+                            cmd.Parameters.AddWithValue("@ArchiveReason", reason)
+                            Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+
+                            If rowsAffected > 0 Then
+                                MessageBox.Show("Batch '" & sku & "' has been successfully archived." & vbCrLf & vbCrLf &
+                                                  "Archive Reason: " & reason & vbCrLf &
+                                                  "Archived By: " & GlobalUserSession.CurrentUsername & vbCrLf &
+                                                  "Archived Date: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") & vbCrLf & vbCrLf &
+                                                  "You can restore it from the Archived Products menu.",
+                                                  "✓ Archived Successfully",
+                                                  MessageBoxButtons.OK,
+                                                  MessageBoxIcon.Information)
+
+                                ' Reload the batches for the current product
+                                LoadProductBatches(currentSelectedProductName)
+
+                                ' If no batches left (all archived), return to summary view
+                                If tableDataGridView.Rows.Count = 0 Then
+                                    MessageBox.Show("All batches of '" & currentSelectedProductName & "' are now archived." & vbCrLf &
+                                                      "Returning to summary view.",
+                                                      "All Batches Archived",
+                                                      MessageBoxButtons.OK,
+                                                      MessageBoxIcon.Information)
+                                    LoadProducts()
+                                End If
+                            Else
+                                MessageBox.Show("Failed to archive the batch.",
+                                                  "Archive Failed",
+                                                  MessageBoxButtons.OK,
+                                                  MessageBoxIcon.Error)
+                            End If
+                        End Using
+                    End Using
+                End If
+                Return ' Exit after handling archive
+            End If
+
+            ' No sales records - safe to delete
+            ' Confirmation dialog with details
+            Dim confirmMsg As String = $"⚠️ WARNING: You are about to permanently delete this product batch!" & vbCrLf & vbCrLf &
+                                      $"Product: {productName}" & vbCrLf &
+                                      $"SKU: {sku}" & vbCrLf &
+                                      $"Stock: {stockQty} {unit}" & vbCrLf & vbCrLf &
+                                      "This action CANNOT be undone!" & vbCrLf & vbCrLf &
+                                      "Are you sure you want to DELETE this batch?"
+
+            Dim result As DialogResult = MessageBox.Show(confirmMsg, "⚠️ Confirm Deletion",
+                                                         MessageBoxButtons.YesNo,
+                                                         MessageBoxIcon.Warning,
+                                                         MessageBoxDefaultButton.Button2)
+
+            If result = DialogResult.Yes Then
+                ' Delete the batch from database
+                Using conn As New SqlConnection(GetConnectionString())
+                    conn.Open()
+
+                    ' Use transaction to handle discounts properly
+                    Using transaction = conn.BeginTransaction()
+                        Try
+                            ' Delete related discounts first
+                            Dim deleteDiscountsQuery As String = "DELETE FROM ProductDiscounts WHERE ProductID = @ProductID"
+                            Using cmd As New SqlCommand(deleteDiscountsQuery, conn, transaction)
+                                cmd.Parameters.AddWithValue("@ProductID", productID)
+                                cmd.ExecuteNonQuery()
+                            End Using
+
+                            ' Delete the batch
+                            Dim query As String = "DELETE FROM wholesaleProducts WHERE SKU = @SKU"
+                            Using cmd As New SqlCommand(query, conn, transaction)
+                                cmd.Parameters.AddWithValue("@SKU", sku)
+                                Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+
+                                If rowsAffected > 0 Then
+                                    transaction.Commit()
+                                    MessageBox.Show($"Batch '{sku}' has been successfully deleted.", "✓ Deletion Successful",
+                                                  MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                                    ' Reload the batches for the current product
+                                    LoadProductBatches(currentSelectedProductName)
+
+                                    ' If no batches left, return to summary view
+                                    If tableDataGridView.Rows.Count = 0 Then
+                                        MessageBox.Show($"All batches of '{currentSelectedProductName}' have been deleted." & vbCrLf &
+                                                      "Returning to summary view.", "All Batches Deleted",
+                                                      MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                        LoadProducts()
+                                    End If
+                                Else
+                                    transaction.Rollback()
+                                    MessageBox.Show("Batch not found or already deleted.", "Not Found",
+                                                  MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                End If
+                            End Using
+                        Catch ex As Exception
+                            transaction.Rollback()
+                            Throw
+                        End Try
+                    End Using
+                End Using
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error processing batch: " & ex.Message, "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Check if a product has sales records in SalesReport
+    ''' </summary>
+    Private Function ProductHasSalesRecords(productID As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT COUNT(*) FROM SalesReport WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error checking sales records: {ex.Message}")
+            ' If we can't check, assume it has records to be safe
+            Return True
+        End Try
+    End Function
 
     Protected Overrides Sub WndProc(ByRef m As Message)
         Const WM_SYSCOMMAND As Integer = &H112
@@ -201,7 +498,7 @@ Public Class InventoryForm
     Public Sub LoadProducts()
         Dim connString As String = GetConnectionString()
 
-        ' Query to get aggregated product summary
+        ' Query to get aggregated product summary (excluding archived products)
         Dim query As String = "
         SELECT
         p.ProductName,
@@ -210,7 +507,9 @@ Public Class InventoryForm
         COUNT(*) AS BatchCount
         FROM wholesaleProducts p
         INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+        WHERE (p.IsArchived IS NULL OR p.IsArchived = 0)
         GROUP BY p.ProductName, c.CategoryName
+        HAVING SUM(p.StockQuantity) >= 0
         ORDER BY p.ProductName"
 
         Try
@@ -227,6 +526,7 @@ Public Class InventoryForm
 
             ' Hide back button in summary view
             btnBackToSummary.Visible = False
+            btnDeleteBatch.Visible = False
 
             ' Re-bind DataView and BindingSource
             dv = New DataView(dt)
@@ -279,7 +579,7 @@ Public Class InventoryForm
     Private Sub LoadProductBatches(productName As String)
         Dim connString As String = GetConnectionString()
 
-        ' Query to get all batches for the selected product
+        ' Query to get all batches for the selected product (excluding archived)
         Dim query As String = "
           SELECT
         p.SKU,
@@ -295,6 +595,7 @@ Public Class InventoryForm
         FROM wholesaleProducts p
         INNER JOIN Categories c ON p.CategoryID = c.CategoryID
         WHERE p.ProductName = @ProductName
+        AND (p.IsArchived IS NULL OR p.IsArchived = 0)
         ORDER BY
         CASE WHEN p.expirationDate IS NULL THEN 1 ELSE 0 END,
         p.expirationDate ASC"
@@ -330,6 +631,10 @@ Public Class InventoryForm
             ' Show back button in detail view
             btnBackToSummary.Visible = True
             btnBackToSummary.BringToFront()
+
+            ' Show delete batch button in detail view
+            btnDeleteBatch.Visible = True
+            btnDeleteBatch.BringToFront()
 
             ' Re-bind DataView and BindingSource
             dv = New DataView(dt)
@@ -478,6 +783,69 @@ Public Class InventoryForm
             End If
         Catch ex As Exception
             MessageBox.Show("Error handling row click: " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Handle cell double-click - open edit form with selected product in detail view
+    ''' </summary>
+    Private Sub TableDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then Return ' Ignore header clicks
+
+        Try
+            ' Only allow editing in detail view
+            If isShowingDetailView Then
+                ' Get the ProductID from the selected row
+                Dim sku As String = tableDataGridView.Rows(e.RowIndex).Cells("SKU").Value?.ToString()
+
+                If String.IsNullOrWhiteSpace(sku) Then
+                    MessageBox.Show("Unable to identify product SKU.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    Return
+                End If
+
+                ' Get ProductID from database using SKU
+                Dim productID As Integer = 0
+                Using conn As New SqlConnection(GetConnectionString())
+                    conn.Open()
+                    Dim query As String = "SELECT ProductID FROM wholesaleProducts WHERE SKU = @SKU"
+                    Using cmd As New SqlCommand(query, conn)
+                        cmd.Parameters.AddWithValue("@SKU", sku)
+                        Dim result = cmd.ExecuteScalar()
+                        If result IsNot Nothing Then
+                            productID = Convert.ToInt32(result)
+                        Else
+                            MessageBox.Show("Product not found in database.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                            Return
+                        End If
+                    End Using
+                End Using
+
+                ' Open edit form with the selected product
+                Dim editForm As New editItemForm(Me)
+                editForm.StartPosition = FormStartPosition.CenterScreen
+                editForm.Show()
+
+                ' Pre-select the product in the dropdown after form loads
+                ' Use a small delay to ensure the form and dropdown are fully loaded
+                Dim timer As New Timer()
+                timer.Interval = 100 ' 100ms delay
+                AddHandler timer.Tick, Sub(timerSender As Object, timerE As EventArgs)
+                                           timer.Stop()
+                                           timer.Dispose()
+
+                                           ' Find and select the product in the dropdown
+                                           If editForm.productDropDown IsNot Nothing Then
+                                               editForm.productDropDown.SelectedValue = productID
+
+                                               ' Bring the edit form to front
+                                               editForm.BringToFront()
+                                               editForm.Focus()
+                                           End If
+                                       End Sub
+                timer.Start()
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Error opening edit form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

@@ -123,6 +123,7 @@ Public Class ProductSearchForm
 
         dgv.DataSource = bs
         AddHandler dgv.CellDoubleClick, AddressOf ProductsDataGridView_CellDoubleClick
+        AddHandler dgv.CellFormatting, AddressOf ProductsDataGridView_CellFormatting
         mainPanel.Controls.Add(dgv)
 
         ' Create instructions label
@@ -169,32 +170,38 @@ Public Class ProductSearchForm
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
 
-                ' Query both wholesale and retail products
+                ' Query both wholesale and retail products - ONLY show products with available stock
                 Dim query As String = "
-      SELECT
-  'W' + CAST(ProductID AS VARCHAR) AS ProductCode,
-           SKU,
-        ProductName,
-     CategoryID,
-    Unit,
-  RetailPrice,
-         StockQuantity,
-          ISNULL(IsVATApplicable, 0) AS IsVATApplicable,
-         'Wholesale' AS ProductType
-         FROM wholesaleProducts
-       UNION ALL
-       SELECT
-         'R' + CAST(ProductID AS VARCHAR) AS ProductCode,
-      SKU,
-           ProductName,
-            CategoryID,
-          Unit,
-     RetailPrice,
- StockQuantity,
-   ISNULL(IsVATApplicable, 0) AS IsVATApplicable,
-  'Retail' AS ProductType
-        FROM retailProducts
-   ORDER BY ProductName"
+                SELECT
+                    'W' + CAST(ProductID AS VARCHAR) AS ProductCode,
+                    SKU,
+                    ProductName,
+                    CategoryID,
+                    Unit,
+                    RetailPrice,
+                    StockQuantity,
+                    ISNULL(IsVATApplicable, 0) AS IsVATApplicable,
+                    'Wholesale' AS ProductType,
+                    expirationDate
+                FROM wholesaleProducts
+                WHERE (IsArchived IS NULL OR IsArchived = 0)
+                AND StockQuantity > 0
+                UNION ALL
+                SELECT
+                    'R' + CAST(ProductID AS VARCHAR) AS ProductCode,
+                    SKU,
+                    ProductName,
+                    CategoryID,
+                    Unit,
+                    RetailPrice,
+                    StockQuantity,
+                    ISNULL(IsVATApplicable, 0) AS IsVATApplicable,
+                    'Retail' AS ProductType,
+                    expirationDate
+                FROM retailProducts
+                WHERE (IsArchived IS NULL OR IsArchived = 0)
+                AND StockQuantity > 0
+                ORDER BY ProductName"
 
                 Using cmd As New SqlCommand(query, conn)
                     Using da As New SqlDataAdapter(cmd)
@@ -216,40 +223,82 @@ Public Class ProductSearchForm
 
                     If .Columns.Contains("SKU") Then
                         .Columns("SKU").HeaderText = "SKU"
-                        .Columns("SKU").FillWeight = 20
+                        .Columns("SKU").FillWeight = 15
                     End If
 
                     If .Columns.Contains("ProductName") Then
                         .Columns("ProductName").HeaderText = "Product Name"
-                        .Columns("ProductName").FillWeight = 40
+                        .Columns("ProductName").FillWeight = 25
                     End If
 
                     If .Columns.Contains("Unit") Then
                         .Columns("Unit").HeaderText = "Unit"
-                        .Columns("Unit").FillWeight = 15
+                        .Columns("Unit").FillWeight = 10
                     End If
 
                     If .Columns.Contains("RetailPrice") Then
                         .Columns("RetailPrice").HeaderText = "Price"
                         .Columns("RetailPrice").DefaultCellStyle.Format = "₱#,##0.00"
-                        .Columns("RetailPrice").FillWeight = 20
+                        .Columns("RetailPrice").FillWeight = 15
                     End If
 
                     If .Columns.Contains("StockQuantity") Then
                         .Columns("StockQuantity").HeaderText = "Stock"
                         .Columns("StockQuantity").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
-                        .Columns("StockQuantity").FillWeight = 15
+                        .Columns("StockQuantity").FillWeight = 10
                     End If
 
                     If .Columns.Contains("ProductType") Then
                         .Columns("ProductType").HeaderText = "Type"
-                        .Columns("ProductType").FillWeight = 15
+                        .Columns("ProductType").FillWeight = 10
+                    End If
+
+                    ' ADD expiration date column formatting
+                    If .Columns.Contains("expirationDate") Then
+                        .Columns("expirationDate").HeaderText = "Expiry Date"
+                        .Columns("expirationDate").DefaultCellStyle.Format = "yyyy-MM-dd"
+                        .Columns("expirationDate").FillWeight = 15
+                        .Columns("expirationDate").Visible = True
                     End If
                 End With
             End If
         Catch ex As Exception
             MessageBox.Show("Error loading products: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    ''' <summary>
+    ''' Color-code expiration dates in the product grid
+    ''' </summary>
+    Private Sub ProductsDataGridView_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
+        Dim dgv As DataGridView = DirectCast(sender, DataGridView)
+
+        If dgv.Columns(e.ColumnIndex).Name = "expirationDate" AndAlso
+           e.Value IsNot Nothing AndAlso e.Value IsNot DBNull.Value Then
+
+            Dim expDate As DateTime = Convert.ToDateTime(e.Value)
+            Dim today As DateTime = DateTime.Today
+            Dim daysLeft As Integer = (expDate - today).Days
+
+            ' Apply background color based on expiration status
+            If expDate < today Then
+                ' Already expired - RED
+                e.CellStyle.BackColor = Color.Red
+                e.CellStyle.ForeColor = Color.White
+            ElseIf daysLeft <= 30 Then
+                ' Soon to expire (within 30 days) - ORANGE
+                e.CellStyle.BackColor = Color.Orange
+                e.CellStyle.ForeColor = Color.Black
+            Else
+                ' Safe (not expiring soon) - GREEN
+                e.CellStyle.BackColor = Color.LightGreen
+                e.CellStyle.ForeColor = Color.Black
+            End If
+        ElseIf dgv.Columns(e.ColumnIndex).Name = "expirationDate" Then
+            ' If expirationDate is NULL - GRAY
+            e.CellStyle.BackColor = Color.LightGray
+            e.CellStyle.ForeColor = Color.Black
+        End If
     End Sub
 
     Private Sub SetPlaceholder(tb As TextBox, text As String)
@@ -318,7 +367,7 @@ Public Class ProductSearchForm
         Dim dgv As DataGridView = Me.Controls.Find("productsDataGridView", True).FirstOrDefault()
         If dgv Is Nothing OrElse dgv.SelectedRows.Count = 0 Then
             MessageBox.Show("Please select a product to add to cart.", "No Selection",
-    MessageBoxButtons.OK, MessageBoxIcon.Information)
+MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -336,13 +385,13 @@ Public Class ProductSearchForm
             ' Check stock availability
             If stockQuantity <= 0 Then
                 MessageBox.Show("This product is out of stock!", "Out of Stock",
-                         MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                     MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
             ' Ask for quantity
             Dim quantityInput As String = InputBox($"Enter quantity to add (Available: {stockQuantity}):",
-          "Add to Cart", "1")
+      "Add to Cart", "1")
 
             If String.IsNullOrWhiteSpace(quantityInput) Then
                 Return ' User cancelled
@@ -351,13 +400,13 @@ Public Class ProductSearchForm
             Dim quantity As Integer
             If Not Integer.TryParse(quantityInput, quantity) OrElse quantity <= 0 Then
                 MessageBox.Show("Please enter a valid quantity.", "Invalid Input",
-        MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
             If quantity > stockQuantity Then
                 MessageBox.Show($"Only {stockQuantity} units available in stock!", "Insufficient Stock",
-                   MessageBoxButtons.OK, MessageBoxIcon.Warning)
+               MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
@@ -371,13 +420,13 @@ Public Class ProductSearchForm
             parentPOSForm.AddProductToCart(productID, productName, quantity, unitPrice, categoryID, isVATApplicable, productType)
 
             MessageBox.Show($"Added {quantity} x {productName} to cart!", "Success",
-      MessageBoxButtons.OK, MessageBoxIcon.Information)
+  MessageBoxButtons.OK, MessageBoxIcon.Information)
 
             ' Optionally close the form after adding
             ' Me.Close()
         Catch ex As Exception
             MessageBox.Show("Error adding product to cart: " & ex.Message, "Error",
-     MessageBoxButtons.OK, MessageBoxIcon.Error)
+ MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

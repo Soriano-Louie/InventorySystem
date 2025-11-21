@@ -26,6 +26,7 @@ Partial Class topControlCashier
         Label1 = New Label()
         nameLabel = New Label()
         roleLabel = New Label()
+        totalSalesText = New Label()
         CType(PictureBox1, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
@@ -72,10 +73,21 @@ Partial Class topControlCashier
         roleLabel.TabIndex = 4
         roleLabel.Text = "Cashier"
         ' 
+        ' totalSalesText
+        ' 
+        totalSalesText.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Right
+        totalSalesText.Font = New Font("Segoe UI", 50F, FontStyle.Bold)
+        totalSalesText.ForeColor = Color.LimeGreen
+        totalSalesText.Location = New Point(1009, 29)
+        totalSalesText.Name = "totalSalesText"
+        totalSalesText.Size = New Size(541, 97)
+        totalSalesText.TabIndex = 5
+        ' 
         ' topControlCashier
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        Controls.Add(totalSalesText)
         Controls.Add(roleLabel)
         Controls.Add(nameLabel)
         Controls.Add(Label1)
@@ -90,5 +102,6 @@ Partial Class topControlCashier
     Friend WithEvents Label1 As Label
     Friend WithEvents nameLabel As Label
     Friend WithEvents roleLabel As Label
+    Friend WithEvents totalSalesText As Label
 
 End Class

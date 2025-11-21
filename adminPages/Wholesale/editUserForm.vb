@@ -49,6 +49,7 @@ Public Class editUserForm
 
     Private Sub editUserForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         loadUserDetails()
+        LoadRoles()
     End Sub
 
     Private Function GetConnectionString() As String
@@ -73,6 +74,24 @@ Public Class editUserForm
                 picker.Value = today
             End If
         End If
+    End Sub
+
+    Private Sub LoadRoles()
+        Using con As New SqlConnection(GetConnectionString())
+            Dim query As String = "SELECT RoleID, RoleName FROM Roles"
+            Dim da As New SqlDataAdapter(query, con)
+            Dim dt As New DataTable()
+            da.Fill(dt)
+
+            ' Bind RoleName to display, RoleID as value
+            newRoleDropdown.DataSource = dt
+            newRoleDropdown.DisplayMember = "RoleName"
+            newRoleDropdown.ValueMember = "RoleID"
+
+            ' Enable autocomplete
+            newRoleDropdown.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+            newRoleDropdown.AutoCompleteSource = AutoCompleteSource.ListItems
+        End Using
     End Sub
 
     Private Sub loadUserDetails()

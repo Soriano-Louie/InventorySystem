@@ -118,16 +118,16 @@ Public Class discountForm
         End If
 
         Try
-            Dim query As String = "INSERT INTO ProductDiscounts (ProductID, MinSacks, DiscountPrice, MaxSacks) VALUES (@ProductID, @MinSacks, @DiscountPrice, @MaxSacks)"
-            Using conn As New SqlConnection(GetConnectionString())
+            Dim query = "INSERT INTO ProductDiscounts (ProductID, MinSacks, DiscountPrice, MaxSacks) VALUES (@ProductID, @MinSacks, @DiscountPrice, @MaxSacks)"
+            Using conn As New SqlConnection(GetConnectionString)
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@ProductID", _productID)
                     cmd.Parameters.AddWithValue("@MinSacks", Convert.ToInt32(txtMinSacks.Text))
                     cmd.Parameters.AddWithValue("@MaxSacks", Convert.ToInt32(txtMaxSacks.Text))
                     cmd.Parameters.AddWithValue("@DiscountPrice", Convert.ToDecimal(txtDiscountPrice.Text))
 
-                    conn.Open()
-                    cmd.ExecuteNonQuery()
+                    conn.Open
+                    cmd.ExecuteNonQuery
                 End Using
             End Using
 
@@ -139,6 +139,75 @@ Public Class discountForm
             LoadDiscounts(_productID) ' refresh DataGridView
         Catch ex As Exception
             MessageBox.Show("Error saving discount: " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub deleteButton_Click(sender As Object, e As EventArgs) Handles deleteButton.Click
+        ' Check if a row is selected
+        If dgvDiscounts.SelectedRows.Count = 0 AndAlso dgvDiscounts.SelectedCells.Count = 0 Then
+            MessageBox.Show("Please select a discount to delete.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        ' Get the selected row index
+        Dim rowIndex As Integer = -1
+        If dgvDiscounts.SelectedRows.Count > 0 Then
+            rowIndex = dgvDiscounts.SelectedRows(0).Index
+        ElseIf dgvDiscounts.SelectedCells.Count > 0 Then
+            rowIndex = dgvDiscounts.SelectedCells(0).RowIndex
+        End If
+
+        If rowIndex < 0 OrElse rowIndex >= dgvDiscounts.Rows.Count Then
+            MessageBox.Show("Invalid selection.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ' Get the discount details from the selected row
+        Dim minSacks As Integer = Convert.ToInt32(dgvDiscounts.Rows(rowIndex).Cells("MinSacks").Value)
+        Dim maxSacks As Integer = Convert.ToInt32(dgvDiscounts.Rows(rowIndex).Cells("MaxSacks").Value)
+        Dim discountPrice As Decimal = Convert.ToDecimal(dgvDiscounts.Rows(rowIndex).Cells("DiscountPrice").Value)
+
+        ' Confirm deletion
+        Dim result = MessageBox.Show(
+            $"Are you sure you want to delete this discount?{vbCrLf}{vbCrLf}" &
+            $"Range: {minSacks} - {maxSacks} sacks{vbCrLf}" &
+            $"Discount Price: ₱{discountPrice:N2}",
+            "Confirm Delete",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question)
+
+        If result = DialogResult.No Then
+            Return
+        End If
+
+        ' Delete from database
+        Try
+            Dim query As String = "DELETE FROM ProductDiscounts 
+                                  WHERE ProductID = @ProductID 
+                                  AND MinSacks = @MinSacks 
+                                  AND MaxSacks = @MaxSacks 
+                                  AND DiscountPrice = @DiscountPrice"
+
+            Using conn As New SqlConnection(GetConnectionString())
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", _productID)
+                    cmd.Parameters.AddWithValue("@MinSacks", minSacks)
+                    cmd.Parameters.AddWithValue("@MaxSacks", maxSacks)
+                    cmd.Parameters.AddWithValue("@DiscountPrice", discountPrice)
+
+                    conn.Open()
+                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+
+                    If rowsAffected > 0 Then
+                        MessageBox.Show("Discount deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        LoadDiscounts(_productID) ' Refresh DataGridView
+                    Else
+                        MessageBox.Show("Discount not found in database.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error deleting discount: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

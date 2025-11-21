@@ -264,6 +264,7 @@ FROM RetailSalesReport sr
                             detailsText.AppendLine("=======================================")
                             detailsText.AppendLine()
 
+                            ' Show transaction status
                             If isRefunded Then
                                 detailsText.AppendLine("*** REFUNDED TRANSACTION ***")
                                 detailsText.AppendLine()
@@ -288,8 +289,8 @@ FROM RetailSalesReport sr
                             detailsText.AppendLine("Pricing Information:")
                             detailsText.AppendLine("----------------------------------------")
                             detailsText.AppendLine($"Quantity Sold: {reader("QuantitySold")}")
-                            detailsText.AppendLine($"Unit Price: P{Convert.ToDecimal(reader("UnitPrice")):N2}")
-                            detailsText.AppendLine($"Total Amount: P{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                            detailsText.AppendLine($"Unit Price: ₱{Convert.ToDecimal(reader("UnitPrice")):N2}")
+                            detailsText.AppendLine($"Total Amount: ₱{Convert.ToDecimal(reader("TotalAmount")):N2}")
                             detailsText.AppendLine()
 
                             detailsText.AppendLine("Payment Information:")
@@ -310,6 +311,7 @@ FROM RetailSalesReport sr
                             End If
                             detailsText.AppendLine()
 
+                            ' Refund Information (if applicable)
                             If isRefunded Then
                                 detailsText.AppendLine("Refund Information:")
                                 detailsText.AppendLine("----------------------------------------")
@@ -319,15 +321,19 @@ FROM RetailSalesReport sr
                                 If Not IsDBNull(reader("RefundReason")) Then
                                     detailsText.AppendLine($"Refund Reason: {reader("RefundReason")}")
                                 End If
-                                detailsText.AppendLine($"Refunded Amount: P{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                                detailsText.AppendLine($"Refunded Amount: ₱{Convert.ToDecimal(reader("TotalAmount")):N2}")
                                 detailsText.AppendLine()
                             End If
 
                             detailsText.AppendLine("=======================================")
 
-                            Dim title As String = If(isRefunded,
-   $"Sale Details (REFUNDED) - #{saleID}",
- $"Sale Details - #{saleID}")
+                            ' Update title based on transaction status
+                            Dim title As String
+                            If isRefunded Then
+                                title = $"Sale Details (REFUNDED) - #{saleID}"
+                            Else
+                                title = $"Sale Details - #{saleID}"
+                            End If
 
                             MessageBox.Show(detailsText.ToString(), title,
          MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -409,22 +415,29 @@ FROM RetailSalesReport sr
     Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
         Using con As New SqlConnection(GetConnectionString())
             Dim query As String = "
-    SELECT
-     sr.SaleID, sr.SaleDate, rp.ProductName, rp.unit, c.CategoryName,
-             sr.QuantitySold, sr.UnitPrice, sr.TotalAmount,
-  sr.PaymentMethod, u.username AS HandledBy
-      FROM RetailSalesReport sr
- INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
-        INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-    INNER JOIN Users u ON sr.HandledBy = u.userID
-   WHERE sr.SaleDate >= @FromDate AND sr.SaleDate <= @ToDate
-       ORDER BY sr.SaleDate DESC"
+SELECT
+    sr.SaleID,
+    sr.SaleDate,
+    rp.ProductName,
+    rp.unit,
+    c.CategoryName,
+    sr.QuantitySold,
+    sr.UnitPrice,
+    sr.TotalAmount,
+    sr.PaymentMethod,
+    u.username AS HandledBy
+FROM RetailSalesReport sr
+INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
+INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+INNER JOIN Users u ON sr.HandledBy = u.userID
+WHERE sr.SaleDate >= @FromDate AND sr.SaleDate < @ToDate
+ORDER BY sr.SaleDate DESC"
 
             Using cmd As New SqlCommand(query, con)
                 ' Set FromDate to start of day (00:00:00)
                 cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
-                ' Set ToDate to end of day (23:59:59)
-                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date.AddDays(1).AddSeconds(-1))
+                ' Set ToDate to end of day by adding 1 day (to include entire day)
+                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date.AddDays(1))
 
                 Dim da As New SqlDataAdapter(cmd)
                 dt.Clear()

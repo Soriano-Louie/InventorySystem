@@ -83,7 +83,7 @@ Public Class editItemRetail
     End Sub
 
     Private Sub loadProducts()
-        Dim query As String = "SELECT ProductID, ProductName FROM retailProducts ORDER BY ProductName"
+        Dim query As String = "SELECT ProductID, ProductName, SKU FROM retailProducts WHERE (IsArchived = 0 OR IsArchived IS NULL) ORDER BY ProductName"
         Dim connString As String = GetConnectionString()
 
         Try
@@ -92,11 +92,23 @@ Public Class editItemRetail
                     Dim dt As New DataTable()
                     da.Fill(dt)
 
+                    ' Add a computed column for display that combines SKU and ProductName
+                    If Not dt.Columns.Contains("DisplayText") Then
+                        dt.Columns.Add("DisplayText", GetType(String))
+                    End If
+
+                    ' Populate the display column with format: [SKU] ProductName
+                    For Each row As DataRow In dt.Rows
+                        Dim sku As String = row("SKU").ToString()
+                        Dim productName As String = row("ProductName").ToString()
+                        row("DisplayText") = $"[{sku}] {productName}"
+                    Next
+
                     With productDropDown
                         .DataSource = dt
-                        .DisplayMember = "ProductName"   ' visible to user
-                        .ValueMember = "ProductID"       ' hidden value
-                        .SelectedIndex = -1               ' optional: no default selection
+                        .DisplayMember = "DisplayText"    ' Show [SKU] ProductName
+                        .ValueMember = "ProductID"        ' Hidden value
+                        .SelectedIndex = -1               ' No default selection
                         .DropDownStyle = ComboBoxStyle.DropDown
                         .AutoCompleteMode = AutoCompleteMode.SuggestAppend
                         .AutoCompleteSource = AutoCompleteSource.ListItems
@@ -339,8 +351,47 @@ Public Class editItemRetail
         Dim newExpDate As Date? = Nothing
         Dim updateExpDate As Boolean = newDateText.Checked
 
+        ' WARNING: Check if expiration date is being modified
         If updateExpDate Then
             newExpDate = newDateText.Value
+
+            ' Get current expiration date from database
+            Dim currentExpDate As Date? = GetCurrentExpirationDate(productID)
+
+            ' Show warning if expiration date is being changed
+            Dim warningMsg As String = ""
+            If currentExpDate.HasValue Then
+                ' Changing existing expiration date
+                warningMsg = $"⚠️ WARNING: You are changing the expiration date" & vbCrLf & vbCrLf &
+                            $"Current Expiration: {currentExpDate.Value:yyyy-MM-dd}" & vbCrLf &
+                            $"New Expiration: {newExpDate.Value:yyyy-MM-dd}" & vbCrLf & vbCrLf &
+                            "Changing the expiration date will affect:" & vbCrLf &
+                            "  • Product visibility in sales" & vbCrLf &
+                            "  • Inventory tracking" & vbCrLf &
+                            "  • Expiration warnings" & vbCrLf & vbCrLf &
+                            "Are you sure you want to proceed?"
+            Else
+                ' Adding new expiration date
+                warningMsg = $"⚠️ WARNING: You are adding an expiration date" & vbCrLf & vbCrLf &
+                            $"New Expiration: {newExpDate.Value:yyyy-MM-dd}" & vbCrLf & vbCrLf &
+                            "This product previously had no expiration date." & vbCrLf &
+                            "Adding an expiration date will:" & vbCrLf &
+                            "  • Enable expiration tracking" & vbCrLf &
+                            "  • Show expiration warnings when near expiry" & vbCrLf &
+                            "  • Affect product visibility based on expiry status" & vbCrLf & vbCrLf &
+                            "Are you sure you want to proceed?"
+            End If
+
+            Dim result = MessageBox.Show(warningMsg,
+                                        "Confirm Expiration Date Change",
+                                        MessageBoxButtons.YesNo,
+                                        MessageBoxIcon.Warning,
+                                        MessageBoxDefaultButton.Button2)
+
+            If result = DialogResult.No Then
+                MessageBox.Show("Expiration date update cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Exit Sub
+            End If
         End If
 
         ' Safe parsing with default fallback
@@ -407,6 +458,24 @@ Public Class editItemRetail
 
         If newQuantity.HasValue AndAlso newQuantity < 0 Then
             MessageBox.Show("Stock Quantity cannot be negative.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        ' Check if at least one field has been updated
+        Dim hasChanges As Boolean = Not String.IsNullOrWhiteSpace(newProductName) OrElse
+                                    newCategory IsNot Nothing OrElse
+                                    Not String.IsNullOrWhiteSpace(newUnit) OrElse
+                                    newCost.HasValue OrElse
+                                    newRetailPrice.HasValue OrElse
+                                    newReorder.HasValue OrElse
+                                    updateExpDate OrElse
+                                    isQuantityEdit
+
+        If Not hasChanges Then
+            MessageBox.Show("No changes detected. Please fill in at least one field to update.",
+                          "No Changes",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Information)
             Exit Sub
         End If
 
@@ -538,6 +607,110 @@ Public Class editItemRetail
         Return hasExpirationDate
     End Function
 
+    ' Helper method to get current expiration date from database (for comparison)
+    Private Function GetCurrentExpirationDate(productID As Integer) As Date?
+        Dim currentExpDate As Date? = Nothing
+        Dim connString As String = GetConnectionString()
+
+        Try
+            Using conn As New SqlConnection(connString)
+                conn.Open()
+                Dim query As String = "SELECT ExpirationDate FROM retailProducts WHERE ProductID = @ProductID"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+
+                    Dim result = cmd.ExecuteScalar()
+
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        currentExpDate = Convert.ToDateTime(result)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error getting current expiration date: {ex.Message}")
+        End Try
+
+        Return currentExpDate
+    End Function
+
+    ''' <summary>
+    ''' Archive a product instead of deleting it - Archives ALL batches with the same ProductName
+    ''' </summary>
+    Private Sub ArchiveProduct(productID As Integer, productName As String)
+        ' Get archive reason from user
+        Dim reason As String = InputBox("Please provide a reason for archiving this product:",
+                                       "Archive Reason",
+                                       "Product no longer available")
+
+        If String.IsNullOrWhiteSpace(reason) Then
+            MessageBox.Show("Archive reason is required.", "Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        Try
+            Dim currentUserID As Integer = GetCurrentUserID()
+            If currentUserID = 0 Then Return
+
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                ' Archive ALL batches with the same ProductName (not just one ProductID)
+                Dim query As String = "UPDATE retailProducts
+                                      SET IsArchived = 1,
+                                          ArchivedDate = GETDATE(),
+                                          ArchivedBy = @ArchivedBy,
+                                          ArchiveReason = @ArchiveReason
+                                      WHERE ProductName = @ProductName"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductName", productName)
+                    cmd.Parameters.AddWithValue("@ArchivedBy", currentUserID)
+                    cmd.Parameters.AddWithValue("@ArchiveReason", reason)
+
+                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+
+                    If rowsAffected > 0 Then
+                        MessageBox.Show($"✓ Product '{productName}' has been archived successfully!" & vbCrLf & vbCrLf &
+                                      $"Archived {rowsAffected} batch(es)" & vbCrLf &
+                                      "Reason: " & reason & vbCrLf & vbCrLf &
+                                      "All batches of this product are now hidden from active inventory." & vbCrLf &
+                                      "You can restore them later from the Archived Products view.",
+                                      "Archive Successful",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information)
+
+                        ' Reset form and reload
+                        productDropDown.SelectedIndex = -1
+                        ResetControl(newProductText)
+                        ResetControl(newCategoryDropdown)
+                        ResetControl(newQuantityText)
+                        ResetControl(newUnitText)
+                        ResetControl(newCostText)
+                        ResetControl(newRetailText)
+                        ResetControl(newReorderText)
+                        ResetControl(newDateText)
+                        For Each ctrl As Control In Panel8.Controls
+                            ResetControl(ctrl)
+                        Next
+                        newDateText.Checked = False
+
+                        loadProducts()
+                        If parentForm IsNot Nothing Then
+                            parentForm.LoadProducts()
+                        End If
+                    Else
+                        MessageBox.Show("Product not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error archiving product: {ex.Message}",
+                          "Database Error",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     ' Helper method to get current logged-in user ID
     Private Function GetCurrentUserID() As Integer
         ' Check if user is logged in
@@ -558,38 +731,133 @@ Public Class editItemRetail
 
         ' Get ProductID from dropdown
         Dim productID As Integer = Convert.ToInt32(productDropDown.SelectedValue)
+        Dim productName As String = productDropDown.Text
 
         ' Confirm before deleting
         Dim confirm = MessageBox.Show("Are you sure you want to delete this product?",
                                       "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
 
         If confirm = DialogResult.Yes Then
-            DeleteProduct(productID)
+            DeleteProduct(productID, productName)
         End If
     End Sub
 
-    Private Sub DeleteProduct(productID As Integer)
-        Dim query As String = "DELETE FROM retailProducts WHERE ProductID = @ProductID"
+    Private Sub DeleteProduct(productID As Integer, productName As String)
+        ' Check if product has sales records first
+        If ProductHasSalesRecords(productID) Then
+            ' Offer to archive instead of delete
+            Dim result = MessageBox.Show(
+                "⚠️ Cannot Delete - Sales Records Exist" & vbCrLf & vbCrLf &
+                $"Product '{productName}' has sales records and cannot be permanently deleted." & vbCrLf & vbCrLf &
+                "Would you like to ARCHIVE this product instead?" & vbCrLf & vbCrLf &
+                "Archived products:" & vbCrLf &
+                "  ✓ Will be hidden from active inventory" & vbCrLf &
+                "  ✓ Can be restored later if needed" & vbCrLf &
+                "  ✓ Sales history will be preserved" & vbCrLf & vbCrLf &
+                "Click YES to archive, NO to cancel.",
+                "Archive Product?",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1)
 
-        Using conn As New SqlConnection(GetConnectionString())
-            Using cmd As New SqlCommand(query, conn)
-                cmd.Parameters.AddWithValue("@ProductID", productID)
+            If result = DialogResult.Yes Then
+                ArchiveProduct(productID, productName)
+            End If
+            Return
+        End If
 
+        ' If no sales records, proceed with normal deletion
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
-                Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
 
-                If rowsAffected > 0 Then
-                    MessageBox.Show("Product deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                    loadProducts()
-                    If parentForm IsNot Nothing Then
-                        parentForm.LoadProducts()
+                ' Step 1: Delete related product discounts (if any - retail may not have this table)
+                Try
+                    Dim deleteDiscountsQuery As String = "DELETE FROM ProductDiscounts WHERE ProductID = @ProductID"
+                    Using cmd As New SqlCommand(deleteDiscountsQuery, conn)
+                        cmd.Parameters.AddWithValue("@ProductID", productID)
+                        Dim discountsDeleted As Integer = cmd.ExecuteNonQuery()
+                        Debug.WriteLine($"Deleted {discountsDeleted} discount records for ProductID {productID}")
+                    End Using
+                Catch ex As SqlException
+                    ' Table might not exist for retail, continue anyway
+                    Debug.WriteLine("ProductDiscounts table might not exist for retail products")
+                End Try
+
+                ' Step 2: Delete the product itself
+                Dim deleteProductQuery As String = "DELETE FROM retailProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(deleteProductQuery, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
+
+                    If rowsAffected > 0 Then
+                        MessageBox.Show($"Product '{productName}' deleted successfully!" & vbCrLf &
+                                      "All associated data has been removed.",
+                                      "Success",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information)
+
+                        ' Reload products list
+                        loadProducts()
+                        If parentForm IsNot Nothing Then
+                            parentForm.LoadProducts()
+                        End If
+                    Else
+                        MessageBox.Show("No product found with that ID.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     End If
-                Else
-                    MessageBox.Show("No product found with that ID.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                End If
+                End Using
             End Using
-        End Using
+        Catch ex As Exception
+            ' Check for specific constraint violations
+            If ex.Message.Contains("FK_") OrElse ex.Message.Contains("REFERENCE constraint") Then
+                ' Find which table is causing the issue
+                Dim tableName As String = "related records"
+                If ex.Message.Contains("RetailSalesReport") Then
+                    tableName = "retail sales records"
+                ElseIf ex.Message.Contains("SalesReport") Then
+                    tableName = "sales records"
+                ElseIf ex.Message.Contains("ProductDiscounts") Then
+                    tableName = "product discounts"
+                End If
+
+                MessageBox.Show($"Cannot delete this product!" & vbCrLf & vbCrLf &
+                              $"This product has {tableName} that reference it." & vbCrLf & vbCrLf &
+                              "The system should have offered to archive this product." & vbCrLf &
+                              "Please contact system administrator if this problem persists." & vbCrLf & vbCrLf &
+                              $"Technical details: {ex.Message}",
+                              "❌ Cannot Delete - Related Data Exists",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Error)
+            Else
+                MessageBox.Show($"Error deleting product:{vbCrLf}{vbCrLf}" &
+                              $"Error: {ex.Message}" & vbCrLf & vbCrLf &
+                              "Please contact system administrator.",
+                              "Database Error",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Error)
+            End If
+        End Try
     End Sub
+
+    ''' <summary>
+    ''' Check if a product has sales records in RetailSalesReport
+    ''' </summary>
+    Private Function ProductHasSalesRecords(productID As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT COUNT(*) FROM RetailSalesReport WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error checking sales records: {ex.Message}")
+            Return False
+        End Try
+    End Function
 
     'Private Sub Button1_Click(sender As Object, e As EventArgs)
     '    If productDropDown.SelectedIndex = -1 Then

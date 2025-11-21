@@ -304,7 +304,7 @@ ORDER BY sr.SaleDate DESC"
                 Dim query As String = "
 SELECT
     sr.SaleID,
-sr.SaleDate,
+    sr.SaleDate,
     p.ProductName,
     p.SKU,
     p.unit AS Unit,
@@ -314,9 +314,9 @@ sr.SaleDate,
     sr.TotalAmount,
     sr.PaymentMethod,
     u.username AS HandledBy,
-sr.IsDelivery,
+    sr.IsDelivery,
     sr.DeliveryAddress,
- sr.DeliveryStatus,
+    sr.DeliveryStatus,
     sr.PayerName,
     sr.ReferenceNumber,
     sr.BankName,
@@ -336,12 +336,20 @@ WHERE sr.SaleID = @SaleID"
                         If reader.Read() Then
                             Dim isRefunded As Boolean = Convert.ToBoolean(reader("IsRefunded"))
 
+                            ' Check if cancelled based on DeliveryStatus
+                            Dim deliveryStatus As String = If(IsDBNull(reader("DeliveryStatus")), "", reader("DeliveryStatus").ToString())
+                            Dim isCancelled As Boolean = (deliveryStatus.ToUpper() = "CANCELLED")
+
                             detailsText.AppendLine("=======================================")
                             detailsText.AppendLine(vbTab & vbTab & "WHOLESALE SALE DETAILS")
                             detailsText.AppendLine("=======================================")
                             detailsText.AppendLine()
 
-                            If isRefunded Then
+                            ' Show transaction status
+                            If isCancelled Then
+                                detailsText.AppendLine("*** TRANSACTION CANCELLED ***")
+                                detailsText.AppendLine()
+                            ElseIf isRefunded Then
                                 detailsText.AppendLine("*** REFUNDED TRANSACTION ***")
                                 detailsText.AppendLine()
                             End If
@@ -353,7 +361,7 @@ WHERE sr.SaleID = @SaleID"
                             detailsText.AppendLine($"Time: {Convert.ToDateTime(reader("SaleDate")):hh:mm:ss tt}")
                             detailsText.AppendLine($"Handled By: {reader("HandledBy")}")
 
-                            ' Transaction Type
+                            ' Transaction Type with Delivery Status
                             Dim isDelivery As Object = reader("IsDelivery")
                             Dim transactionType As String
                             If IsDBNull(isDelivery) Then
@@ -364,6 +372,13 @@ WHERE sr.SaleID = @SaleID"
                                 transactionType = "Pickup"
                             End If
                             detailsText.AppendLine($"Type: {transactionType}")
+
+                            ' Show delivery status prominently in transaction info section
+                            If transactionType = "Delivery" AndAlso Not String.IsNullOrEmpty(deliveryStatus) Then
+                                detailsText.AppendLine($"Delivery Status: {deliveryStatus}")
+                            ElseIf transactionType = "Pickup" Then
+                                detailsText.AppendLine($"Fulfillment: Pickup (No Delivery)")
+                            End If
                             detailsText.AppendLine()
 
                             detailsText.AppendLine("Product Information:")
@@ -377,8 +392,8 @@ WHERE sr.SaleID = @SaleID"
                             detailsText.AppendLine("Pricing Information:")
                             detailsText.AppendLine("----------------------------------------")
                             detailsText.AppendLine($"Quantity Sold: {reader("QuantitySold")}")
-                            detailsText.AppendLine($"Unit Price: P{Convert.ToDecimal(reader("UnitPrice")):N2}")
-                            detailsText.AppendLine($"Total Amount: P{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                            detailsText.AppendLine($"Unit Price: ₱{Convert.ToDecimal(reader("UnitPrice")):N2}")
+                            detailsText.AppendLine($"Total Amount: ₱{Convert.ToDecimal(reader("TotalAmount")):N2}")
                             detailsText.AppendLine()
 
                             detailsText.AppendLine("Payment Information:")
@@ -400,7 +415,7 @@ WHERE sr.SaleID = @SaleID"
                             End If
                             detailsText.AppendLine()
 
-                            ' Delivery Information (if applicable)
+                            ' Delivery Information (if applicable) - Enhanced section
                             If transactionType = "Delivery" Then
                                 detailsText.AppendLine("Delivery Information:")
                                 detailsText.AppendLine("----------------------------------------")
@@ -408,8 +423,29 @@ WHERE sr.SaleID = @SaleID"
                                     detailsText.AppendLine($"Address: {reader("DeliveryAddress")}")
                                 End If
                                 If Not IsDBNull(reader("DeliveryStatus")) Then
-                                    detailsText.AppendLine($"Status: {reader("DeliveryStatus")}")
+                                    ' Show status with more detail
+                                    Dim statusDisplay As String = deliveryStatus
+                                    Select Case deliveryStatus.ToUpper()
+                                        Case "PENDING"
+                                            statusDisplay = "Pending (Awaiting Shipment)"
+                                        Case "IN TRANSIT"
+                                            statusDisplay = "In Transit (On the way)"
+                                        Case "DELIVERED"
+                                            statusDisplay = "Delivered (Complete)"
+                                        Case "CANCELLED"
+                                            statusDisplay = "Cancelled"
+                                    End Select
+                                    detailsText.AppendLine($"Delivery Status: {statusDisplay}")
                                 End If
+                                detailsText.AppendLine()
+                            End If
+
+                            ' Cancellation Information (if applicable) - based on DeliveryStatus
+                            If isCancelled Then
+                                detailsText.AppendLine("Cancellation Information:")
+                                detailsText.AppendLine("----------------------------------------")
+                                detailsText.AppendLine("Status: Cancelled")
+                                detailsText.AppendLine($"Transaction Amount: ₱{Convert.ToDecimal(reader("TotalAmount")):N2} (CANCELLED)")
                                 detailsText.AppendLine()
                             End If
 
@@ -423,28 +459,34 @@ WHERE sr.SaleID = @SaleID"
                                 If Not IsDBNull(reader("RefundReason")) Then
                                     detailsText.AppendLine($"Refund Reason: {reader("RefundReason")}")
                                 End If
-                                detailsText.AppendLine($"Refunded Amount: P{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                                detailsText.AppendLine($"Refunded Amount: ₱{Convert.ToDecimal(reader("TotalAmount")):N2}")
                                 detailsText.AppendLine()
                             End If
 
                             detailsText.AppendLine("=======================================")
 
-                            Dim title As String = If(isRefunded,
-           $"Sale Details (REFUNDED) - #{saleID}",
-         $"Sale Details - #{saleID}")
+                            ' Update title based on transaction status
+                            Dim title As String
+                            If isCancelled Then
+                                title = $"Sale Details (CANCELLED) - #{saleID}"
+                            ElseIf isRefunded Then
+                                title = $"Sale Details (REFUNDED) - #{saleID}"
+                            Else
+                                title = $"Sale Details - #{saleID}"
+                            End If
 
                             MessageBox.Show(detailsText.ToString(), title,
-     MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                          MessageBoxButtons.OK, MessageBoxIcon.Information)
                         Else
                             MessageBox.Show("Sale record not found.", "Not Found",
- MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                          MessageBoxButtons.OK, MessageBoxIcon.Warning)
                         End If
                     End Using
                 End Using
             End Using
         Catch ex As Exception
             MessageBox.Show($"Error loading sale details: {ex.Message}", "Error",
-   MessageBoxButtons.OK, MessageBoxIcon.Error)
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -575,8 +617,9 @@ SELECT
     sr.SaleID,
     sr.SaleDate,
     p.ProductName,
+    p.unit,
     c.CategoryName,
-  sr.QuantitySold,
+    sr.QuantitySold,
     sr.UnitPrice,
     sr.TotalAmount,
     sr.PaymentMethod,
@@ -585,12 +628,14 @@ FROM SalesReport sr
 INNER JOIN wholesaleProducts p ON sr.ProductID = p.ProductID
 INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
 INNER JOIN Users u ON sr.HandledBy = u.userID
-WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
+WHERE sr.SaleDate >= @FromDate AND sr.SaleDate < @ToDate
 ORDER BY sr.SaleDate DESC"
 
             Using cmd As New SqlCommand(query, con)
+                ' Set FromDate to start of day (00:00:00)
                 cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
-                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date)
+                ' Set ToDate to end of day by adding 1 day (to include entire day)
+                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date.AddDays(1))
 
                 Dim da As New SqlDataAdapter(cmd)
                 dt.Clear()

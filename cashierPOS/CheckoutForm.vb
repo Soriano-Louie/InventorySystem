@@ -12,14 +12,15 @@ Public Class CheckoutForm
 
     ' Payment details for GCash and Bank Transaction
     Private payerName As String = ""
-
     Private referenceNumber As String = ""
-
     Private bankName As String = ""
+
+    ' Payment tracking for cash
+    Private amountPaid As Decimal = 0
+    Private changeGiven As Decimal = 0
 
     ' Receipt printing support
     Private WithEvents printDocument As New PrintDocument()
-
     Private receiptContent As String = ""
     Private receiptLines As List(Of String)
 
@@ -67,6 +68,10 @@ Public Class CheckoutForm
         lblSelectedPayment.Text = "Please select a payment method"
         lblSelectedPayment.Font = New Font("Segoe UI", 10, FontStyle.Italic)
         lblSelectedPayment.ForeColor = Color.FromArgb(79, 51, 40)
+
+        ' Set Accept and Cancel buttons for Enter/Esc key support
+        Me.AcceptButton = btnConfirm
+        Me.CancelButton = btnCancel
     End Sub
 
     ''' Handle keyboard shortcuts for checkout form
@@ -76,30 +81,41 @@ Public Class CheckoutForm
         Select Case e.KeyCode
             Case Keys.C
                 ' Press C for Cash
-                btnCash.PerformClick()
-                e.Handled = True
+                If Not e.Control AndAlso Not e.Alt Then
+                    btnCash.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
 
             Case Keys.G
                 ' Press G for GCash
-                btnGCash.PerformClick()
-                e.Handled = True
+                If Not e.Control AndAlso Not e.Alt Then
+                    btnGCash.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
 
             Case Keys.B
                 ' Press B for Bank Transaction
-                btnBankTransaction.PerformClick()
-                e.Handled = True
+                If Not e.Control AndAlso Not e.Alt Then
+                    btnBankTransaction.PerformClick()
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                End If
 
             Case Keys.Enter
                 ' Press Enter to Confirm (only if button is enabled)
                 If btnConfirm.Enabled Then
                     btnConfirm.PerformClick()
                     e.Handled = True
+                    e.SuppressKeyPress = True
                 End If
 
             Case Keys.Escape
                 ' Press Esc to Cancel/Exit
                 btnCancel.PerformClick()
                 e.Handled = True
+                e.SuppressKeyPress = True
         End Select
     End Sub
 
@@ -115,6 +131,67 @@ Public Class CheckoutForm
         SelectPaymentMethod("Bank Transaction", btnBankTransaction)
     End Sub
 
+    ''' <summary>
+    ''' Prompts cashier to enter amount paid by customer for cash payments
+    ''' </summary>
+    Private Function PromptForCashPayment() As Boolean
+        Try
+            ' Create input dialog
+            Dim amountInput As String = InputBox($"Total Amount: ₱{totalAmount:N2}" & vbCrLf & vbCrLf &
+                                                "Enter amount paid by customer:",
+                                                "Cash Payment",
+                                                totalAmount.ToString("F2"))
+
+            If String.IsNullOrWhiteSpace(amountInput) Then
+                MessageBox.Show("Payment cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return False
+            End If
+
+            ' Validate input
+            If Not Decimal.TryParse(amountInput, amountPaid) Then
+                MessageBox.Show("Please enter a valid amount.", "Invalid Input",
+                              MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return False
+            End If
+
+            ' Check if amount is sufficient
+            If amountPaid < totalAmount Then
+                MessageBox.Show($"Insufficient amount!" & vbCrLf & vbCrLf &
+                              $"Total: ₱{totalAmount:N2}" & vbCrLf &
+                              $"Paid: ₱{amountPaid:N2}" & vbCrLf &
+                              $"Short: ₱{(totalAmount - amountPaid):N2}",
+                              "Insufficient Payment",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Warning)
+                Return False
+            End If
+
+            ' Calculate change
+            changeGiven = amountPaid - totalAmount
+
+            ' Show change to cashier
+            If changeGiven > 0 Then
+                MessageBox.Show($"Total: ₱{totalAmount:N2}" & vbCrLf &
+                              $"Paid: ₱{amountPaid:N2}" & vbCrLf & vbCrLf &
+                              $"Change: ₱{changeGiven:N2}",
+                              "Change Due",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Information)
+            Else
+                MessageBox.Show($"Exact amount received: ₱{totalAmount:N2}",
+                              "Payment Confirmed",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Information)
+            End If
+
+            Return True
+        Catch ex As Exception
+            MessageBox.Show($"Error processing payment: {ex.Message}", "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
+
     Private Sub SelectPaymentMethod(method As String, selectedButton As Button)
         selectedPaymentMethod = method
         lblSelectedPayment.Text = $"Selected: {method}"
@@ -128,15 +205,30 @@ Public Class CheckoutForm
         ' Highlight selected button
         selectedButton.BackColor = Color.FromArgb(79, 51, 40)
 
-        ' Prompt for payment details if GCash or Bank Transaction
-        If method = "GCash" OrElse method = "Bank Transaction" Then
+        ' Handle payment method specific actions
+        If method = "Cash" Then
+            ' For cash, prompt for amount paid immediately
+            If Not PromptForCashPayment() Then
+                ' User cancelled or entered invalid amount
+                selectedPaymentMethod = ""
+                lblSelectedPayment.Text = "Please select a payment method"
+                btnConfirm.Enabled = False
+                selectedButton.BackColor = Color.FromArgb(147, 53, 53)
+                amountPaid = 0
+                changeGiven = 0
+            End If
+        ElseIf method = "GCash" OrElse method = "Bank Transaction" Then
+            ' Existing code for GCash/Bank Transaction
             Dim paymentDetailsForm As New PaymentDetailsForm(method)
 
             If paymentDetailsForm.ShowDialog() = DialogResult.OK Then
-                ' Store payment details
                 payerName = paymentDetailsForm.PayerName
                 referenceNumber = paymentDetailsForm.ReferenceNumber
                 bankName = paymentDetailsForm.BankName
+
+                ' For non-cash, amount paid equals total (full payment)
+                amountPaid = totalAmount
+                changeGiven = 0
 
                 Debug.WriteLine($"Payment details captured:")
                 Debug.WriteLine($"  - Payer Name: {payerName}")
@@ -145,7 +237,7 @@ Public Class CheckoutForm
                     Debug.WriteLine($"  - Bank Name: {bankName}")
                 End If
             Else
-                ' User cancelled payment details - reset selection
+                ' User cancelled
                 selectedPaymentMethod = ""
                 lblSelectedPayment.Text = "Please select a payment method"
                 btnConfirm.Enabled = False
@@ -153,12 +245,9 @@ Public Class CheckoutForm
                 payerName = ""
                 referenceNumber = ""
                 bankName = ""
+                amountPaid = 0
+                changeGiven = 0
             End If
-        Else
-            ' Cash payment - no additional details needed
-            payerName = ""
-            referenceNumber = ""
-            bankName = ""
         End If
     End Sub
 
@@ -463,14 +552,16 @@ Public Class CheckoutForm
     End Function
 
     Private Sub InsertRetailSalesReport(conn As SqlConnection, item As posForm.CartItem,
-     effectivePrice As Decimal, itemTotal As Decimal,
-        handledBy As Integer)
+                                       effectivePrice As Decimal, itemTotal As Decimal,
+                                       handledBy As Integer)
         ' Use GETDATE() which includes both date and time components
         Dim query As String = "
 INSERT INTO RetailSalesReport
- (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, PayerName, ReferenceNumber, BankName)
-  VALUES
- (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @PayerName, @ReferenceNumber, @BankName)"
+(SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, 
+ HandledBy, PayerName, ReferenceNumber, BankName, AmountPaid, ChangeGiven)
+VALUES
+(GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, 
+ @HandledBy, @PayerName, @ReferenceNumber, @BankName, @AmountPaid, @ChangeGiven)"
 
         Using cmd As New SqlCommand(query, conn)
             cmd.Parameters.AddWithValue("@ProductID", item.ProductID)
@@ -481,10 +572,14 @@ INSERT INTO RetailSalesReport
             cmd.Parameters.AddWithValue("@PaymentMethod", selectedPaymentMethod)
             cmd.Parameters.AddWithValue("@HandledBy", handledBy)
 
-            ' Add payment details (NULL for Cash)
+            ' Add payment details (NULL for Cash if no payer name)
             cmd.Parameters.AddWithValue("@PayerName", If(String.IsNullOrWhiteSpace(payerName), DBNull.Value, payerName))
             cmd.Parameters.AddWithValue("@ReferenceNumber", If(String.IsNullOrWhiteSpace(referenceNumber), DBNull.Value, referenceNumber))
             cmd.Parameters.AddWithValue("@BankName", If(String.IsNullOrWhiteSpace(bankName), DBNull.Value, bankName))
+
+            ' Add new payment tracking columns
+            cmd.Parameters.AddWithValue("@AmountPaid", If(amountPaid > 0, amountPaid, DBNull.Value))
+            cmd.Parameters.AddWithValue("@ChangeGiven", If(changeGiven > 0, changeGiven, DBNull.Value))
 
             ' Log the exact time being inserted
             Debug.WriteLine($"Inserting retail sale at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}")
@@ -494,9 +589,16 @@ INSERT INTO RetailSalesReport
     End Sub
 
     Private Sub InsertWholesaleSalesReport(conn As SqlConnection, item As posForm.CartItem,
-     effectivePrice As Decimal, itemTotal As Decimal,
-  handledBy As Integer)
-        Dim query As String = "INSERT INTO SalesReport (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, DeliveryStatus, PayerName, ReferenceNumber, BankName) VALUES (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, @DeliveryStatus, @PayerName, @ReferenceNumber, @BankName)"
+                                          effectivePrice As Decimal, itemTotal As Decimal,
+                                          handledBy As Integer)
+        Dim query As String = "INSERT INTO SalesReport 
+        (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, 
+         HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, 
+         DeliveryStatus, PayerName, ReferenceNumber, BankName, AmountPaid, ChangeGiven) 
+        VALUES 
+        (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, 
+         @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, 
+         @DeliveryStatus, @PayerName, @ReferenceNumber, @BankName, @AmountPaid, @ChangeGiven)"
 
         Try
             Using cmd As New SqlCommand(query, conn)
@@ -538,10 +640,14 @@ INSERT INTO RetailSalesReport
                     Debug.WriteLine($"    - This item will NOT appear in delivery logs")
                 End If
 
-                ' Add payment details (NULL for Cash)
+                ' Add payment details (NULL for Cash if no payer name)
                 cmd.Parameters.Add("@PayerName", SqlDbType.NVarChar, 200).Value = If(String.IsNullOrWhiteSpace(payerName), DBNull.Value, payerName)
                 cmd.Parameters.Add("@ReferenceNumber", SqlDbType.NVarChar, 100).Value = If(String.IsNullOrWhiteSpace(referenceNumber), DBNull.Value, referenceNumber)
                 cmd.Parameters.Add("@BankName", SqlDbType.NVarChar, 200).Value = If(String.IsNullOrWhiteSpace(bankName), DBNull.Value, bankName)
+
+                ' Add new payment tracking columns
+                cmd.Parameters.Add("@AmountPaid", SqlDbType.Decimal).Value = If(amountPaid > 0, amountPaid, DBNull.Value)
+                cmd.Parameters.Add("@ChangeGiven", SqlDbType.Decimal).Value = If(changeGiven > 0, changeGiven, DBNull.Value)
 
                 cmd.ExecuteNonQuery()
                 Debug.WriteLine($"  ✓ Wholesale sale inserted successfully: ProductID={item.ProductID}, IsDelivery={isDelivery}")
@@ -711,6 +817,16 @@ INSERT INTO RetailSalesReport
         End If
         content.AppendLine($"TOTAL AMOUNT:     ₱{totalAmount:N2}")
         content.AppendLine($"Payment Method: {selectedPaymentMethod}")
+
+        ' Add cash payment details
+        If selectedPaymentMethod = "Cash" Then
+            If amountPaid > 0 Then
+                content.AppendLine($"Amount Paid:      ₱{amountPaid:N2}")
+                If changeGiven > 0 Then
+                    content.AppendLine($"Change:           ₱{changeGiven:N2}")
+                End If
+            End If
+        End If
 
         ' Add payment details if GCash or Bank Transaction
         If selectedPaymentMethod = "GCash" OrElse selectedPaymentMethod = "Bank Transaction" Then

@@ -6,6 +6,13 @@ Public Class DailyTransactionsForm
     Private dv As New DataView()
     Private bs As New BindingSource()
 
+    ' Track view state
+    Private isDetailView As Boolean = False
+
+    Private currentBatchDate As DateTime
+    Private currentBatchCashier As String
+    Private currentBatchType As String
+
     Public Sub New(parent As posForm)
         InitializeComponent()
         Me.parentForm = parent
@@ -58,14 +65,16 @@ Public Class DailyTransactionsForm
         transactionsDataGridView.AllowUserToResizeColumns = False
         transactionsDataGridView.AllowUserToResizeRows = False
 
-        ' Add double-click event handler to show receipt
+        ' Add single-click event handler for batch view
+        AddHandler transactionsDataGridView.CellClick, AddressOf TransactionsDataGridView_CellClick
+        ' Add double-click event handler for detail view (receipts)
         AddHandler transactionsDataGridView.CellDoubleClick, AddressOf TransactionsDataGridView_CellDoubleClick
 
-        ' Add tooltip to inform users about double-click functionality
+        ' Add tooltip
         Dim toolTip As New ToolTip()
-        toolTip.SetToolTip(transactionsDataGridView, "Double-click a transaction to view its receipt")
+        toolTip.SetToolTip(transactionsDataGridView, "Click a batch to view details | Double-click an item to view receipt")
 
-        ' Setup buttons
+        ' Setup buttons - initially hidden except Refresh and Close
         btnRefresh.BackColor = Color.FromArgb(147, 53, 53)
         btnRefresh.ForeColor = Color.FromArgb(230, 216, 177)
         btnRefresh.Font = New Font("Segoe UI", 10, FontStyle.Bold)
@@ -77,12 +86,14 @@ Public Class DailyTransactionsForm
         btnRefund.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         btnRefund.FlatStyle = FlatStyle.Flat
         btnRefund.Cursor = Cursors.Hand
+        btnRefund.Visible = False ' Hidden in batch view
 
         btnViewReceipt.BackColor = Color.FromArgb(147, 53, 53)
         btnViewReceipt.ForeColor = Color.FromArgb(230, 216, 177)
         btnViewReceipt.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         btnViewReceipt.FlatStyle = FlatStyle.Flat
         btnViewReceipt.Cursor = Cursors.Hand
+        btnViewReceipt.Visible = False ' Hidden in batch view
 
         btnClose.BackColor = Color.FromArgb(79, 51, 40)
         btnClose.ForeColor = Color.FromArgb(230, 216, 177)
@@ -109,78 +120,60 @@ Public Class DailyTransactionsForm
         bs.DataSource = dv
         transactionsDataGridView.DataSource = bs
 
-        ' Load transactions
-        LoadDailyTransactions()
+        ' Load batch transactions
+        LoadBatchTransactions()
     End Sub
 
-    Private Sub LoadDailyTransactions()
+    ''' <summary>
+    ''' Load grouped batch transactions (summary view)
+    ''' Groups by SaleDate (minute precision) and HandledBy
+    ''' </summary>
+    Private Sub LoadBatchTransactions()
         Try
             Dim connStr As String = GetConnectionString()
             Dim today As Date = DateTime.Today
 
-            ' Combined query for both retail and wholesale transactions with refund status
+            ' Query to group transactions by time and cashier
             Dim query As String = "
-    -- Retail Sales (all in-store)
-     SELECT
-     'RETAIL' AS SaleType,
- 'In-Store' AS TransactionType,
-       sr.SaleID,
-     sr.SaleDate,
-        rp.ProductName,
-       rp.ProductID,
-    rp.unit AS Unit,
-   c.CategoryName,
-    sr.QuantitySold,
-sr.UnitPrice,
-     sr.TotalAmount,
-    sr.PaymentMethod,
-          u.username AS HandledBy,
-         ISNULL(sr.IsRefunded, 0) AS IsRefunded,
-    sr.RefundDate,
-      sr.RefundReason,
-          sr.PayerName,
-     sr.ReferenceNumber,
-            sr.BankName
-            FROM RetailSalesReport sr
-            INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
-      INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-     INNER JOIN Users u ON sr.HandledBy = u.userID
-      WHERE CAST(sr.SaleDate AS DATE) = @Today
+                WITH AllTransactions AS (
+                    -- Retail transactions
+                    SELECT
+                        'RETAIL' AS SaleType,
+                        sr.SaleDate,
+                        u.username AS HandledBy,
+                        sr.SaleID,
+                        sr.TotalAmount,
+                        ISNULL(sr.IsRefunded, 0) AS IsRefunded
+                    FROM RetailSalesReport sr
+                    INNER JOIN Users u ON sr.HandledBy = u.userID
+                    WHERE CAST(sr.SaleDate AS DATE) = @Today
 
-        UNION ALL
+                    UNION ALL
 
-         -- Wholesale Sales (can be delivery, pickup, or in-store)
-   SELECT
-     'WHOLESALE' AS SaleType,
-      CASE
-       WHEN sr.IsDelivery = 1 THEN 'Delivery'
-       WHEN sr.IsDelivery = 0 THEN 'Pickup'
-          ELSE 'In-Store'
-     END AS TransactionType,
-    sr.SaleID,
- sr.SaleDate,
-     wp.ProductName,
-    wp.ProductID,
-     wp.unit AS Unit,
-    c.CategoryName,
- sr.QuantitySold,
- sr.UnitPrice,
-sr.TotalAmount,
-       sr.PaymentMethod,
-          u.username AS HandledBy,
-       ISNULL(sr.IsRefunded, 0) AS IsRefunded,
-      sr.RefundDate,
-       sr.RefundReason,
-       sr.PayerName,
-      sr.ReferenceNumber,
-            sr.BankName
-    FROM SalesReport sr
-   INNER JOIN wholesaleProducts wp ON sr.ProductID = wp.ProductID
-    INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-      INNER JOIN Users u ON sr.HandledBy = u.userID
-      WHERE CAST(sr.SaleDate AS DATE) = @Today
-
-        ORDER BY SaleDate DESC"
+                    -- Wholesale transactions
+                    SELECT
+                        'WHOLESALE' AS SaleType,
+                        sr.SaleDate,
+                        u.username AS HandledBy,
+                        sr.SaleID,
+                        sr.TotalAmount,
+                        ISNULL(sr.IsRefunded, 0) AS IsRefunded
+                    FROM SalesReport sr
+                    INNER JOIN Users u ON sr.HandledBy = u.userID
+                    WHERE CAST(sr.SaleDate AS DATE) = @Today
+                )
+                SELECT
+                    MIN(SaleDate) AS BatchTime,
+                    HandledBy AS Cashier,
+                    COUNT(*) AS ItemCount,
+                    SUM(TotalAmount) AS TotalAmount,
+                    CASE WHEN MAX(CAST(IsRefunded AS INT)) = 1 THEN 1 ELSE 0 END AS HasRefunds,
+                    STRING_AGG(CAST(SaleID AS VARCHAR), ',') AS SaleIDs
+                FROM AllTransactions
+                GROUP BY
+                    DATEADD(MINUTE, DATEDIFF(MINUTE, 0, SaleDate), 0),
+                    HandledBy
+                ORDER BY BatchTime DESC"
 
             Using conn As New SqlConnection(connStr)
                 Using da As New SqlDataAdapter(query, conn)
@@ -189,175 +182,470 @@ sr.TotalAmount,
                     dt.Clear()
                     da.Fill(dt)
 
-                    ' Add a computed column for display status
+                    ' Add a computed column for display status BEFORE binding
+                    If Not dt.Columns.Contains("StatusDisplay") Then
+                        dt.Columns.Add("StatusDisplay", GetType(String))
+                    End If
+
+                    ' Populate the display column
+                    For Each row As DataRow In dt.Rows
+                        Dim hasRefundsInt As Integer = Convert.ToInt32(row("HasRefunds"))
+                        row("StatusDisplay") = If(hasRefundsInt = 1, "HAS REFUNDS", "Active")
+                    Next
+
+                    ' Mark as batch view
+                    isDetailView = False
+
+                    ' Hide detail-only buttons
+                    btnRefund.Visible = False
+                    btnViewReceipt.Visible = False
+
+                    ' Re-bind to update structure
+                    dv = New DataView(dt)
+                    bs.DataSource = dv
+                    transactionsDataGridView.DataSource = bs
+
+                    ' Format columns for batch view
+                    If transactionsDataGridView.Columns.Count > 0 Then
+                        ' First, hide all detail view columns if they exist
+                        If transactionsDataGridView.Columns.Contains("SaleType") Then
+                            transactionsDataGridView.Columns("SaleType").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("TransactionType") Then
+                            transactionsDataGridView.Columns("TransactionType").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("SaleID") Then
+                            transactionsDataGridView.Columns("SaleID").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("SaleDate") Then
+                            transactionsDataGridView.Columns("SaleDate").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("ProductName") Then
+                            transactionsDataGridView.Columns("ProductName").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("ProductID") Then
+                            transactionsDataGridView.Columns("ProductID").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("Unit") Then
+                            transactionsDataGridView.Columns("Unit").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("CategoryName") Then
+                            transactionsDataGridView.Columns("CategoryName").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("QuantitySold") Then
+                            transactionsDataGridView.Columns("QuantitySold").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("UnitPrice") Then
+                            transactionsDataGridView.Columns("UnitPrice").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("PaymentMethod") Then
+                            transactionsDataGridView.Columns("PaymentMethod").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("HandledBy") Then
+                            transactionsDataGridView.Columns("HandledBy").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("IsRefunded") Then
+                            transactionsDataGridView.Columns("IsRefunded").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("RefundStatus") Then
+                            transactionsDataGridView.Columns("RefundStatus").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("RefundDate") Then
+                            transactionsDataGridView.Columns("RefundDate").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("RefundReason") Then
+                            transactionsDataGridView.Columns("RefundReason").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("PayerName") Then
+                            transactionsDataGridView.Columns("PayerName").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("ReferenceNumber") Then
+                            transactionsDataGridView.Columns("ReferenceNumber").Visible = False
+                        End If
+                        If transactionsDataGridView.Columns.Contains("BankName") Then
+                            transactionsDataGridView.Columns("BankName").Visible = False
+                        End If
+
+                        With transactionsDataGridView
+                            ' Show and configure batch view columns
+                            .Columns("BatchTime").Visible = True
+                            .Columns("BatchTime").HeaderText = "Transaction Time (Click to view details)"
+                            .Columns("BatchTime").DefaultCellStyle.Format = "hh:mm:ss tt"
+                            .Columns("BatchTime").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                            .Columns("BatchTime").FillWeight = 35
+
+                            .Columns("Cashier").Visible = True
+                            .Columns("Cashier").HeaderText = "Cashier"
+                            .Columns("Cashier").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                            .Columns("Cashier").FillWeight = 25
+
+                            .Columns("ItemCount").Visible = True
+                            .Columns("ItemCount").HeaderText = "Items"
+                            .Columns("ItemCount").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                            .Columns("ItemCount").FillWeight = 10
+
+                            .Columns("TotalAmount").Visible = True
+                            .Columns("TotalAmount").HeaderText = "Total Amount"
+                            .Columns("TotalAmount").DefaultCellStyle.Format = "₱#,##0.00"
+                            .Columns("TotalAmount").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                            .Columns("TotalAmount").FillWeight = 20
+
+                            ' Use StatusDisplay for showing, hide HasRefunds
+                            .Columns("StatusDisplay").Visible = True
+                            .Columns("StatusDisplay").HeaderText = "Status"
+                            .Columns("StatusDisplay").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                            .Columns("StatusDisplay").FillWeight = 10
+                            .Columns("HasRefunds").Visible = False
+
+                            ' Hide SaleIDs column (used internally)
+                            .Columns("SaleIDs").Visible = False
+                        End With
+
+                        ' Color-code rows based on StatusDisplay
+                        For Each row As DataGridViewRow In transactionsDataGridView.Rows
+                            Dim statusDisplay As String = row.Cells("StatusDisplay").Value.ToString()
+
+                            If statusDisplay = "HAS REFUNDS" Then
+                                row.Cells("StatusDisplay").Style.BackColor = Color.FromArgb(255, 180, 180)
+                                row.Cells("StatusDisplay").Style.ForeColor = Color.DarkRed
+                                row.Cells("StatusDisplay").Style.Font = New Font("Segoe UI", 9, FontStyle.Bold)
+                            Else
+                                row.Cells("StatusDisplay").Style.BackColor = Color.FromArgb(200, 255, 200)
+                                row.Cells("StatusDisplay").Style.ForeColor = Color.DarkGreen
+                            End If
+                        Next
+                    End If
+
+                    ' Update summary
+                    UpdateSummary()
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error loading transactions: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Load detailed view of products in a specific batch
+    ''' </summary>
+    Private Sub LoadBatchDetails(batchTime As DateTime, cashier As String)
+        Try
+            Dim connStr As String = GetConnectionString()
+
+            ' Store current batch info
+            currentBatchDate = batchTime
+            currentBatchCashier = cashier
+
+            ' Query to get all products in this batch (within same minute, same cashier)
+            Dim query As String = "
+                SELECT
+                    'RETAIL' AS SaleType,
+                    'In-Store' AS TransactionType,
+                    sr.SaleID,
+                    sr.SaleDate,
+                    rp.ProductName,
+                    rp.ProductID,
+                    rp.unit AS Unit,
+                    c.CategoryName,
+                    sr.QuantitySold,
+                    sr.UnitPrice,
+                    sr.TotalAmount,
+                    sr.PaymentMethod,
+                    u.username AS HandledBy,
+                    ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+                    sr.RefundDate,
+                    sr.RefundReason,
+                    sr.PayerName,
+                    sr.ReferenceNumber,
+                    sr.BankName
+                FROM RetailSalesReport sr
+                INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
+                INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+                INNER JOIN Users u ON sr.HandledBy = u.userID
+                WHERE DATEADD(MINUTE, DATEDIFF(MINUTE, 0, sr.SaleDate), 0) = DATEADD(MINUTE, DATEDIFF(MINUTE, 0, @BatchTime), 0)
+                AND u.username = @Cashier
+
+                UNION ALL
+
+                SELECT
+                    'WHOLESALE' AS SaleType,
+                    CASE
+                        WHEN sr.IsDelivery = 1 THEN 'Delivery'
+                        WHEN sr.IsDelivery = 0 THEN 'Pickup'
+                        ELSE 'In-Store'
+                    END AS TransactionType,
+                    sr.SaleID,
+                    sr.SaleDate,
+                    wp.ProductName,
+                    wp.ProductID,
+                    wp.unit AS Unit,
+                    c.CategoryName,
+                    sr.QuantitySold,
+                    sr.UnitPrice,
+                    sr.TotalAmount,
+                    sr.PaymentMethod,
+                    u.username AS HandledBy,
+                    ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+                    sr.RefundDate,
+                    sr.RefundReason,
+                    sr.PayerName,
+                    sr.ReferenceNumber,
+                    sr.BankName
+                FROM SalesReport sr
+                INNER JOIN wholesaleProducts wp ON sr.ProductID = wp.ProductID
+                INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+                INNER JOIN Users u ON sr.HandledBy = u.userID
+                WHERE DATEADD(MINUTE, DATEDIFF(MINUTE, 0, sr.SaleDate), 0) = DATEADD(MINUTE, DATEDIFF(MINUTE, 0, @BatchTime), 0)
+                AND u.username = @Cashier
+
+                ORDER BY SaleDate, SaleType"
+
+            Using conn As New SqlConnection(connStr)
+                Using da As New SqlDataAdapter(query, conn)
+                    da.SelectCommand.Parameters.AddWithValue("@BatchTime", batchTime)
+                    da.SelectCommand.Parameters.AddWithValue("@Cashier", cashier)
+
+                    dt.Clear()
+                    da.Fill(dt)
+
+                    ' Add computed column for display status
                     If Not dt.Columns.Contains("RefundStatus") Then
                         dt.Columns.Add("RefundStatus", GetType(String))
                     End If
 
-                    ' Populate the display column
                     For Each row As DataRow In dt.Rows
                         Dim isRefunded As Boolean = If(IsDBNull(row("IsRefunded")), False, Convert.ToBoolean(row("IsRefunded")))
                         row("RefundStatus") = If(isRefunded, "REFUNDED", "Active")
                     Next
 
-                    ' Format columns
+                    ' Mark as detail view
+                    isDetailView = True
+
+                    ' Show detail-only buttons
+                    btnRefund.Visible = True
+                    btnViewReceipt.Visible = True
+
+                    ' Re-bind
+                    dv = New DataView(dt)
+                    bs.DataSource = dv
+                    transactionsDataGridView.DataSource = bs
+
+                    ' Format columns for detail view
                     If transactionsDataGridView.Columns.Count > 0 Then
                         With transactionsDataGridView
+                            ' Show detail view columns
+                            .Columns("SaleType").Visible = True
                             .Columns("SaleType").HeaderText = "Type"
                             .Columns("SaleType").Width = 80
+
+                            .Columns("TransactionType").Visible = True
                             .Columns("TransactionType").HeaderText = "Mode"
                             .Columns("TransactionType").Width = 80
+
+                            .Columns("SaleID").Visible = True
                             .Columns("SaleID").HeaderText = "Sale ID"
                             .Columns("SaleID").Width = 60
+
+                            .Columns("SaleDate").Visible = True
                             .Columns("SaleDate").HeaderText = "Time"
                             .Columns("SaleDate").DefaultCellStyle.Format = "hh:mm:ss tt"
                             .Columns("SaleDate").Width = 90
+
+                            .Columns("ProductName").Visible = True
                             .Columns("ProductName").HeaderText = "Product"
                             .Columns("ProductName").Width = 180
-                            .Columns("ProductName").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-                            .Columns("ProductName").DefaultCellStyle.WrapMode = DataGridViewTriState.False
 
-                            ' Hide ProductID and IsRefunded columns (needed for refunds but not displayed)
                             .Columns("ProductID").Visible = False
                             .Columns("IsRefunded").Visible = False
 
+                            .Columns("Unit").Visible = True
                             .Columns("Unit").HeaderText = "Unit"
                             .Columns("Unit").Width = 60
+
+                            .Columns("CategoryName").Visible = True
                             .Columns("CategoryName").HeaderText = "Category"
                             .Columns("CategoryName").Width = 90
+
+                            .Columns("QuantitySold").Visible = True
                             .Columns("QuantitySold").HeaderText = "Qty"
                             .Columns("QuantitySold").Width = 50
+
+                            .Columns("UnitPrice").Visible = True
                             .Columns("UnitPrice").HeaderText = "Unit Price"
                             .Columns("UnitPrice").DefaultCellStyle.Format = "₱#,##0.00"
                             .Columns("UnitPrice").Width = 90
+
+                            .Columns("TotalAmount").Visible = True
                             .Columns("TotalAmount").HeaderText = "Total"
                             .Columns("TotalAmount").DefaultCellStyle.Format = "₱#,##0.00"
                             .Columns("TotalAmount").Width = 90
+
+                            .Columns("PaymentMethod").Visible = True
                             .Columns("PaymentMethod").HeaderText = "Payment"
                             .Columns("PaymentMethod").Width = 90
+
+                            .Columns("HandledBy").Visible = True
                             .Columns("HandledBy").HeaderText = "Cashier"
                             .Columns("HandledBy").Width = 90
 
-                            ' Refund status columns - use RefundStatus instead of IsRefunded for display
+                            .Columns("RefundStatus").Visible = True
                             .Columns("RefundStatus").HeaderText = "Status"
                             .Columns("RefundStatus").Width = 80
+
+                            .Columns("RefundDate").Visible = True
                             .Columns("RefundDate").HeaderText = "Refund Date"
                             .Columns("RefundDate").DefaultCellStyle.Format = "MM/dd/yyyy hh:mm tt"
                             .Columns("RefundDate").Width = 130
+
+                            .Columns("RefundReason").Visible = True
                             .Columns("RefundReason").HeaderText = "Refund Reason"
                             .Columns("RefundReason").Width = 150
+
+                            .Columns("PayerName").Visible = False
+                            .Columns("ReferenceNumber").Visible = False
+                            .Columns("BankName").Visible = False
+
+                            ' Hide batch view columns that don't apply to detail view
+                            If .Columns.Contains("BatchTime") Then
+                                .Columns("BatchTime").Visible = False
+                            End If
+                            If .Columns.Contains("Cashier") Then
+                                .Columns("Cashier").Visible = False
+                            End If
+                            If .Columns.Contains("ItemCount") Then
+                                .Columns("ItemCount").Visible = False
+                            End If
+                            If .Columns.Contains("StatusDisplay") Then
+                                .Columns("StatusDisplay").Visible = False
+                            End If
+                            If .Columns.Contains("SaleIDs") Then
+                                .Columns("SaleIDs").Visible = False
+                            End If
                         End With
 
                         ' Color-code the rows
                         For Each row As DataGridViewRow In transactionsDataGridView.Rows
-                            ' Color-code the SaleType column
+                            ' Color-code SaleType
                             If row.Cells("SaleType").Value IsNot Nothing Then
                                 If row.Cells("SaleType").Value.ToString() = "RETAIL" Then
                                     row.Cells("SaleType").Style.BackColor = Color.LightBlue
                                     row.Cells("SaleType").Style.ForeColor = Color.DarkBlue
-                                Else ' WHOLESALE
+                                Else
                                     row.Cells("SaleType").Style.BackColor = Color.LightGreen
                                     row.Cells("SaleType").Style.ForeColor = Color.DarkGreen
                                 End If
                             End If
 
-                            ' Color-code the TransactionType column
+                            ' Color-code TransactionType
                             If row.Cells("TransactionType").Value IsNot Nothing Then
                                 Dim transType As String = row.Cells("TransactionType").Value.ToString()
                                 Select Case transType
                                     Case "Delivery"
-                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(255, 220, 180) ' Light orange
+                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(255, 220, 180)
                                         row.Cells("TransactionType").Style.ForeColor = Color.DarkOrange
                                     Case "Pickup"
-                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(255, 255, 200) ' Light yellow
+                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(255, 255, 200)
                                         row.Cells("TransactionType").Style.ForeColor = Color.DarkGoldenrod
                                     Case "In-Store"
-                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(200, 255, 200) ' Light green
+                                        row.Cells("TransactionType").Style.BackColor = Color.FromArgb(200, 255, 200)
                                         row.Cells("TransactionType").Style.ForeColor = Color.DarkGreen
                                 End Select
                             End If
 
-                            ' Color-code the Status column and entire row for refunded items
+                            ' Color-code RefundStatus
                             If row.Cells("RefundStatus").Value IsNot Nothing Then
                                 Dim refundStatus As String = row.Cells("RefundStatus").Value.ToString()
                                 If refundStatus = "REFUNDED" Then
-                                    row.Cells("RefundStatus").Style.BackColor = Color.FromArgb(255, 180, 180) ' Light red
+                                    row.Cells("RefundStatus").Style.BackColor = Color.FromArgb(255, 180, 180)
                                     row.Cells("RefundStatus").Style.ForeColor = Color.DarkRed
                                     row.Cells("RefundStatus").Style.Font = New Font("Segoe UI", 9, FontStyle.Bold)
 
-                                    ' Strike through entire row for refunded transactions
                                     For Each cell As DataGridViewCell In row.Cells
                                         cell.Style.Font = New Font("Segoe UI", 9, FontStyle.Strikeout)
                                         cell.Style.ForeColor = Color.Gray
                                     Next
                                 Else
-                                    row.Cells("RefundStatus").Style.BackColor = Color.FromArgb(200, 255, 200) ' Light green
+                                    row.Cells("RefundStatus").Style.BackColor = Color.FromArgb(200, 255, 200)
                                     row.Cells("RefundStatus").Style.ForeColor = Color.DarkGreen
                                 End If
                             End If
                         Next
                     End If
 
-                    ' Update summary labels
-                    UpdateSummary()
+                    ' Update title to show batch info
+                    lblTitle.Text = $"Batch Details - {batchTime:hh:mm:ss tt} by {cashier} (Click Refresh to go back)"
                 End Using
             End Using
         Catch ex As Exception
-            MessageBox.Show($"Error loading transactions: {ex.Message}", "Error",
-   MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Error loading batch details: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     Private Sub UpdateSummary()
-        Try
-            Dim totalTransactions As Integer = dt.Rows.Count
-            Dim totalRevenue As Decimal = 0D
-            Dim retailCount As Integer = 0
-            Dim wholesaleCount As Integer = 0
-            Dim refundedCount As Integer = 0
-            Dim refundedAmount As Decimal = 0D
+        ' Summary logic differs based on view
+        If Not isDetailView Then
+            ' Batch view summary
+            Try
+                Dim totalBatches As Integer = dt.Rows.Count
+                Dim totalRevenue As Decimal = 0D
+                Dim totalItems As Integer = 0
 
-            For Each row As DataRow In dt.Rows
-                ' Check if refunded
-                Dim isRefunded As Boolean = If(IsDBNull(row("IsRefunded")), False, Convert.ToBoolean(row("IsRefunded")))
-
-                If isRefunded Then
-                    refundedCount += 1
-                    ' Track refunded amount but don't add to revenue
-                    If Not IsDBNull(row("TotalAmount")) Then
-                        refundedAmount += Convert.ToDecimal(row("TotalAmount"))
-                    End If
-                Else
-                    ' Only count non-refunded transactions in revenue
+                For Each row As DataRow In dt.Rows
                     If Not IsDBNull(row("TotalAmount")) Then
                         totalRevenue += Convert.ToDecimal(row("TotalAmount"))
                     End If
-
-                    ' Count by type (only non-refunded)
-                    If Not IsDBNull(row("SaleType")) Then
-                        If row("SaleType").ToString() = "RETAIL" Then
-                            retailCount += 1
-                        Else
-                            wholesaleCount += 1
-                        End If
+                    If Not IsDBNull(row("ItemCount")) Then
+                        totalItems += Convert.ToInt32(row("ItemCount"))
                     End If
-                End If
-            Next
+                Next
 
-            ' Update labels - showing active (non-refunded) transactions
-            Dim activeTransactions As Integer = totalTransactions - refundedCount
-            lblTotalTransactions.Text = $"Total Transactions: {activeTransactions}"
-            lblTotalRevenue.Text = $"Total Sales: ₱{totalRevenue:N2}"
-            lblRetailCount.Text = $"Retail: {retailCount} transactions"
-            lblWholesaleCount.Text = $"Wholesale: {wholesaleCount} transactions"
+                lblTotalTransactions.Text = $"Total Batches: {totalBatches}"
+                lblTotalRevenue.Text = $"Total Sales: ₱{totalRevenue:N2}"
+                lblRetailCount.Text = $"Total Items: {totalItems}"
+                lblWholesaleCount.Text = "Click a batch to view details"
+            Catch ex As Exception
+                Console.WriteLine($"Error updating summary: {ex.Message}")
+            End Try
+        Else
+            ' Detail view summary
+            Try
+                Dim totalItems As Integer = dt.Rows.Count
+                Dim totalRevenue As Decimal = 0D
+                Dim retailCount As Integer = 0
+                Dim wholesaleCount As Integer = 0
+                Dim refundedCount As Integer = 0
 
-            ' Optionally show refunded info in debug
-            If refundedCount > 0 Then
-                Debug.WriteLine($"Refunded Transactions: {refundedCount}, Refunded Amount: ₱{refundedAmount:N2}")
-            End If
-        Catch ex As Exception
-            Console.WriteLine($"Error updating summary: {ex.Message}")
-        End Try
+                For Each row As DataRow In dt.Rows
+                    Dim isRefunded As Boolean = If(IsDBNull(row("IsRefunded")), False, Convert.ToBoolean(row("IsRefunded")))
+
+                    If Not isRefunded Then
+                        If Not IsDBNull(row("TotalAmount")) Then
+                            totalRevenue += Convert.ToDecimal(row("TotalAmount"))
+                        End If
+
+                        If Not IsDBNull(row("SaleType")) Then
+                            If row("SaleType").ToString() = "RETAIL" Then
+                                retailCount += 1
+                            Else
+                                wholesaleCount += 1
+                            End If
+                        End If
+                    Else
+                        refundedCount += 1
+                    End If
+                Next
+
+                Dim activeItems As Integer = totalItems - refundedCount
+                lblTotalTransactions.Text = $"Items in Batch: {activeItems}"
+                lblTotalRevenue.Text = $"Batch Total: ₱{totalRevenue:N2}"
+                lblRetailCount.Text = $"Retail: {retailCount} items"
+                lblWholesaleCount.Text = $"Wholesale: {wholesaleCount} items"
+            Catch ex As Exception
+                Console.WriteLine($"Error updating summary: {ex.Message}")
+            End Try
+        End If
     End Sub
 
     Private Function GetConnectionString() As String
@@ -365,40 +653,38 @@ sr.TotalAmount,
     End Function
 
     Private Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
-        LoadDailyTransactions()
+        ' Refresh always goes back to batch view
+        LoadBatchTransactions()
+        lblTitle.Text = $"Daily Transactions - {DateTime.Today:dddd, MMMM dd, yyyy}"
+
+        ' Update summary after refresh
+        UpdateSummary()
+
         MessageBox.Show("Transactions refreshed!", "Refresh",
-        MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub btnClose_Click(sender As Object, e As EventArgs) Handles btnClose.Click
         Me.Close()
     End Sub
 
-    ''' <summary>
-    ''' View Receipt button click handler
-    ''' Shows receipt for the currently selected transaction
-    ''' Alternative to double-clicking a row
-    ''' </summary>
     Private Sub btnViewReceipt_Click(sender As Object, e As EventArgs) Handles btnViewReceipt.Click
-        ' Check if a row is selected
-        If transactionsDataGridView.SelectedRows.Count = 0 Then
-            MessageBox.Show("Please select a transaction to view its receipt.", "No Selection",
-         MessageBoxButtons.OK, MessageBoxIcon.Information)
+        If Not isDetailView Then
+            MessageBox.Show("Please select a batch first to view receipts.", "No Batch Selected",
+                MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
-        Dim selectedRow As DataGridViewRow = transactionsDataGridView.SelectedRows(0)
-
-        ' Get transaction details
-        Dim saleType As String = selectedRow.Cells("SaleType").Value.ToString()
-        Dim saleID As Integer = Convert.ToInt32(selectedRow.Cells("SaleID").Value)
-
-        ' Show receipt
-        ShowTransactionReceipt(saleType, saleID)
+        ' Show receipt for entire batch
+        ShowBatchReceipt(currentBatchDate, currentBatchCashier)
     End Sub
 
     Private Sub cboSalesType_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboSalesType.SelectedIndexChanged
-        ' Filter based on selection
+        ' Filtering only works in detail view
+        If Not isDetailView Then
+            Return
+        End If
+
         Select Case cboSalesType.SelectedIndex
             Case 0 ' All Transactions
                 bs.Filter = ""
@@ -412,117 +698,24 @@ sr.TotalAmount,
                 bs.Filter = "IsRefunded = False"
         End Select
 
-        ' Update summary after filtering
-        UpdateFilteredSummary()
+        UpdateSummary()
     End Sub
 
-    Private Sub UpdateFilteredSummary()
-        Try
-            Dim totalTransactions As Integer = 0
-            Dim totalRevenue As Decimal = 0D
-            Dim retailCount As Integer = 0
-            Dim wholesaleCount As Integer = 0
-            Dim refundedCount As Integer = 0
-            Dim refundedAmount As Decimal = 0D
-
-            For Each rowView As DataRowView In dv
-                Dim row As DataRow = rowView.Row
-
-                ' Check if refunded
-                Dim isRefunded As Boolean = If(IsDBNull(row("IsRefunded")), False, Convert.ToBoolean(row("IsRefunded")))
-
-                If isRefunded Then
-                    refundedCount += 1
-                    ' Track refunded amount
-                    If Not IsDBNull(row("TotalAmount")) Then
-                        refundedAmount += Convert.ToDecimal(row("TotalAmount"))
-                    End If
-
-                    ' If we're showing "Refunded Only", include in transaction count
-                    If cboSalesType.SelectedIndex = 3 Then
-                        totalTransactions += 1
-                    End If
-                Else
-                    ' Non-refunded transaction
-                    totalTransactions += 1
-
-                    ' Sum up total revenue (only non-refunded)
-                    If Not IsDBNull(row("TotalAmount")) Then
-                        totalRevenue += Convert.ToDecimal(row("TotalAmount"))
-                    End If
-
-                    ' Count by type (only non-refunded)
-                    If Not IsDBNull(row("SaleType")) Then
-                        If row("SaleType").ToString() = "RETAIL" Then
-                            retailCount += 1
-                        Else
-                            wholesaleCount += 1
-                        End If
-                    End If
-                End If
-            Next
-
-            ' Update labels based on filter
-            If cboSalesType.SelectedIndex = 3 Then
-                ' Showing refunded only
-                lblTotalTransactions.Text = $"Refunded Transactions: {refundedCount}"
-                lblTotalRevenue.Text = $"Refunded Amount: ₱{refundedAmount:N2}"
-                lblRetailCount.Text = ""
-                lblWholesaleCount.Text = ""
-            Else
-                ' Showing active transactions
-                lblTotalTransactions.Text = $"Total Transactions: {totalTransactions}"
-                lblTotalRevenue.Text = $"Total Sales: ₱{totalRevenue:N2}"
-                lblRetailCount.Text = $"Retail: {retailCount} transactions"
-                lblWholesaleCount.Text = $"Wholesale: {wholesaleCount} transactions"
-            End If
-        Catch ex As Exception
-            Console.WriteLine($"Error updating filtered summary: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' Refund button click handler
-    '''
-    ''' REFUND FEATURE USAGE:
-    ''' ====================
-    ''' 1. User selects a transaction from the grid
-    ''' 2. Clicks the "Refund" button
-    ''' 3. System validates the transaction is not already refunded
-    ''' 4. Confirmation dialog shows refund details and impact
-    ''' 5. User provides refund reason (required)
-    ''' 6. System processes refund:
-    '''    a. Marks transaction as refunded in database
-    '''    b. Restores product quantity to inventory
-    '''    c. Updates Total Sales (excludes refunded amount)
-    ''' 7. Grid refreshes showing refunded transaction with strikethrough
-    '''
-    ''' FILTERS AVAILABLE:
-    ''' ==================
-    ''' - All Transactions: Shows everything
-    ''' - Retail Only: Shows only retail transactions
-    ''' - Wholesale Only: Shows only wholesale transactions
-    ''' - Refunded Only: Shows only refunded transactions
-    ''' - Non-Refunded Only: Shows active transactions (default for calculations)
-    '''
-    ''' NOTES:
-    ''' ======
-    ''' - Refunds are permanent (cannot undo)
-    ''' - Refunded transactions excluded from revenue totals
-    ''' - Product quantity is restored immediately
-    ''' - Refund reason is required for audit trail
-    ''' </summary>
     Private Sub btnRefund_Click(sender As Object, e As EventArgs) Handles btnRefund.Click
-        ' Check if a row is selected
+        If Not isDetailView Then
+            MessageBox.Show("Please select a batch first, then select an item to refund.", "No Batch Selected",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
         If transactionsDataGridView.SelectedRows.Count = 0 Then
             MessageBox.Show("Please select a transaction to refund.", "No Selection",
-   MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
         Dim selectedRow As DataGridViewRow = transactionsDataGridView.SelectedRows(0)
 
-        ' Get transaction details
         Dim saleType As String = selectedRow.Cells("SaleType").Value.ToString()
         Dim saleID As Integer = Convert.ToInt32(selectedRow.Cells("SaleID").Value)
         Dim productID As Integer = Convert.ToInt32(selectedRow.Cells("ProductID").Value)
@@ -530,18 +723,15 @@ sr.TotalAmount,
         Dim quantitySold As Integer = Convert.ToInt32(selectedRow.Cells("QuantitySold").Value)
         Dim totalAmount As Decimal = Convert.ToDecimal(selectedRow.Cells("TotalAmount").Value)
 
-        ' Get the actual boolean value from the IsRefunded column (not RefundStatus display column)
         Dim isRefunded As Boolean = If(IsDBNull(selectedRow.Cells("IsRefunded").Value), False,
-   Convert.ToBoolean(selectedRow.Cells("IsRefunded").Value))
+            Convert.ToBoolean(selectedRow.Cells("IsRefunded").Value))
 
-        ' Check if already refunded
         If isRefunded Then
             MessageBox.Show("This transaction has already been refunded.", "Already Refunded",
-       MessageBoxButtons.OK, MessageBoxIcon.Information)
+                MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
-        ' Confirm refund
         Dim confirmMsg As String = $"Refund Transaction Details:" & vbCrLf & vbCrLf &
             $"Type: {saleType}" & vbCrLf &
             $"Product: {productName}" & vbCrLf &
@@ -558,51 +748,29 @@ sr.TotalAmount,
             Return
         End If
 
-        ' Ask for refund reason
         Dim refundReason As String = InputBox("Please provide a reason for this refund:",
             "Refund Reason", "Customer request")
 
         If String.IsNullOrWhiteSpace(refundReason) Then
             MessageBox.Show("Refund reason is required.", "Required Field",
-     MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
-        ' Process the refund
         If ProcessRefund(saleType, saleID, productID, quantitySold, refundReason) Then
             MessageBox.Show("Refund processed successfully!" & vbCrLf &
-    $"Product quantity restored: +{quantitySold}" & vbCrLf &
-            $"Amount refunded: ₱{totalAmount:N2}",
-   "Refund Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                $"Product quantity restored: +{quantitySold}" & vbCrLf &
+                $"Amount refunded: ₱{totalAmount:N2}",
+                "Refund Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
-            ' Reload transactions
-            LoadDailyTransactions()
+            ' Reload batch details
+            LoadBatchDetails(currentBatchDate, currentBatchCashier)
         Else
             MessageBox.Show("Failed to process refund. Please try again.", "Error",
- MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
 
-    ''' <summary>
-    ''' Processes a refund for a transaction
-    ''' This function:
-    ''' 1. Marks the sale as refunded in the database
-    ''' 2. Restores the product quantity to inventory
-    ''' 3. Records the refund reason and timestamp
-    ''' 4. Uses database transaction to ensure data consistency
-    '''
-    ''' Refunded transactions are:
-    ''' - Excluded from Total Sales calculations
-    ''' - Shown with strikethrough formatting
-    ''' - Filterable via "Refunded Only" option
-    ''' - Cannot be refunded again (one-time operation)
-    ''' </summary>
-    ''' <param name="saleType">RETAIL or WHOLESALE</param>
-    ''' <param name="saleID">The Sale ID from sales report table</param>
-    ''' <param name="productID">Product ID to restore quantity</param>
-    ''' <param name="quantitySold">Quantity to restore to inventory</param>
-    ''' <param name="refundReason">Reason for refund (required)</param>
-    ''' <returns>True if refund successful, False otherwise</returns>
     Private Function ProcessRefund(saleType As String, saleID As Integer, productID As Integer,
              quantitySold As Integer, refundReason As String) As Boolean
         Try
@@ -613,14 +781,26 @@ sr.TotalAmount,
 
                 Using transaction As SqlTransaction = conn.BeginTransaction()
                     Try
-                        ' 1. Update the sales report to mark as refunded
                         Dim tableName As String = If(saleType = "RETAIL", "RetailSalesReport", "SalesReport")
-                        Dim updateQuery As String = $"
-                          UPDATE {tableName}
-                                      SET IsRefunded = 1,
-                             RefundDate = GETDATE(),
-                           RefundReason = @RefundReason
-                               WHERE SaleID = @SaleID"
+
+                        ' For wholesale deliveries, also set DeliveryStatus to 'Cancelled'
+                        Dim updateQuery As String
+                        If saleType = "WHOLESALE" Then
+                            updateQuery = $"
+                                UPDATE {tableName}
+                                SET IsRefunded = 1,
+                                    RefundDate = GETDATE(),
+                                    RefundReason = @RefundReason,
+                                    DeliveryStatus = CASE WHEN IsDelivery = 1 THEN 'Cancelled' ELSE DeliveryStatus END
+                                WHERE SaleID = @SaleID"
+                        Else
+                            updateQuery = $"
+                                UPDATE {tableName}
+                                SET IsRefunded = 1,
+                                    RefundDate = GETDATE(),
+                                    RefundReason = @RefundReason
+                                WHERE SaleID = @SaleID"
+                        End If
 
                         Using cmd As New SqlCommand(updateQuery, conn, transaction)
                             cmd.Parameters.AddWithValue("@RefundReason", refundReason)
@@ -628,12 +808,11 @@ sr.TotalAmount,
                             cmd.ExecuteNonQuery()
                         End Using
 
-                        ' 2. Restore product quantity
                         Dim productTableName As String = If(saleType = "RETAIL", "retailProducts", "wholesaleProducts")
                         Dim restoreQuery As String = $"
-                           UPDATE {productTableName}
-                             SET StockQuantity = StockQuantity + @QuantityToRestore
-                              WHERE ProductID = @ProductID"
+                            UPDATE {productTableName}
+                            SET StockQuantity = StockQuantity + @QuantityToRestore
+                            WHERE ProductID = @ProductID"
 
                         Using cmd As New SqlCommand(restoreQuery, conn, transaction)
                             cmd.Parameters.AddWithValue("@QuantityToRestore", quantitySold)
@@ -641,11 +820,9 @@ sr.TotalAmount,
                             cmd.ExecuteNonQuery()
                         End Using
 
-                        ' Commit the transaction
                         transaction.Commit()
                         Return True
                     Catch ex As Exception
-                        ' Rollback on error
                         transaction.Rollback()
                         Console.WriteLine($"Refund transaction error: {ex.Message}")
                         Return False
@@ -659,28 +836,209 @@ sr.TotalAmount,
     End Function
 
     ''' <summary>
-    ''' Handles double-click event on DataGridView to show receipt
+    ''' Handles single-click event on DataGridView for batch selection
     ''' </summary>
-    Private Sub TransactionsDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
-        ' Ignore header row clicks
+    Private Sub TransactionsDataGridView_CellClick(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex < 0 Then
             Return
         End If
 
-        ' Get the selected row
-        Dim selectedRow As DataGridViewRow = transactionsDataGridView.Rows(e.RowIndex)
+        ' Only handle single-click in batch view to load details
+        If Not isDetailView Then
+            Dim selectedRow As DataGridViewRow = transactionsDataGridView.Rows(e.RowIndex)
+            Dim batchTime As DateTime = Convert.ToDateTime(selectedRow.Cells("BatchTime").Value)
+            Dim cashier As String = selectedRow.Cells("Cashier").Value.ToString()
 
-        ' Get transaction details
-        Dim saleType As String = selectedRow.Cells("SaleType").Value.ToString()
-        Dim saleID As Integer = Convert.ToInt32(selectedRow.Cells("SaleID").Value)
-
-        ' Show receipt for this transaction
-        ShowTransactionReceipt(saleType, saleID)
+            LoadBatchDetails(batchTime, cashier)
+        End If
     End Sub
 
     ''' <summary>
-    ''' Displays a receipt for the selected transaction
-    ''' Shows all details including product info, amounts, payment method, and refund status
+    ''' Handles double-click event on DataGridView to show receipt
+    ''' </summary>
+    Private Sub TransactionsDataGridView_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex < 0 Then
+            Return
+        End If
+
+        ' Only handle double-click in detail view to show single item receipt
+        If isDetailView Then
+            Dim selectedRow As DataGridViewRow = transactionsDataGridView.Rows(e.RowIndex)
+            Dim saleType As String = selectedRow.Cells("SaleType").Value.ToString()
+            Dim saleID As Integer = Convert.ToInt32(selectedRow.Cells("SaleID").Value)
+
+            ShowTransactionReceipt(saleType, saleID)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Shows receipt for entire batch (all products purchased together)
+    ''' </summary>
+    Private Sub ShowBatchReceipt(batchTime As DateTime, cashier As String)
+        Try
+            Dim connStr As String = GetConnectionString()
+            Dim receiptContent As New System.Text.StringBuilder()
+
+            ' Get all transactions in this batch
+            Dim batchItems As New List(Of Dictionary(Of String, Object))
+
+            Using conn As New SqlConnection(connStr)
+                conn.Open()
+
+                ' Get retail items
+                Dim retailQuery As String = "
+                    SELECT
+                        'RETAIL' AS SaleType,
+                        sr.SaleID,
+                        sr.SaleDate,
+                        rp.ProductName,
+                        rp.unit AS Unit,
+                        c.CategoryName,
+                        sr.QuantitySold,
+                        sr.UnitPrice,
+                        sr.TotalAmount,
+                        sr.PaymentMethod,
+                        ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+                        sr.RefundDate,
+                        sr.RefundReason,
+                        sr.PayerName,
+                        sr.ReferenceNumber,
+                        sr.BankName
+                    FROM RetailSalesReport sr
+                    INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
+                    INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+                    WHERE DATEADD(MINUTE, DATEDIFF(MINUTE, 0, sr.SaleDate), 0) = DATEADD(MINUTE, DATEDIFF(MINUTE, 0, @BatchTime), 0)
+                    AND sr.HandledBy = (SELECT userID FROM Users WHERE username = @Cashier)"
+
+                Dim wholesaleQuery As String = "
+                    SELECT
+                        'WHOLESALE' AS SaleType,
+                        sr.SaleID,
+                        sr.SaleDate,
+                        wp.ProductName,
+                        wp.unit AS Unit,
+                        c.CategoryName,
+                        sr.QuantitySold,
+                        sr.UnitPrice,
+                        sr.TotalAmount,
+                        sr.PaymentMethod,
+                        ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+                        sr.RefundDate,
+                        sr.RefundReason,
+                        CASE
+                            WHEN sr.IsDelivery = 1 THEN 'Delivery'
+                            WHEN sr.IsDelivery = 0 THEN 'Pickup'
+                            ELSE 'In-Store'
+                        END AS TransactionType,
+                        sr.DeliveryAddress,
+                        sr.PayerName,
+                        sr.ReferenceNumber,
+                        sr.BankName
+                    FROM SalesReport sr
+                    INNER JOIN wholesaleProducts wp ON sr.ProductID = wp.ProductID
+                    INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+                    WHERE DATEADD(MINUTE, DATEDIFF(MINUTE, 0, sr.SaleDate), 0) = DATEADD(MINUTE, DATEDIFF(MINUTE, 0, @BatchTime), 0)
+                    AND sr.HandledBy = (SELECT userID FROM Users WHERE username = @Cashier)"
+
+                ' Collect all items
+                Using cmd As New SqlCommand(retailQuery, conn)
+                    cmd.Parameters.AddWithValue("@BatchTime", batchTime)
+                    cmd.Parameters.AddWithValue("@Cashier", cashier)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim item As New Dictionary(Of String, Object)
+                            For i As Integer = 0 To reader.FieldCount - 1
+                                item(reader.GetName(i)) = reader.GetValue(i)
+                            Next
+                            batchItems.Add(item)
+                        End While
+                    End Using
+                End Using
+
+                Using cmd As New SqlCommand(wholesaleQuery, conn)
+                    cmd.Parameters.AddWithValue("@BatchTime", batchTime)
+                    cmd.Parameters.AddWithValue("@Cashier", cashier)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim item As New Dictionary(Of String, Object)
+                            For i As Integer = 0 To reader.FieldCount - 1
+                                item(reader.GetName(i)) = reader.GetValue(i)
+                            Next
+                            batchItems.Add(item)
+                        End While
+                    End Using
+                End Using
+            End Using
+
+            ' Build receipt
+            receiptContent.AppendLine("================================")
+            receiptContent.AppendLine("   INVENTORY SYSTEM POS")
+            receiptContent.AppendLine("   BATCH TRANSACTION RECEIPT")
+            receiptContent.AppendLine("================================")
+            receiptContent.AppendLine()
+            receiptContent.AppendLine($"Date: {batchTime:MMM dd, yyyy}")
+            receiptContent.AppendLine($"Time: {batchTime:hh:mm:ss tt}")
+            receiptContent.AppendLine($"Cashier: {cashier}")
+            receiptContent.AppendLine($"Total Items: {batchItems.Count}")
+            receiptContent.AppendLine()
+            receiptContent.AppendLine("--------------------------------")
+            receiptContent.AppendLine("ITEMS PURCHASED")
+            receiptContent.AppendLine("--------------------------------")
+            receiptContent.AppendLine()
+
+            Dim grandTotal As Decimal = 0D
+            Dim hasRefunds As Boolean = False
+
+            For Each item In batchItems
+                Dim productName As String = item("ProductName").ToString()
+                If productName.Length > 28 Then
+                    productName = productName.Substring(0, 25) & "..."
+                End If
+
+                Dim isRefunded As Boolean = Convert.ToBoolean(item("IsRefunded"))
+                Dim saleType As String = item("SaleType").ToString()
+                Dim qty As Integer = Convert.ToInt32(item("QuantitySold"))
+                Dim unitPrice As Decimal = Convert.ToDecimal(item("UnitPrice"))
+                Dim totalAmount As Decimal = Convert.ToDecimal(item("TotalAmount"))
+
+                If isRefunded Then
+                    hasRefunds = True
+                    receiptContent.AppendLine($"[REFUNDED] {productName}")
+                Else
+                    receiptContent.AppendLine($"{productName} ({saleType})")
+                    grandTotal += totalAmount
+                End If
+
+                receiptContent.AppendLine($"  {qty} x ₱{unitPrice:N2} = ₱{totalAmount:N2}")
+                receiptContent.AppendLine()
+            Next
+
+            receiptContent.AppendLine("================================")
+            receiptContent.AppendLine($"TOTAL AMOUNT: ₱{grandTotal:N2}")
+            receiptContent.AppendLine("================================")
+
+            If hasRefunds Then
+                receiptContent.AppendLine()
+                receiptContent.AppendLine("⚠ Some items in this batch have been refunded.")
+            End If
+
+            receiptContent.AppendLine()
+            receiptContent.AppendLine("================================")
+            receiptContent.AppendLine("  Thank you for your purchase!")
+            receiptContent.AppendLine("================================")
+
+            MessageBox.Show(receiptContent.ToString(), $"Batch Receipt - {batchTime:hh:mm:ss tt}",
+                MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show($"Error displaying batch receipt: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Shows receipt for single item (used when double-clicking in detail view)
     ''' </summary>
     Private Sub ShowTransactionReceipt(saleType As String, saleID As Integer)
         Try
@@ -690,62 +1048,61 @@ sr.TotalAmount,
             Using conn As New SqlConnection(connStr)
                 conn.Open()
 
-                ' Query to get transaction details
                 Dim query As String = ""
                 If saleType = "RETAIL" Then
                     query = "
-    SELECT
-   sr.SaleID,
-sr.SaleDate,
-   rp.ProductName,
-       rp.unit AS Unit,
-c.CategoryName,
-     sr.QuantitySold,
-             sr.UnitPrice,
-   sr.TotalAmount,
- sr.PaymentMethod,
-     u.username AS HandledBy,
-  ISNULL(sr.IsRefunded, 0) AS IsRefunded,
-   sr.RefundDate,
-    sr.RefundReason,
-   sr.PayerName,
-   sr.ReferenceNumber,
-        sr.BankName
-   FROM RetailSalesReport sr
-       INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
- INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-     INNER JOIN Users u ON sr.HandledBy = u.userID
-    WHERE sr.SaleID = @SaleID"
-                Else ' WHOLESALE
+                        SELECT
+                            sr.SaleID,
+                            sr.SaleDate,
+                            rp.ProductName,
+                            rp.unit AS Unit,
+                            c.CategoryName,
+                            sr.QuantitySold,
+                            sr.UnitPrice,
+                            sr.TotalAmount,
+                            sr.PaymentMethod,
+                            u.username AS HandledBy,
+                            ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+                            sr.RefundDate,
+                            sr.RefundReason,
+                            sr.PayerName,
+                            sr.ReferenceNumber,
+                            sr.BankName
+                        FROM RetailSalesReport sr
+                        INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
+                        INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+                        INNER JOIN Users u ON sr.HandledBy = u.userID
+                        WHERE sr.SaleID = @SaleID"
+                Else
                     query = "
-       SELECT
-   sr.SaleID,
-  sr.SaleDate,
-      wp.ProductName,
-     wp.unit AS Unit,
-    c.CategoryName,
-   sr.QuantitySold,
-             sr.UnitPrice,
-    sr.TotalAmount,
-      sr.PaymentMethod,
-       u.username AS HandledBy,
-    ISNULL(sr.IsRefunded, 0) AS IsRefunded,
- sr.RefundDate,
-       sr.RefundReason,
-        CASE
-   WHEN sr.IsDelivery = 1 THEN 'Delivery'
-   WHEN sr.IsDelivery = 0 THEN 'Pickup'
-   ELSE 'In-Store'
-   END AS TransactionType,
-    sr.DeliveryAddress,
-   sr.PayerName,
-   sr.ReferenceNumber,
-        sr.BankName
-    FROM SalesReport sr
-       INNER JOIN wholesaleProducts wp ON sr.ProductID = wp.ProductID
- INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
-     INNER JOIN Users u ON sr.HandledBy = u.userID
-      WHERE sr.SaleID = @SaleID"
+                        SELECT
+                            sr.SaleID,
+                            sr.SaleDate,
+                            wp.ProductName,
+                            wp.unit AS Unit,
+                            c.CategoryName,
+                            sr.QuantitySold,
+                            sr.UnitPrice,
+                            sr.TotalAmount,
+                            sr.PaymentMethod,
+                            u.username AS HandledBy,
+                            ISNULL(sr.IsRefunded, 0) AS IsRefunded,
+                            sr.RefundDate,
+                            sr.RefundReason,
+                            CASE
+                                WHEN sr.IsDelivery = 1 THEN 'Delivery'
+                                WHEN sr.IsDelivery = 0 THEN 'Pickup'
+                                ELSE 'In-Store'
+                            END AS TransactionType,
+                            sr.DeliveryAddress,
+                            sr.PayerName,
+                            sr.ReferenceNumber,
+                            sr.BankName
+                        FROM SalesReport sr
+                        INNER JOIN wholesaleProducts wp ON sr.ProductID = wp.ProductID
+                        INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
+                        INNER JOIN Users u ON sr.HandledBy = u.userID
+                        WHERE sr.SaleID = @SaleID"
                 End If
 
                 Using cmd As New SqlCommand(query, conn)
@@ -753,14 +1110,12 @@ c.CategoryName,
 
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
-                            ' Build receipt header
                             receiptContent.AppendLine("================================")
                             receiptContent.AppendLine("   INVENTORY SYSTEM POS")
                             receiptContent.AppendLine("   TRANSACTION RECEIPT")
                             receiptContent.AppendLine("================================")
                             receiptContent.AppendLine()
 
-                            ' Transaction type and status
                             Dim isRefunded As Boolean = Convert.ToBoolean(reader("IsRefunded"))
                             If isRefunded Then
                                 receiptContent.AppendLine("*** REFUNDED TRANSACTION ***")
@@ -773,7 +1128,6 @@ c.CategoryName,
                             receiptContent.AppendLine($"Time: {Convert.ToDateTime(reader("SaleDate")):hh:mm:ss tt}")
                             receiptContent.AppendLine($"Cashier: {reader("HandledBy")}")
 
-                            ' Wholesale-specific details
                             If saleType = "WHOLESALE" Then
                                 receiptContent.AppendLine($"Mode: {reader("TransactionType")}")
                                 If Not IsDBNull(reader("DeliveryAddress")) Then
@@ -787,7 +1141,6 @@ c.CategoryName,
                             receiptContent.AppendLine("--------------------------------")
                             receiptContent.AppendLine()
 
-                            ' Product details
                             Dim productName As String = reader("ProductName").ToString()
                             If productName.Length > 30 Then
                                 productName = productName.Substring(0, 27) & "..."
@@ -797,7 +1150,6 @@ c.CategoryName,
                             receiptContent.AppendLine($"Unit: {reader("Unit")}")
                             receiptContent.AppendLine()
 
-                            ' Pricing details
                             Dim quantity As Integer = Convert.ToInt32(reader("QuantitySold"))
                             Dim unitPrice As Decimal = Convert.ToDecimal(reader("UnitPrice"))
                             Dim totalAmount As Decimal = Convert.ToDecimal(reader("TotalAmount"))
@@ -811,7 +1163,6 @@ c.CategoryName,
                             receiptContent.AppendLine()
                             receiptContent.AppendLine($"Payment Method: {reader("PaymentMethod")}")
 
-                            ' Payment details for GCash and Bank Transaction
                             Dim paymentMethod As String = reader("PaymentMethod").ToString()
                             If paymentMethod = "GCash" OrElse paymentMethod = "Bank Transaction" Then
                                 If Not IsDBNull(reader("PayerName")) OrElse Not IsDBNull(reader("ReferenceNumber")) Then
@@ -834,7 +1185,6 @@ c.CategoryName,
                                 End If
                             End If
 
-                            ' Refund information
                             If isRefunded Then
                                 receiptContent.AppendLine()
                                 receiptContent.AppendLine("================================")
@@ -854,24 +1204,83 @@ c.CategoryName,
                             receiptContent.AppendLine("  Thank you for your purchase!")
                             receiptContent.AppendLine("================================")
 
-                            ' Display receipt in message box
                             Dim receiptTitle As String = If(isRefunded,
-      $"Transaction Receipt (REFUNDED) - #{saleID}",
-       $"Transaction Receipt - #{saleID}")
+                                $"Transaction Receipt (REFUNDED) - #{saleID}",
+                                $"Transaction Receipt - #{saleID}")
 
                             MessageBox.Show(receiptContent.ToString(), receiptTitle,
                                 MessageBoxButtons.OK, MessageBoxIcon.Information)
                         Else
                             MessageBox.Show("Transaction not found.", "Error",
-   MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                MessageBoxButtons.OK, MessageBoxIcon.Error)
                         End If
                     End Using
                 End Using
             End Using
         Catch ex As Exception
             MessageBox.Show($"Error displaying receipt: {ex.Message}", "Error",
-       MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    ' UpdateFilteredSummary method closing
+    ''' <summary>
+    ''' Updates the summary labels based on the current filter
+    ''' </summary>
+    Private Sub UpdateFilteredSummary()
+        ' Summary logic for filtered view (detail view only)
+        If isDetailView Then
+            Try
+                Dim totalRevenue As Decimal = 0D
+                Dim retailCount As Integer = 0
+                Dim wholesaleCount As Integer = 0
+                Dim refundedCount As Integer = 0
+                Dim totalTransactions As Integer = dt.Rows.Count
+
+                For Each row As DataRow In dt.Rows
+                    Dim isRefunded As Boolean = If(IsDBNull(row("IsRefunded")), False, Convert.ToBoolean(row("IsRefunded")))
+
+                    If Not isRefunded Then
+                        If Not IsDBNull(row("TotalAmount")) Then
+                            totalRevenue += Convert.ToDecimal(row("TotalAmount"))
+                        End If
+
+                        If Not IsDBNull(row("SaleType")) Then
+                            If row("SaleType").ToString() = "RETAIL" Then
+                                retailCount += 1
+                            Else
+                                wholesaleCount += 1
+                            End If
+                        End If
+                    Else
+                        refundedCount += 1
+                    End If
+                Next
+
+                Dim activeItems As Integer = totalTransactions - refundedCount
+                lblTotalTransactions.Text = $"Items in Batch: {activeItems}"
+                lblTotalRevenue.Text = $"Batch Total: ₱{totalRevenue:N2}"
+                lblRetailCount.Text = $"Retail: {retailCount} items"
+                lblWholesaleCount.Text = $"Wholesale: {wholesaleCount} items"
+
+                ' Update labels based on filter
+                If cboSalesType.SelectedIndex = 3 Then
+                    ' Showing refunded only
+                    lblTotalTransactions.Text = $"Refunded Transactions: {refundedCount}"
+                    lblTotalRevenue.Text = $"Refunded Amount: ₱{totalRevenue:N2}"
+                    lblRetailCount.Text = ""
+                    lblWholesaleCount.Text = ""
+                Else
+                    ' Showing active transactions
+                    lblTotalTransactions.Text = $"Total Transactions: {totalTransactions}"
+                    lblTotalRevenue.Text = $"Total Sales: ₱{totalRevenue:N2}"
+                    lblRetailCount.Text = $"Retail: {retailCount} transactions"
+                    lblWholesaleCount.Text = $"Wholesale: {wholesaleCount} transactions"
+                End If
+            Catch ex As Exception
+                Console.WriteLine($"Error updating filtered summary: {ex.Message}")
+            End Try
+        End If
     End Sub
 
 End Class

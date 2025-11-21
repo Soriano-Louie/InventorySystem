@@ -356,6 +356,9 @@ Public Class posForm
                 ' Checkout was successful, cart is already cleared by checkout form
                 MessageBox.Show("Transaction completed successfully!", "Success",
  MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                ' Update daily sales display in top panel
+                topPanel.UpdateDailySales()
             End If
         Catch ex As Exception
             MessageBox.Show("Error opening checkout: " & ex.Message, "Error",
@@ -387,18 +390,40 @@ Public Class posForm
     ''' </summary>
     Public Sub AddProductToCart(productID As Integer, productName As String, quantity As Integer,
  unitPrice As Decimal, categoryID As Integer, isVATApplicable As Boolean, Optional productType As String = "", Optional unit As String = "")
+        ' Determine product type if not provided
+        If String.IsNullOrEmpty(productType) Then
+            productType = DetermineProductType(productID)
+        End If
+
+        ' Check available stock
+        Dim availableStock As Integer = GetAvailableStock(productID, productType)
+
         ' Check if product already exists in cart
         Dim existingItem = cartItems.FirstOrDefault(Function(x) x.ProductID = productID)
+
+        Dim totalQuantityNeeded As Integer = quantity
+        If existingItem IsNot Nothing Then
+            totalQuantityNeeded = existingItem.Quantity + quantity
+        End If
+
+        ' Validate stock availability
+        If totalQuantityNeeded > availableStock Then
+            MessageBox.Show("Insufficient stock!" & vbCrLf & vbCrLf &
+                          "Product: " & productName & vbCrLf &
+                          "Available: " & availableStock.ToString() & vbCrLf &
+                          "Requested: " & totalQuantityNeeded.ToString() & vbCrLf &
+                          "(Current in cart: " & If(existingItem IsNot Nothing, existingItem.Quantity, 0).ToString() & " + New: " & quantity.ToString() & ")",
+                          "Stock Limit",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Warning)
+            Return
+        End If
 
         If existingItem IsNot Nothing Then
             ' Update quantity
             existingItem.Quantity += quantity
+            existingItem.DiscountPrice = GetDiscountPrice(productID, existingItem.Quantity)
         Else
-            ' Determine product type if not provided
-            If String.IsNullOrEmpty(productType) Then
-                productType = DetermineProductType(productID)
-            End If
-
             ' Get unit from database if not provided
             If String.IsNullOrEmpty(unit) Then
                 unit = GetProductUnit(productID, productType)
@@ -406,16 +431,16 @@ Public Class posForm
 
             ' Add new item
             Dim newItem As New CartItem With {
-      .ProductID = productID,
-  .ProductName = productName,
-     .Quantity = quantity,
-   .UnitPrice = unitPrice,
-     .IsVATApplicable = isVATApplicable,
-       .CategoryID = categoryID,
-       .DiscountPrice = GetDiscountPrice(productID, quantity),
-  .ProductType = productType,
-         .Unit = unit
-          }
+            .ProductID = productID,
+            .ProductName = productName,
+            .Quantity = quantity,
+            .UnitPrice = unitPrice,
+            .IsVATApplicable = isVATApplicable,
+            .CategoryID = categoryID,
+            .DiscountPrice = GetDiscountPrice(productID, quantity),
+            .ProductType = productType,
+             .Unit = unit
+              }
             cartItems.Add(newItem)
         End If
 
@@ -423,6 +448,29 @@ Public Class posForm
         RefreshDataGridView()
         CalculateAllTotals()
     End Sub
+
+    ''' <summary>
+    ''' Gets the available stock for a product from database
+    ''' </summary>
+    Private Function GetAvailableStock(productID As Integer, productType As String) As Integer
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+
+                Dim tableName As String = If(productType = "Wholesale", "wholesaleProducts", "retailProducts")
+                Dim query As String = "SELECT ISNULL(SUM(StockQuantity), 0) FROM " & tableName &
+                                     " WHERE ProductID = @ProductID AND (IsArchived IS NULL OR IsArchived = 0)"
+
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Return Convert.ToInt32(cmd.ExecuteScalar())
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine("Error getting stock: " & ex.Message)
+            Return 0
+        End Try
+    End Function
 
     ''' <summary>
     ''' Gets the unit type for a product from the database
@@ -433,7 +481,7 @@ Public Class posForm
                 conn.Open()
 
                 Dim tableName As String = If(productType = "Wholesale", "wholesaleProducts", "retailProducts")
-                Dim query As String = $"SELECT Unit FROM {tableName} WHERE ProductID = @ProductID"
+                Dim query As String = "SELECT Unit FROM " & tableName & " WHERE ProductID = @ProductID"
 
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@ProductID", productID)
@@ -491,11 +539,11 @@ Public Class posForm
         Try
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
-                Dim query As String = "SELECT DiscountPrice FROM ProductDiscounts
-       WHERE ProductID = @ProductID
-  AND @Quantity >= MinSacks
-      AND (@Quantity <= MaxSacks OR MaxSacks IS NULL)
-        ORDER BY MinSacks DESC"
+                Dim query As String = "SELECT DiscountPrice FROM ProductDiscounts " &
+                                     "WHERE ProductID = @ProductID " &
+                                     "AND @Quantity >= MinSacks " &
+                                     "AND (@Quantity <= MaxSacks OR MaxSacks IS NULL) " &
+                                     "ORDER BY MinSacks DESC"
 
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@ProductID", productID)
@@ -520,7 +568,16 @@ Public Class posForm
         DataGridView1.Rows.Clear()
         Dim rowNum As Integer = 1
 
+        ' Create a copy to avoid modification during iteration
+        Dim itemsToRemove As New List(Of CartItem)
+
         For Each item In cartItems
+            ' Check if quantity is zero or negative
+            If item.Quantity <= 0 Then
+                itemsToRemove.Add(item)
+                Continue For ' Skip this item, don't display it
+            End If
+
             Dim effectivePrice As Decimal = If(item.DiscountPrice.HasValue, item.DiscountPrice.Value, item.UnitPrice)
             Dim total As Decimal = effectivePrice * item.Quantity
 
@@ -532,6 +589,11 @@ Public Class posForm
                         total
            )
             rowNum += 1
+        Next
+
+        ' Remove zero quantity items from cart
+        For Each item In itemsToRemove
+            cartItems.Remove(item)
         Next
     End Sub
 
@@ -580,10 +642,10 @@ Public Class posForm
         Dim grandTotal As Decimal = subtotalBeforeVAT + totalVATAmount
 
         ' Update labels with calculated values
-        totalSalesLabel.Text = $"₱{grandTotal:N2}" ' Total including VAT
-        totalDiscountLabel.Text = $"₱{totalDiscountAmount:N2}" ' Total discount given
-        VATLabel.Text = $"₱{totalVATAmount:N2}" ' Total VAT amount
-        vatableLabel.Text = $"₱{totalVatableAmount:N2}" ' Vatable amount (before VAT is added)
+        totalSalesLabel.Text = "₱" & grandTotal.ToString("N2")
+        totalDiscountLabel.Text = "₱" & totalDiscountAmount.ToString("N2")
+        VATLabel.Text = "₱" & totalVATAmount.ToString("N2")
+        vatableLabel.Text = "₱" & totalVatableAmount.ToString("N2")
     End Sub
 
     ''' <summary>
@@ -597,6 +659,20 @@ Public Class posForm
 
         Select Case colName
             Case "ColAdd"
+                ' Check stock availability before increasing quantity
+                Dim availableStock As Integer = GetAvailableStock(item.ProductID, item.ProductType)
+
+                If item.Quantity >= availableStock Then
+                    MessageBox.Show("Cannot add more items!" & vbCrLf & vbCrLf &
+                                  "Product: " & item.ProductName & vbCrLf &
+                                  "Available Stock: " & availableStock.ToString() & " " & item.Unit & vbCrLf &
+                                  "Current Cart Quantity: " & item.Quantity.ToString() & " " & item.Unit,
+                                  "Stock Limit Reached",
+                                  MessageBoxButtons.OK,
+                                  MessageBoxIcon.Warning)
+                    Return
+                End If
+
                 ' Increase quantity
                 item.Quantity += 1
                 item.DiscountPrice = GetDiscountPrice(item.ProductID, item.Quantity)
@@ -610,6 +686,17 @@ Public Class posForm
                     item.DiscountPrice = GetDiscountPrice(item.ProductID, item.Quantity)
                     RefreshDataGridView()
                     CalculateAllTotals()
+                Else
+                    ' When quantity is 1, show confirmation before removing
+                    Dim result = MessageBox.Show("Remove '" & item.ProductName & "' from cart?",
+                                                "Remove Item",
+                                                MessageBoxButtons.YesNo,
+                                                MessageBoxIcon.Question)
+                    If result = DialogResult.Yes Then
+                        cartItems.RemoveAt(e.RowIndex)
+                        RefreshDataGridView()
+                        CalculateAllTotals()
+                    End If
                 End If
 
             Case "ColDelete"
@@ -631,17 +718,19 @@ Public Class posForm
             Using conn As New SqlConnection(GetConnectionString())
                 conn.Open()
 
-                ' Check both wholesaleProducts and retailProducts
+                ' Check both wholesaleProducts and retailProducts (excluding archived)
                 Dim query As String = "
                 SELECT ProductID, ProductName, RetailPrice, CategoryID,
                 ISNULL(IsVATApplicable, 0) AS IsVATApplicable
                     FROM wholesaleProducts
                     WHERE SKU = @SKU
+                    AND (IsArchived IS NULL OR IsArchived = 0)
                     UNION
                     SELECT ProductID, ProductName, RetailPrice, CategoryID,
                 ISNULL(IsVATApplicable, 0) AS IsVATApplicable
                 FROM retailProducts
-                WHERE SKU = @SKU"
+                WHERE SKU = @SKU
+                AND (IsArchived IS NULL OR IsArchived = 0)"
 
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@SKU", productCode)

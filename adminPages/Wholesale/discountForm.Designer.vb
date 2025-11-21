@@ -25,6 +25,7 @@ Partial Class discountForm
         Label1 = New Label()
         dgvDiscounts = New DataGridView()
         TableLayoutPanel1 = New TableLayoutPanel()
+        deleteButton = New Button()
         Panel3 = New Panel()
         txtDiscountPrice = New TextBox()
         Label4 = New Label()
@@ -48,7 +49,7 @@ Partial Class discountForm
         Label1.Font = New Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         Label1.Location = New Point(0, 0)
         Label1.Name = "Label1"
-        Label1.Size = New Size(557, 69)
+        Label1.Size = New Size(595, 69)
         Label1.TabIndex = 1
         Label1.TextAlign = ContentAlignment.MiddleCenter
         ' 
@@ -62,15 +63,17 @@ Partial Class discountForm
         dgvDiscounts.Location = New Point(0, 200)
         dgvDiscounts.Name = "dgvDiscounts"
         dgvDiscounts.ReadOnly = True
-        dgvDiscounts.Size = New Size(557, 263)
+        dgvDiscounts.Size = New Size(595, 263)
         dgvDiscounts.TabIndex = 2
         ' 
         ' TableLayoutPanel1
         ' 
         TableLayoutPanel1.Anchor = AnchorStyles.Left Or AnchorStyles.Right
-        TableLayoutPanel1.ColumnCount = 2
+        TableLayoutPanel1.ColumnCount = 3
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 100F))
+        TableLayoutPanel1.Controls.Add(deleteButton, 2, 0)
         TableLayoutPanel1.Controls.Add(Panel3, 0, 1)
         TableLayoutPanel1.Controls.Add(Panel2, 1, 0)
         TableLayoutPanel1.Controls.Add(Panel1, 0, 0)
@@ -80,8 +83,21 @@ Partial Class discountForm
         TableLayoutPanel1.RowCount = 2
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 50F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 50F))
-        TableLayoutPanel1.Size = New Size(557, 122)
+        TableLayoutPanel1.Size = New Size(595, 122)
         TableLayoutPanel1.TabIndex = 3
+        ' 
+        ' deleteButton
+        ' 
+        deleteButton.Anchor = AnchorStyles.None
+        deleteButton.BackColor = Color.Red
+        deleteButton.FlatStyle = FlatStyle.Popup
+        deleteButton.Location = New Point(510, 47)
+        deleteButton.Name = "deleteButton"
+        TableLayoutPanel1.SetRowSpan(deleteButton, 2)
+        deleteButton.Size = New Size(68, 27)
+        deleteButton.TabIndex = 6
+        deleteButton.Text = "DELETE"
+        deleteButton.UseVisualStyleBackColor = False
         ' 
         ' Panel3
         ' 
@@ -90,13 +106,13 @@ Partial Class discountForm
         Panel3.Dock = DockStyle.Fill
         Panel3.Location = New Point(3, 64)
         Panel3.Name = "Panel3"
-        Panel3.Size = New Size(272, 55)
+        Panel3.Size = New Size(241, 55)
         Panel3.TabIndex = 4
         ' 
         ' txtDiscountPrice
         ' 
         txtDiscountPrice.BorderStyle = BorderStyle.FixedSingle
-        txtDiscountPrice.Location = New Point(82, 24)
+        txtDiscountPrice.Location = New Point(54, 24)
         txtDiscountPrice.Name = "txtDiscountPrice"
         txtDiscountPrice.Size = New Size(100, 23)
         txtDiscountPrice.TabIndex = 1
@@ -105,7 +121,7 @@ Partial Class discountForm
         ' 
         Label4.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         Label4.AutoSize = True
-        Label4.Location = New Point(85, 6)
+        Label4.Location = New Point(57, 6)
         Label4.Name = "Label4"
         Label4.Size = New Size(96, 15)
         Label4.TabIndex = 0
@@ -117,15 +133,15 @@ Partial Class discountForm
         Panel2.Controls.Add(txtMaxSacks)
         Panel2.Controls.Add(Label3)
         Panel2.Dock = DockStyle.Fill
-        Panel2.Location = New Point(281, 3)
+        Panel2.Location = New Point(250, 3)
         Panel2.Name = "Panel2"
-        Panel2.Size = New Size(273, 55)
+        Panel2.Size = New Size(241, 55)
         Panel2.TabIndex = 3
         ' 
         ' txtMaxSacks
         ' 
         txtMaxSacks.BorderStyle = BorderStyle.FixedSingle
-        txtMaxSacks.Location = New Point(82, 24)
+        txtMaxSacks.Location = New Point(70, 24)
         txtMaxSacks.Name = "txtMaxSacks"
         txtMaxSacks.Size = New Size(100, 23)
         txtMaxSacks.TabIndex = 1
@@ -134,7 +150,7 @@ Partial Class discountForm
         ' 
         Label3.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         Label3.AutoSize = True
-        Label3.Location = New Point(63, 6)
+        Label3.Location = New Point(51, 6)
         Label3.Name = "Label3"
         Label3.Size = New Size(151, 15)
         Label3.TabIndex = 0
@@ -148,13 +164,13 @@ Partial Class discountForm
         Panel1.Dock = DockStyle.Fill
         Panel1.Location = New Point(3, 3)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(272, 55)
+        Panel1.Size = New Size(241, 55)
         Panel1.TabIndex = 0
         ' 
         ' txtMinSacks
         ' 
         txtMinSacks.BorderStyle = BorderStyle.FixedSingle
-        txtMinSacks.Location = New Point(82, 24)
+        txtMinSacks.Location = New Point(55, 24)
         txtMinSacks.Name = "txtMinSacks"
         txtMinSacks.Size = New Size(100, 23)
         txtMinSacks.TabIndex = 1
@@ -163,7 +179,7 @@ Partial Class discountForm
         ' 
         Label2.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         Label2.AutoSize = True
-        Label2.Location = New Point(63, 6)
+        Label2.Location = New Point(33, 6)
         Label2.Name = "Label2"
         Label2.Size = New Size(150, 15)
         Label2.TabIndex = 0
@@ -174,9 +190,9 @@ Partial Class discountForm
         ' 
         saveButton.Anchor = AnchorStyles.None
         saveButton.FlatStyle = FlatStyle.Popup
-        saveButton.Location = New Point(380, 80)
+        saveButton.Location = New Point(336, 78)
         saveButton.Name = "saveButton"
-        saveButton.Size = New Size(75, 23)
+        saveButton.Size = New Size(68, 27)
         saveButton.TabIndex = 5
         saveButton.Text = "SAVE"
         saveButton.UseVisualStyleBackColor = True
@@ -185,7 +201,7 @@ Partial Class discountForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(557, 463)
+        ClientSize = New Size(595, 463)
         Controls.Add(TableLayoutPanel1)
         Controls.Add(dgvDiscounts)
         Controls.Add(Label1)
@@ -215,5 +231,6 @@ Partial Class discountForm
     Friend WithEvents Label3 As Label
     Friend WithEvents txtMinSacks As TextBox
     Friend WithEvents Label2 As Label
+    Friend WithEvents deleteButton As Button
     Friend WithEvents saveButton As Button
 End Class

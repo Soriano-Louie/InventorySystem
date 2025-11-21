@@ -122,25 +122,15 @@ Public Class addItemForm
     End Function
 
     Private Function GetVATRate() As Decimal
-        Dim vatRate As Decimal = 0.12 ' Default VAT rate
-        Dim connString As String = GetConnectionString()
-
         Try
-            Using conn As New SqlConnection(connString)
-                conn.Open()
-                Dim query As String = "SELECT TOP 1 VAT FROM Settings"
-                Using cmd As New SqlCommand(query, conn)
-                    Dim result = cmd.ExecuteScalar()
-                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
-                        vatRate = Convert.ToDecimal(result)
-                    End If
-                End Using
-            End Using
+            Return SharedUtilities.GetCurrentVATRate()
         Catch ex As Exception
-            MessageBox.Show("Error retrieving VAT rate: " & ex.Message & vbCrLf & "Using default VAT rate of 12%.")
+            MessageBox.Show("Error retrieving VAT rate: " & ex.Message & vbCrLf & "Using default VAT rate of 12%.",
+                          "VAT Rate Error",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Warning)
+            Return 0.12D ' Default 12% VAT rate
         End Try
-
-        Return vatRate
     End Function
 
     Private Sub LoadCategories()
@@ -228,7 +218,7 @@ Public Class addItemForm
         Dim vatMessage As String = ""
         If isVATApplicable Then
             Dim vatRate As Decimal = GetVATRate()
-            vatMessage = $" (VAT {vatRate:P} applicable)"
+            vatMessage = $" (VAT {(vatRate / 100):P} applicable)"
         Else
             vatMessage = " (VAT not applicable)"
         End If
@@ -299,6 +289,31 @@ Public Class addItemForm
 
             MessageBox.Show("Please fill in all required fields.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Exit Sub
+        End If
+
+        ' Check if product name already exists (warn user about batch implications)
+        If ProductNameExists(productTextBox.Text.Trim()) Then
+            Dim result = MessageBox.Show(
+                "⚠️ Product Name Already Exists" & vbCrLf & vbCrLf &
+                $"A product named '{productTextBox.Text.Trim()}' already exists in the system." & vbCrLf & vbCrLf &
+                "IMPORTANT: If you continue:" & vbCrLf &
+                "• This will create a NEW BATCH of the same product" & vbCrLf &
+                "• Both batches will have the SAME product name" & vbCrLf &
+                "• Archiving one will ARCHIVE ALL batches with this name" & vbCrLf & vbCrLf &
+                "Do you want to continue and create a new batch?" & vbCrLf & vbCrLf &
+                "Click YES to create batch | NO to cancel",
+                "Duplicate Product Name Warning",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2)
+            
+            If result = DialogResult.No Then
+                MessageBox.Show("Operation cancelled. Please use a different product name or edit the existing product to add stock.",
+                              "Cancelled",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Information)
+                Return
+            End If
         End If
 
         ' Generate final SKU before saving (in case user hasn't typed in product name yet)
@@ -373,5 +388,25 @@ Public Class addItemForm
         ' Refresh the DataGridView
         InventoryForm.LoadProducts()
     End Sub
+
+    ''' <summary>
+    ''' Check if a product name already exists in the database
+    ''' </summary>
+    Private Function ProductNameExists(productName As String) As Boolean
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductName = @ProductName AND (IsArchived = 0 OR IsArchived IS NULL)"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductName", productName)
+                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            ' If error checking, assume doesn't exist
+            Return False
+        End Try
+    End Function
 
 End Class
