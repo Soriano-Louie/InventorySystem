@@ -172,10 +172,8 @@ Public Class loginRecordsForm
                     Dim form = ShowSingleForm(Of retailStockEditLogs)()
                     form.loadStockEditLogs()
                 Case "Button5"
-                    Dim form = ShowSingleForm(Of wholeSaleStockEditLogs)()
-                    form.loadStockEditLogs()
-                Case "Button10"
-                    ShowSingleForm(Of retailSalesReport)()
+                    Dim form = ShowSingleForm(Of retailSalesReport)()
+                    form.loadSalesReport()
                 Case "Button6"
                     ShowSingleForm(Of loginRecordsForm)()
                 Case "Button7"

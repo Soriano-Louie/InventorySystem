@@ -165,9 +165,9 @@ Public Class retailStockEditLogs
         SetRoundedRegion2(Button1, 20)
         SetRoundedRegion2(Button2, 20)
 
-        ' Set default date range (last 30 days)
-        DateTimePickerTo.Value = DateTime.Now
-        DateTimePickerFrom.Value = DateTime.Now.AddDays(-30)
+        ' Set default date range - from today to today
+        DateTimePickerFrom.Value = DateTime.Today
+        DateTimePickerTo.Value = DateTime.Today
 
         ' Initialize
         dt = New DataTable()
@@ -207,9 +207,9 @@ Public Class retailStockEditLogs
     End Sub
 
     Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
-        ' Reset date range to last 30 days
-        DateTimePickerTo.Value = DateTime.Now
-        DateTimePickerFrom.Value = DateTime.Now.AddDays(-30)
+        ' Reset date range to today
+        DateTimePickerFrom.Value = DateTime.Today
+        DateTimePickerTo.Value = DateTime.Today
 
         ' Clear search box
         TextBoxSearch.Text = ""

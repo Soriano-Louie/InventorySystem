@@ -410,19 +410,21 @@ FROM RetailSalesReport sr
         Using con As New SqlConnection(GetConnectionString())
             Dim query As String = "
     SELECT
-     sr.SaleID, sr.SaleDate, rp.ProductName, c.CategoryName,
-                 sr.QuantitySold, sr.UnitPrice, sr.TotalAmount,
+     sr.SaleID, sr.SaleDate, rp.ProductName, rp.unit, c.CategoryName,
+             sr.QuantitySold, sr.UnitPrice, sr.TotalAmount,
   sr.PaymentMethod, u.username AS HandledBy
       FROM RetailSalesReport sr
  INNER JOIN retailProducts rp ON sr.ProductID = rp.ProductID
         INNER JOIN Categories c ON sr.CategoryID = c.CategoryID
     INNER JOIN Users u ON sr.HandledBy = u.userID
-        WHERE sr.SaleDate BETWEEN @FromDate AND @ToDate
+   WHERE sr.SaleDate >= @FromDate AND sr.SaleDate <= @ToDate
        ORDER BY sr.SaleDate DESC"
 
             Using cmd As New SqlCommand(query, con)
+                ' Set FromDate to start of day (00:00:00)
                 cmd.Parameters.AddWithValue("@FromDate", DateTimePickerFrom.Value.Date)
-                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date)
+                ' Set ToDate to end of day (23:59:59)
+                cmd.Parameters.AddWithValue("@ToDate", DateTimePickerTo.Value.Date.AddDays(1).AddSeconds(-1))
 
                 Dim da As New SqlDataAdapter(cmd)
                 dt.Clear()
