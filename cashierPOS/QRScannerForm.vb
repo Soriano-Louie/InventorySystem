@@ -26,12 +26,16 @@ Public Class QRScannerForm
         InitializeComponent()
         Me.parentForm = parent
 
-        ' Initialize the barcode reader
+        ' Initialize the barcode reader with optimized settings
         reader = New BarcodeReader()
         reader.AutoRotate = True
         reader.Options = New ZXing.Common.DecodingOptions()
         reader.Options.TryHarder = True
         reader.Options.PossibleFormats = New List(Of BarcodeFormat) From {BarcodeFormat.QR_CODE}
+
+        ' Additional options for better QR code detection across different cameras
+        reader.Options.TryInverted = True
+        reader.TryInverted = True
 
         ConfigureScanner()
     End Sub
@@ -84,25 +88,115 @@ Public Class QRScannerForm
 
     Private Sub ConfigureScanner()
         Try
-            ' Get available video devices
             Dim videoDevices As New FilterInfoCollection(FilterCategory.VideoInputDevice)
 
             If videoDevices.Count = 0 Then
                 MessageBox.Show("No camera detected on this device.", "Camera Error",
-              MessageBoxButtons.OK, MessageBoxIcon.Error)
+                              MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Me.Close()
                 Return
             End If
 
-            ' Use the first available camera
-            videoSource = New VideoCaptureDevice(videoDevices(0).MonikerString)
-            AddHandler videoSource.NewFrame, AddressOf VideoSource_NewFrame
-            videoSource.Start()
+            Console.WriteLine($"Found {videoDevices.Count} camera device(s)")
+            For i As Integer = 0 To videoDevices.Count - 1
+                Console.WriteLine($"  [{i}] {videoDevices(i).Name}")
+            Next
 
-            labelStatus.Text = "Ready to scan QR code..."
+            Dim cameraInitialized As Boolean = False
+            Dim lastError As Exception = Nothing
+
+            For cameraIndex As Integer = 0 To Math.Min(videoDevices.Count - 1, 2)
+                Try
+                    Console.WriteLine($"Trying camera {cameraIndex}: {videoDevices(cameraIndex).Name}")
+
+                    videoSource = New VideoCaptureDevice(videoDevices(cameraIndex).MonikerString)
+
+                    Dim capabilities = videoSource.VideoCapabilities
+
+                    If capabilities IsNot Nothing AndAlso capabilities.Length > 0 Then
+                        Console.WriteLine($"  Available resolutions: {capabilities.Length}")
+
+                        Dim preferredSizes As New List(Of Size) From {
+                            New Size(640, 480),
+                            New Size(800, 600),
+                            New Size(1280, 720),
+                            New Size(1024, 768),
+                            New Size(320, 240)
+                        }
+
+                        Dim bestCap As VideoCapabilities = Nothing
+
+                        For Each prefSize In preferredSizes
+                            For Each cap In capabilities
+                                If cap.FrameSize.Equals(prefSize) Then
+                                    bestCap = cap
+                                    Console.WriteLine($"  Using resolution: {cap.FrameSize.Width}x{cap.FrameSize.Height} @ {cap.AverageFrameRate} fps")
+                                    Exit For
+                                End If
+                            Next
+                            If bestCap IsNot Nothing Then Exit For
+                        Next
+
+                        If bestCap Is Nothing Then
+                            bestCap = capabilities(0)
+                            Console.WriteLine($"  Using default: {bestCap.FrameSize.Width}x{bestCap.FrameSize.Height}")
+                        End If
+
+                        videoSource.VideoResolution = bestCap
+                    End If
+
+                    AddHandler videoSource.NewFrame, AddressOf VideoSource_NewFrame
+                    videoSource.Start()
+
+                    System.Threading.Thread.Sleep(500)
+
+                    If videoSource.IsRunning Then
+                        cameraInitialized = True
+                        Console.WriteLine($"Camera {cameraIndex} started successfully")
+                        labelStatus.Text = "Ready to scan QR code..."
+                        Exit For
+                    Else
+                        Console.WriteLine($"Camera {cameraIndex} failed to start")
+                        RemoveHandler videoSource.NewFrame, AddressOf VideoSource_NewFrame
+                        videoSource = Nothing
+                    End If
+                Catch ex As Exception
+                    Console.WriteLine($"Camera {cameraIndex} error: {ex.Message}")
+                    lastError = ex
+                    If videoSource IsNot Nothing Then
+                        Try
+                            RemoveHandler videoSource.NewFrame, AddressOf VideoSource_NewFrame
+                            If videoSource.IsRunning Then videoSource.SignalToStop()
+                        Catch
+                        End Try
+                        videoSource = Nothing
+                    End If
+                End Try
+            Next
+
+            If Not cameraInitialized Then
+                Dim msg As String = "Failed to initialize camera." & vbCrLf & vbCrLf
+
+                If lastError IsNot Nothing Then
+                    msg &= $"Error: {lastError.Message}" & vbCrLf & vbCrLf
+                End If
+
+                msg &= "Troubleshooting:" & vbCrLf &
+                       "• Close other apps using the camera" & vbCrLf +
+                       "• Check Windows camera permissions" & vbCrLf +
+                       "• Update camera drivers" & vbCrLf +
+                       "• Restart the application"
+
+                MessageBox.Show(msg, "Camera Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Me.Close()
+            End If
         Catch ex As Exception
-            MessageBox.Show("Error initializing camera: " & ex.Message, "Camera Error",
-                 MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Camera initialization error: {ex.Message}" & vbCrLf & vbCrLf &
+                          "Please check:" & vbCrLf &
+                          "- Camera is connected" & vbCrLf &
+                          "- Drivers are installed" & vbCrLf &
+                          "- No other app is using camera",
+                          "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Me.Close()
         End Try
     End Sub
