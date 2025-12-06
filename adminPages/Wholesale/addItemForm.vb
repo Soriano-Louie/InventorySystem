@@ -68,9 +68,10 @@ Public Class addItemForm
     End Function
 
     ''' <summary>
-    ''' Auto-generates SKU based on product name and current date
-    ''' Format: First 3 letters of product name + YYMMDD + random 2-digit number
-    ''' Example: "COF250119-47" for "Coffee" on Jan 19, 2025
+    ''' Auto-generates SKU based on product name and current date with batch number
+    ''' Format: First 3 letters of product name + YYMMDD + batch number (01, 02, etc.)
+    ''' Example: "COF-250119-01" for "Coffee" on Jan 19, 2025 (first batch)
+    ''' Example: "COF-250119-02" for "Coffee" on Jan 19, 2025 (second batch)
     ''' </summary>
     Private Function GenerateSKU(productName As String) As String
         If String.IsNullOrWhiteSpace(productName) Then
@@ -84,40 +85,36 @@ Public Class addItemForm
         ' Get current date in YYMMDD format
         Dim dateCode As String = DateTime.Now.ToString("yyMMdd")
 
-        ' Generate random 2-digit number for uniqueness
-        Dim random As New Random()
-        Dim randomCode As String = random.Next(10, 99).ToString()
+        ' Get the next batch number for this product name
+        Dim batchNumber As Integer = GetNextBatchNumber(productName.Trim())
+        Dim batchCode As String = batchNumber.ToString("D2") ' Format as 2 digits (01, 02, etc.)
 
-        ' Combine to create SKU: ABC-YYMMDD-RR
-        Dim sku As String = $"{prefix}-{dateCode}-{randomCode}"
-
-        ' Check if SKU already exists, if so, regenerate random part
-        While SKUExists(sku)
-            randomCode = random.Next(10, 99).ToString()
-            sku = $"{prefix}-{dateCode}-{randomCode}"
-        End While
+        ' Combine to create SKU: ABC-YYMMDD-BB (BB = batch number)
+        Dim sku As String = $"{prefix}-{dateCode}-{batchCode}"
 
         Return sku
     End Function
 
     ''' <summary>
-    ''' Checks if SKU already exists in database
+    ''' Gets the next batch number for a product name
     ''' </summary>
-    Private Function SKUExists(sku As String) As Boolean
+    Private Function GetNextBatchNumber(productName As String) As Integer
         Dim connString As String = GetConnectionString()
         Try
             Using conn As New SqlConnection(connString)
                 conn.Open()
-                Dim query As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE SKU = @SKU"
+                ' Count all existing batches for this product name (including archived)
+                Dim query As String = "SELECT COUNT(*) FROM wholesaleProducts WHERE ProductName = @ProductName"
                 Using cmd As New SqlCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@SKU", sku)
+                    cmd.Parameters.AddWithValue("@ProductName", productName)
                     Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    Return count > 0
+                    ' Return next batch number (count + 1)
+                    Return count + 1
                 End Using
             End Using
         Catch ex As Exception
-            ' If error checking, assume doesn't exist
-            Return False
+            ' If error checking, assume first batch
+            Return 1
         End Try
     End Function
 

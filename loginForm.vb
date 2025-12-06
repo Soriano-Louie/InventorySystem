@@ -213,12 +213,10 @@ Public Class LoginForm
             Using conn As New SqlConnection(connStr)
                 conn.Open()
 
-                ' Fetch UserID, passwordHash, and RoleName from Roles table
-                Dim query As String = "
-                SELECT u.UserID, u.passwordHash, r.RoleName
-                FROM Users u
-                INNER JOIN Roles r ON u.RoleID = r.RoleID
-                WHERE u.username = @u"
+                ' Fetch UserID, username, passwordHash, and RoleName with case-sensitive username match
+                Dim query As String = "SELECT u.UserID, u.username, u.passwordHash, r.RoleName " &
+                                   "FROM Users u INNER JOIN Roles r ON u.RoleID = r.RoleID " &
+                                   "WHERE u.username COLLATE SQL_Latin1_General_CP1_CS_AS = @u"
 
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.Add("@u", SqlDbType.NVarChar, 50).Value = username
@@ -226,8 +224,15 @@ Public Class LoginForm
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
                             Dim userID As Integer = Convert.ToInt32(reader("UserID"))
+                            Dim dbUsername As String = reader("username").ToString()
                             Dim storedObj As Object = reader("passwordHash")
                             userRole = reader("RoleName").ToString()
+
+                            ' Ensure exact case-sensitive match (defensive check)
+                            If Not String.Equals(dbUsername, username, StringComparison.Ordinal) Then
+                                MessageBox.Show("Username or password incorrect.")
+                                Return
+                            End If
 
                             If storedObj Is Nothing OrElse storedObj Is DBNull.Value Then
                                 MessageBox.Show("Username or password incorrect.")
@@ -249,9 +254,7 @@ Public Class LoginForm
                                     End Using
 
                                     ' Insert login history
-                                    Using insertCmd As New SqlCommand("
-                                    INSERT INTO UserLoginHistory (UserID, DeviceInfo)
-                                    VALUES (@UserID, @DeviceInfo)", conn)
+                                    Using insertCmd As New SqlCommand("INSERT INTO UserLoginHistory (UserID, DeviceInfo) VALUES (@UserID, @DeviceInfo)", conn)
                                         insertCmd.Parameters.AddWithValue("@UserID", userID)
                                         insertCmd.Parameters.AddWithValue("@DeviceInfo", Environment.MachineName)
                                         insertCmd.ExecuteNonQuery()
@@ -260,8 +263,8 @@ Public Class LoginForm
                                     ' Success
                                     MessageBox.Show("Login successful!")
 
-                                    ' Set global user session
-                                    GlobalUserSession.SetUserSession(userID, username, userRole)
+                                    ' Set global user session (use DB username to preserve exact case)
+                                    GlobalUserSession.SetUserSession(userID, dbUsername, userRole)
 
                                     Me.Hide()
                                     If userRole.ToLower() = "admin" Then
@@ -269,12 +272,19 @@ Public Class LoginForm
                                     ElseIf userRole.ToLower() = "cashier" Then
                                         posForm.Show()
                                     End If
+
+                                    Return
                                 Else
                                     MessageBox.Show("Username or password incorrect.")
+                                    Return
                                 End If
+                            Else
+                                MessageBox.Show("Username or password incorrect.")
+                                Return
                             End If
                         Else
                             MessageBox.Show("Username or password incorrect.")
+                            Return
                         End If
                     End Using
                 End Using

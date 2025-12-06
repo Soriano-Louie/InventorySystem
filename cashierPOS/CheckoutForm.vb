@@ -12,15 +12,18 @@ Public Class CheckoutForm
 
     ' Payment details for GCash and Bank Transaction
     Private payerName As String = ""
+
     Private referenceNumber As String = ""
     Private bankName As String = ""
 
     ' Payment tracking for cash
     Private amountPaid As Decimal = 0
+
     Private changeGiven As Decimal = 0
 
     ' Receipt printing support
     Private WithEvents printDocument As New PrintDocument()
+
     Private receiptContent As String = ""
     Private receiptLines As List(Of String)
 
@@ -197,6 +200,15 @@ Public Class CheckoutForm
         lblSelectedPayment.Text = $"Selected: {method}"
         btnConfirm.Enabled = True
 
+        ' Move focus to the Confirm button so Enter triggers confirmation
+        Try
+            btnConfirm.Focus()
+            btnConfirm.Select()
+            Me.ActiveControl = btnConfirm
+        Catch
+            ' Ignore focus failures
+        End Try
+
         ' Reset all button colors
         btnCash.BackColor = Color.FromArgb(147, 53, 53)
         btnGCash.BackColor = Color.FromArgb(147, 53, 53)
@@ -216,6 +228,20 @@ Public Class CheckoutForm
                 selectedButton.BackColor = Color.FromArgb(147, 53, 53)
                 amountPaid = 0
                 changeGiven = 0
+
+                ' Clear focus so Enter won't activate the previously focused button
+                Try
+                    Me.ActiveControl = Nothing
+                Catch
+                End Try
+            Else
+                ' Ensure Confirm keeps focus after successful cash entry
+                Try
+                    btnConfirm.Focus()
+                    btnConfirm.Select()
+                    Me.ActiveControl = btnConfirm
+                Catch
+                End Try
             End If
         ElseIf method = "GCash" OrElse method = "Bank Transaction" Then
             ' Existing code for GCash/Bank Transaction
@@ -236,6 +262,14 @@ Public Class CheckoutForm
                 If method = "Bank Transaction" Then
                     Debug.WriteLine($"  - Bank Name: {bankName}")
                 End If
+
+                ' Ensure Confirm keeps focus after successful payment details entry
+                Try
+                    btnConfirm.Focus()
+                    btnConfirm.Select()
+                    Me.ActiveControl = btnConfirm
+                Catch
+                End Try
             Else
                 ' User cancelled
                 selectedPaymentMethod = ""
@@ -247,6 +281,12 @@ Public Class CheckoutForm
                 bankName = ""
                 amountPaid = 0
                 changeGiven = 0
+
+                ' Clear focus so Enter won't activate the previously focused button
+                Try
+                    Me.ActiveControl = Nothing
+                Catch
+                End Try
             End If
         End If
     End Sub
@@ -557,10 +597,10 @@ Public Class CheckoutForm
         ' Use GETDATE() which includes both date and time components
         Dim query As String = "
 INSERT INTO RetailSalesReport
-(SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, 
+(SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod,
  HandledBy, PayerName, ReferenceNumber, BankName, AmountPaid, ChangeGiven)
 VALUES
-(GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, 
+(GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod,
  @HandledBy, @PayerName, @ReferenceNumber, @BankName, @AmountPaid, @ChangeGiven)"
 
         Using cmd As New SqlCommand(query, conn)
@@ -591,13 +631,13 @@ VALUES
     Private Sub InsertWholesaleSalesReport(conn As SqlConnection, item As posForm.CartItem,
                                           effectivePrice As Decimal, itemTotal As Decimal,
                                           handledBy As Integer)
-        Dim query As String = "INSERT INTO SalesReport 
-        (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod, 
-         HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude, 
-         DeliveryStatus, PayerName, ReferenceNumber, BankName, AmountPaid, ChangeGiven) 
-        VALUES 
-        (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod, 
-         @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude, 
+        Dim query As String = "INSERT INTO SalesReport
+        (SaleDate, ProductID, CategoryID, QuantitySold, UnitPrice, TotalAmount, PaymentMethod,
+         HandledBy, IsDelivery, DeliveryAddress, DeliveryLatitude, DeliveryLongitude,
+         DeliveryStatus, PayerName, ReferenceNumber, BankName, AmountPaid, ChangeGiven)
+        VALUES
+        (GETDATE(), @ProductID, @CategoryID, @QuantitySold, @UnitPrice, @TotalAmount, @PaymentMethod,
+         @HandledBy, @IsDelivery, @DeliveryAddress, @DeliveryLatitude, @DeliveryLongitude,
          @DeliveryStatus, @PayerName, @ReferenceNumber, @BankName, @AmountPaid, @ChangeGiven)"
 
         Try

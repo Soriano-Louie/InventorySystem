@@ -489,71 +489,136 @@ Public Class editItemRetail
                 Exit Sub
             End If
 
-            ' Prompt for edit reason
-            Dim editReason As String = InputBox("Please provide a reason for this stock adjustment:", "Edit Reason", "")
+            ' Ask user if this is a new batch or updating existing batch
+            Dim batchChoice = MessageBox.Show(
+                "Stock Quantity Update" & vbCrLf & vbCrLf &
+                $"You are modifying the stock quantity to {newQuantity.Value} units." & vbCrLf & vbCrLf &
+                "Is this a NEW BATCH of the product?" & vbCrLf & vbCrLf &
+                "• Click YES if this is a NEW BATCH (different expiration date, new shipment)" & vbCrLf &
+                "• Click NO if you're CORRECTING the quantity of the SAME BATCH" & vbCrLf & vbCrLf &
+                "Choose carefully as this affects inventory tracking.",
+                "New Batch or Same Batch?",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button3)
 
-            If String.IsNullOrWhiteSpace(editReason) Then
-                MessageBox.Show("Edit reason is required for stock quantity changes.", "Required Field", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If batchChoice = DialogResult.Cancel Then
+                MessageBox.Show("Operation cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Exit Sub
             End If
 
-            ' Check if product has expiration date in database
-            Dim productHasExpirationDate As Boolean = CheckProductHasExpirationDate(productID)
+            Dim isNewBatch As Boolean = (batchChoice = DialogResult.Yes)
 
-            ' Handle expiration date based on product type
-            If productHasExpirationDate Then
-                ' Product has expiration date, require user to specify one for the new batch
-                If Not updateExpDate Then
-                    MessageBox.Show("This product requires an expiration date." & vbCrLf &
-                                   "Please check the expiration date checkbox and select a date.",
-                                   "Expiration Date Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If isNewBatch Then
+                ' NEW BATCH - Create separate inventory entry
+                ' Prompt for edit reason
+                Dim editReason As String = InputBox("Please provide a reason for adding this new batch:", "New Batch Reason", "New shipment received")
+
+                If String.IsNullOrWhiteSpace(editReason) Then
+                    MessageBox.Show("Reason is required for adding new batch.", "Required Field", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     Exit Sub
                 End If
+
+                ' Check if product has expiration date in database
+                Dim productHasExpirationDate As Boolean = CheckProductHasExpirationDate(productID)
+
+                ' Handle expiration date based on product type
+                If productHasExpirationDate Then
+                    ' Product has expiration date, require user to specify one for the new batch
+                    If Not updateExpDate Then
+                        MessageBox.Show("This product requires an expiration date for the new batch." & vbCrLf &
+                                       "Please check the expiration date checkbox and select a date.",
+                                       "Expiration Date Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        Exit Sub
+                    End If
+                Else
+                    ' Product doesn't have expiration date, use Nothing
+                    newExpDate = Nothing
+                    updateExpDate = False
+                End If
+
+                ' Build confirmation message
+                Dim confirmMsg As String
+                If productHasExpirationDate AndAlso newExpDate.HasValue Then
+                    confirmMsg = String.Format(
+                        "You are adding {0} units as a NEW BATCH with expiration date {1}." & vbCrLf & vbCrLf &
+                        "This will create a separate inventory entry for tracking purposes." & vbCrLf &
+                        "Reason: {2}" & vbCrLf & vbCrLf &
+                        "Do you want to continue?",
+                        newQuantity.Value,
+                        newExpDate.Value.ToShortDateString(),
+                        editReason)
+                Else
+                    confirmMsg = String.Format(
+                        "You are adding {0} units as a NEW BATCH without an expiration date." & vbCrLf & vbCrLf &
+                        "This will create a separate inventory entry for tracking purposes." & vbCrLf &
+                        "Reason: {1}" & vbCrLf & vbCrLf &
+                        "Do you want to continue?",
+                        newQuantity.Value,
+                        editReason)
+                End If
+
+                If MessageBox.Show(confirmMsg, "Confirm New Batch Creation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then
+                    Exit Sub
+                End If
+
+                Try
+                    ' Insert new batch instead of updating existing quantity
+                    InsertProductBatch(productID, newQuantity.Value, newExpDate, currentUserID, editReason)
+
+                    ' Update other fields (except quantity) if provided
+                    UpdateProducts(productID, newProductName, newCategory, Nothing, newUnit, newCost, newRetailPrice, newReorder, Nothing, False)
+
+                    MessageBox.Show("New product batch created successfully!" & vbCrLf &
+                                   "The quantity has been added as a separate batch." & vbCrLf &
+                                   "Stock edit has been logged.",
+                                   "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch ex As Exception
+                    MessageBox.Show("Error creating product batch: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
             Else
-                ' Product doesn't have expiration date, use Nothing
-                newExpDate = Nothing
-                updateExpDate = False
-            End If
+                ' SAME BATCH - Update existing quantity
+                Dim editReason As String = InputBox("Please provide a reason for this stock adjustment:", "Edit Reason", "Stock correction")
 
-            ' Build confirmation message
-            Dim confirmMsg As String
-            If productHasExpirationDate AndAlso newExpDate.HasValue Then
-                confirmMsg = String.Format(
-                    "You are adding {0} units as a new batch with expiration date {1}." & vbCrLf & vbCrLf &
-                    "This will create a separate inventory entry for tracking purposes." & vbCrLf &
-                    "Reason: {2}" & vbCrLf & vbCrLf &
+                If String.IsNullOrWhiteSpace(editReason) Then
+                    MessageBox.Show("Edit reason is required for stock quantity changes.", "Required Field", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Exit Sub
+                End If
+
+                ' Get old quantity for logging
+                Dim oldQuantity As Decimal = GetCurrentStockQuantity(productID)
+                Dim currentUnit As String = GetCurrentUnit(productID)
+
+                ' Confirm the update
+                Dim confirmMsg As String = String.Format(
+                    "You are updating the SAME BATCH quantity." & vbCrLf & vbCrLf &
+                    "Current Quantity: {0} {2}" & vbCrLf &
+                    "New Quantity: {1} {2}" & vbCrLf &
+                    "Reason: {3}" & vbCrLf & vbCrLf &
                     "Do you want to continue?",
+                    oldQuantity,
                     newQuantity.Value,
-                    newExpDate.Value.ToShortDateString(),
+                    currentUnit,
                     editReason)
-            Else
-                confirmMsg = String.Format(
-                    "You are adding {0} units as a new batch without an expiration date." & vbCrLf & vbCrLf &
-                    "This will create a separate inventory entry for tracking purposes." & vbCrLf &
-                    "Reason: {1}" & vbCrLf & vbCrLf &
-                    "Do you want to continue?",
-                    newQuantity.Value,
-                    editReason)
+
+                If MessageBox.Show(confirmMsg, "Confirm Stock Update", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then
+                    Exit Sub
+                End If
+
+                Try
+                    ' Update the existing product quantity
+                    UpdateProducts(productID, newProductName, newCategory, newQuantity, newUnit, newCost, newRetailPrice, newReorder, Nothing, False)
+
+                    ' Log the stock edit
+                    InsertStockEditLog(productID, oldQuantity, newQuantity.Value, If(String.IsNullOrWhiteSpace(newUnit), currentUnit, newUnit), currentUserID, editReason)
+
+                    MessageBox.Show("Product quantity updated successfully!" & vbCrLf &
+                                   "Stock edit has been logged.",
+                                   "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch ex As Exception
+                    MessageBox.Show("Error updating product: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
             End If
-
-            If MessageBox.Show(confirmMsg, "Confirm Batch Creation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then
-                Exit Sub
-            End If
-
-            Try
-                ' Insert new batch instead of updating existing quantity
-                InsertProductBatch(productID, newQuantity.Value, newExpDate, currentUserID, editReason)
-
-                ' Update other fields (except quantity) if provided
-                UpdateProducts(productID, newProductName, newCategory, Nothing, newUnit, newCost, newRetailPrice, newReorder, Nothing, False)
-
-                MessageBox.Show("New product batch created successfully!" & vbCrLf &
-                               "The quantity has been added as a separate batch." & vbCrLf &
-                               "Stock edit has been logged.",
-                               "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            Catch ex As Exception
-                MessageBox.Show("Error creating product batch: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
         Else
             ' 5. Normal update without quantity change
             Try
@@ -856,6 +921,52 @@ Public Class editItemRetail
         Catch ex As Exception
             Debug.WriteLine($"Error checking sales records: {ex.Message}")
             Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Get current stock quantity for a product
+    ''' </summary>
+    Private Function GetCurrentStockQuantity(productID As Integer) As Decimal
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT StockQuantity FROM retailProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        Return Convert.ToDecimal(result)
+                    End If
+                    Return 0
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error getting stock quantity: {ex.Message}")
+            Return 0
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Get current unit for a product
+    ''' </summary>
+    Private Function GetCurrentUnit(productID As Integer) As String
+        Try
+            Using conn As New SqlConnection(GetConnectionString())
+                conn.Open()
+                Dim query As String = "SELECT Unit FROM retailProducts WHERE ProductID = @ProductID"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@ProductID", productID)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        Return result.ToString()
+                    End If
+                    Return ""
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error getting unit: {ex.Message}")
+            Return ""
         End Try
     End Function
 

@@ -171,6 +171,7 @@ Public Class ProductSearchForm
                 conn.Open()
 
                 ' Query both wholesale and retail products - ONLY show products with available stock
+                ' FIFO sorting: Products expiring soonest appear first
                 Dim query As String = "
                 SELECT
                     'W' + CAST(ProductID AS VARCHAR) AS ProductCode,
@@ -182,7 +183,8 @@ Public Class ProductSearchForm
                     StockQuantity,
                     ISNULL(IsVATApplicable, 0) AS IsVATApplicable,
                     'Wholesale' AS ProductType,
-                    expirationDate
+                    CASE WHEN expirationDate IS NULL THEN 1 ELSE 0 END AS ExpirationIsNull,
+                    expirationDate AS ExpirationDate
                 FROM wholesaleProducts
                 WHERE (IsArchived IS NULL OR IsArchived = 0)
                 AND StockQuantity > 0
@@ -197,11 +199,15 @@ Public Class ProductSearchForm
                     StockQuantity,
                     ISNULL(IsVATApplicable, 0) AS IsVATApplicable,
                     'Retail' AS ProductType,
-                    expirationDate
+                    CASE WHEN expirationDate IS NULL THEN 1 ELSE 0 END AS ExpirationIsNull,
+                    expirationDate AS ExpirationDate
                 FROM retailProducts
                 WHERE (IsArchived IS NULL OR IsArchived = 0)
                 AND StockQuantity > 0
-                ORDER BY ProductName"
+                ORDER BY
+                    ExpirationIsNull,
+                    ExpirationDate ASC,
+                    ProductName"
 
                 Using cmd As New SqlCommand(query, conn)
                     Using da As New SqlDataAdapter(cmd)
@@ -220,6 +226,7 @@ Public Class ProductSearchForm
                     If .Columns.Contains("ProductCode") Then .Columns("ProductCode").Visible = False
                     If .Columns.Contains("CategoryID") Then .Columns("CategoryID").Visible = False
                     If .Columns.Contains("IsVATApplicable") Then .Columns("IsVATApplicable").Visible = False
+                    If .Columns.Contains("ExpirationIsNull") Then .Columns("ExpirationIsNull").Visible = False
 
                     If .Columns.Contains("SKU") Then
                         .Columns("SKU").HeaderText = "SKU"
@@ -253,12 +260,12 @@ Public Class ProductSearchForm
                         .Columns("ProductType").FillWeight = 10
                     End If
 
-                    ' ADD expiration date column formatting
-                    If .Columns.Contains("expirationDate") Then
-                        .Columns("expirationDate").HeaderText = "Expiry Date"
-                        .Columns("expirationDate").DefaultCellStyle.Format = "yyyy-MM-dd"
-                        .Columns("expirationDate").FillWeight = 15
-                        .Columns("expirationDate").Visible = True
+                    ' ADD expiration date column formatting (now using ExpirationDate alias)
+                    If .Columns.Contains("ExpirationDate") Then
+                        .Columns("ExpirationDate").HeaderText = "Expiry Date (FIFO)"
+                        .Columns("ExpirationDate").DefaultCellStyle.Format = "yyyy-MM-dd"
+                        .Columns("ExpirationDate").FillWeight = 15
+                        .Columns("ExpirationDate").Visible = True
                     End If
                 End With
             End If
@@ -273,7 +280,7 @@ Public Class ProductSearchForm
     Private Sub ProductsDataGridView_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
         Dim dgv As DataGridView = DirectCast(sender, DataGridView)
 
-        If dgv.Columns(e.ColumnIndex).Name = "expirationDate" AndAlso
+        If dgv.Columns(e.ColumnIndex).Name = "ExpirationDate" AndAlso
            e.Value IsNot Nothing AndAlso e.Value IsNot DBNull.Value Then
 
             Dim expDate As DateTime = Convert.ToDateTime(e.Value)
@@ -294,8 +301,8 @@ Public Class ProductSearchForm
                 e.CellStyle.BackColor = Color.LightGreen
                 e.CellStyle.ForeColor = Color.Black
             End If
-        ElseIf dgv.Columns(e.ColumnIndex).Name = "expirationDate" Then
-            ' If expirationDate is NULL - GRAY
+        ElseIf dgv.Columns(e.ColumnIndex).Name = "ExpirationDate" Then
+            ' If ExpirationDate is NULL - GRAY
             e.CellStyle.BackColor = Color.LightGray
             e.CellStyle.ForeColor = Color.Black
         End If
@@ -385,13 +392,13 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
             ' Check stock availability
             If stockQuantity <= 0 Then
                 MessageBox.Show("This product is out of stock!", "Out of Stock",
-                     MessageBoxButtons.OK, MessageBoxIcon.Warning)
+ MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
             ' Ask for quantity
             Dim quantityInput As String = InputBox($"Enter quantity to add (Available: {stockQuantity}):",
-      "Add to Cart", "1")
+  "Add to Cart", "1")
 
             If String.IsNullOrWhiteSpace(quantityInput) Then
                 Return ' User cancelled
@@ -400,13 +407,13 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
             Dim quantity As Integer
             If Not Integer.TryParse(quantityInput, quantity) OrElse quantity <= 0 Then
                 MessageBox.Show("Please enter a valid quantity.", "Invalid Input",
-    MessageBoxButtons.OK, MessageBoxIcon.Warning)
+MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
             If quantity > stockQuantity Then
                 MessageBox.Show($"Only {stockQuantity} units available in stock!", "Insufficient Stock",
-               MessageBoxButtons.OK, MessageBoxIcon.Warning)
+       MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
@@ -420,13 +427,13 @@ MessageBoxButtons.OK, MessageBoxIcon.Information)
             parentPOSForm.AddProductToCart(productID, productName, quantity, unitPrice, categoryID, isVATApplicable, productType)
 
             MessageBox.Show($"Added {quantity} x {productName} to cart!", "Success",
-  MessageBoxButtons.OK, MessageBoxIcon.Information)
+MessageBoxButtons.OK, MessageBoxIcon.Information)
 
             ' Optionally close the form after adding
             ' Me.Close()
         Catch ex As Exception
             MessageBox.Show("Error adding product to cart: " & ex.Message, "Error",
- MessageBoxButtons.OK, MessageBoxIcon.Error)
+MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

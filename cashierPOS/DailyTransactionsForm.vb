@@ -122,6 +122,17 @@ Public Class DailyTransactionsForm
 
         ' Load batch transactions
         LoadBatchTransactions()
+
+        ' Enable form to receive key events before child controls
+        Me.KeyPreview = True
+        AddHandler Me.KeyDown, AddressOf DailyTransactionsForm_KeyDown
+    End Sub
+
+    ' Close form when Escape is pressed
+    Private Sub DailyTransactionsForm_KeyDown(sender As Object, e As KeyEventArgs)
+        If e.KeyCode = Keys.Escape Then
+            Me.Close()
+        End If
     End Sub
 
     ''' <summary>
@@ -166,7 +177,7 @@ Public Class DailyTransactionsForm
                     MIN(SaleDate) AS BatchTime,
                     HandledBy AS Cashier,
                     COUNT(*) AS ItemCount,
-                    SUM(TotalAmount) AS TotalAmount,
+                    SUM(CASE WHEN IsRefunded = 0 THEN TotalAmount ELSE 0 END) AS TotalAmount,
                     CASE WHEN MAX(CAST(IsRefunded AS INT)) = 1 THEN 1 ELSE 0 END AS HasRefunds,
                     STRING_AGG(CAST(SaleID AS VARCHAR), ',') AS SaleIDs
                 FROM AllTransactions
@@ -199,6 +210,11 @@ Public Class DailyTransactionsForm
                     ' Hide detail-only buttons
                     btnRefund.Visible = False
                     btnViewReceipt.Visible = False
+
+                    ' Ensure any existing filters from detail view are cleared so rows are visible
+                    If bs IsNot Nothing Then
+                        bs.Filter = String.Empty
+                    End If
 
                     ' Re-bind to update structure
                     dv = New DataView(dt)
@@ -656,6 +672,14 @@ Public Class DailyTransactionsForm
         ' Refresh always goes back to batch view
         LoadBatchTransactions()
         lblTitle.Text = $"Daily Transactions - {DateTime.Today:dddd, MMMM dd, yyyy}"
+
+        ' Ensure filters/reset UI state do not hide data after refresh
+        If bs IsNot Nothing Then
+            bs.Filter = String.Empty
+        End If
+        If cboSalesType IsNot Nothing Then
+            cboSalesType.SelectedIndex = 0
+        End If
 
         ' Update summary after refresh
         UpdateSummary()

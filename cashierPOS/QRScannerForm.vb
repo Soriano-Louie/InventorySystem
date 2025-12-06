@@ -3,8 +3,6 @@ Imports AForge.Video.DirectShow
 Imports Microsoft.Data.SqlClient
 Imports ZXing
 Imports ZXing.Windows.Compatibility
-Imports System.Diagnostics
-Imports System.Threading.Tasks
 
 Public Class QRScannerForm
     Inherits Form
